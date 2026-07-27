@@ -1,6 +1,19 @@
 #!/usr/bin/env ruby
-require_relative "../config/boot"
-require "active_support/continuous_integration"
+# frozen_string_literal: true
 
-CI = ActiveSupport::ContinuousIntegration
-require_relative "../config/ci.rb"
+ENV["PAGER"] = "cat"
+
+def step(name)
+  puts "\n\e[34m===> Running #{name}...\e[0m"
+  system(yield) || abort("\e[31m===> #{name} FAILED\e[0m")
+end
+
+puts "\e[32m🚀 Starting Pre-Flight CI Quality Checks\e[0m"
+
+step("RuboCop Linter") { "bundle exec rubocop" }
+step("Brakeman Security Scan") { "bundle exec brakeman --no-pager" }
+step("Bundler Audit Vulnerability Scan") { "bin/bundler-audit" }
+step("Database Migration Check") { "bin/rails db:test:prepare" }
+step("RSpec Test Suite") { "bundle exec rspec" }
+
+puts "\n\e[32m✅ All Pre-Flight Checks Passed Cleanly!\e[0m\n"
