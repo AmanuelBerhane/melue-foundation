@@ -93,6 +93,9 @@ jobs:
       - name: Run test suite
         env:
           RAILS_ENV: test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST: localhost
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/melue_backend_test
         run: |
           bin/rails db:test:prepare
