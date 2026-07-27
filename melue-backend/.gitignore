@@ -1,0 +1,47 @@
+# Ignore bundler config.
+/.bundle
+
+# Ignore all environment files (except templates).
+/.env*
+!/.env*.erb
+
+# Ignore all logfiles and tempfiles.
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore pidfiles, but keep the directory.
+/tmp/pids/*
+!/tmp/pids/.keep
+
+# Ignore storage (uploaded files in development and any SQLite databases).
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/.keep
+
+# Ignore assets.
+/public/assets
+
+# Ignore credentials except the template.
+/config/credentials/*.key
+/config/credentials/*.yml.enc
+
+# master.key is committed intentionally during development
+# to allow contributors to run the app without manual setup.
+# Remove this exception and rotate the key before going to production.
+!/config/master.key
+
+# Ignore database schema dump.
+# db/schema.rb
+
+# Ignore node_modules (if any JS tooling is added).
+/node_modules
+
+# Ignore OS files.
+.DS_Store
+Thumbs.db
+
+# Ignore test coverage reports.
+/coverage
