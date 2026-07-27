@@ -45,3 +45,6 @@ Thumbs.db
 
 # Ignore test coverage reports.
 /coverage
+
+# Ignore bootsnap cache.
+/tmp/cache/bootsnap/
