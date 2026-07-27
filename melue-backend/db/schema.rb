@@ -10,8 +10,38 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 0) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_27_095107) do
   # These are extensions that must be enabled in order to support this database
+  enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
 
+  create_table "user_login_change_keys", force: :cascade do |t|
+    t.datetime "deadline", null: false
+    t.string "key", null: false
+    t.string "login", null: false
+  end
+
+  create_table "user_password_reset_keys", force: :cascade do |t|
+    t.datetime "deadline", null: false
+    t.datetime "email_last_sent", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.string "key", null: false
+  end
+
+  create_table "user_verification_keys", force: :cascade do |t|
+    t.datetime "email_last_sent", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.string "key", null: false
+    t.datetime "requested_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.citext "email", null: false
+    t.string "password_hash"
+    t.integer "status", default: 1, null: false
+    t.index ["email"], name: "index_users_on_email", unique: true, where: "(status = ANY (ARRAY[1, 2]))"
+    t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
+  end
+
+  add_foreign_key "user_login_change_keys", "users", column: "id"
+  add_foreign_key "user_password_reset_keys", "users", column: "id"
+  add_foreign_key "user_verification_keys", "users", column: "id"
 end
