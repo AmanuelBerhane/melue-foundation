@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "🚀 Running automated Git Pre-Push checks..."
+
+# Run backend pre-flight CI checks in melue-backend
+cd melue-backend && ./bin/ci
+
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  echo "❌ Pre-push checks failed! Git push aborted."
+  exit 1
+fi
+
+echo "✅ Pre-push checks passed! Proceeding with push."
+exit 0

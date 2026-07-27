@@ -31,10 +31,11 @@ Ensure you have the following installed:
 * PostgreSQL 14+
 * Bundler (`gem install bundler`)
 
-### 2. Clone & Install Dependencies
+### 2. First-Time Project Setup (Recommended)
+Run the automated setup script to install dependencies, prepare the database, clear old logs, and configure pre-push git hooks in one command:
 ```bash
 cd melue-backend
-bundle install
+bin/setup
 ```
 
 ### 3. Environment Configuration
@@ -45,7 +46,7 @@ cp .env.example .env
 Update `.env` with your local PostgreSQL user/password if needed.
 
 ### 4. Database Setup
-Create, migrate, and seed the database:
+Create, migrate, and seed the database (if not using `bin/setup`):
 ```bash
 bin/rails db:prepare
 ```
