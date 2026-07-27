@@ -56,4 +56,15 @@ group :development, :test do
 
   # Realistic fake data for factories
   gem "faker"
+
+  # RSpec test framework
+  gem "rspec-rails"
+end
+
+group :test do
+  # Clean one-liner assertions for models and controllers
+  gem "shoulda-matchers"
+
+  # Ensures clean DB state between tests
+  gem "database_cleaner-active_record"
 end
