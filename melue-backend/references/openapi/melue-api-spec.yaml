@@ -1,0 +1,1949 @@
+openapi: 3.1.0
+info:
+  title: Melue Foundation Therapy Management API
+  version: 1.0.0
+  description: |
+    REST API for the Melue Foundation Therapy Management System.
+    Manages identity, student enrollment, clinical assessments, IUP authoring,
+    active therapy sessions, scheduling, and reporting.
+  contact:
+    name: Melue Foundation
+    email: api@melue.foundation
+
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development server
+  - url: https://api.melue.foundation/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Authentication
+    description: Login and password reset operations
+  - name: Users
+    description: User account management
+  - name: Configuration
+    description: System configuration and reference data
+  - name: Students
+    description: Student registration and enrollment
+  - name: Assessment
+    description: Six-week clinical assessments
+  - name: IUP & Goals
+    description: Individualized treatment plans and goals
+  - name: Scheduling
+    description: Teacher-student scheduling and assignments
+  - name: Active Therapy
+    description: Therapy sessions, trials, and incidents
+  - name: Communication
+    description: Notifications and parent communication
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate user
+      description: |
+        Returns a JWT token in the `Authorization: Bearer <token>` response header
+        (Rails devise-jwt convention) and also in the response body for convenience.
+        Use the header value for all subsequent requests.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                rememberDevice:
+                  type: boolean
+                  default: false
+                deviceIdentifier:
+                  type: string
+                  description: Stable device identifier for remembered-device sessions
+      responses:
+        '200':
+          description: Authentication successful
+          headers:
+            Authorization:
+              description: JWT bearer token — use this value for all subsequent requests
+              schema:
+                type: string
+              examples:
+                jwt:
+                  summary: Example JWT bearer token
+                  value: "Bearer eyJhbGciOiJIUzI1NiJ9..."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT bearer token (same value as Authorization header)
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '423':
+          description: Account locked due to too many failed attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/sessions:
+    delete:
+      tags: [Authentication]
+      summary: Logout — invalidate current session
+      description: |
+        Revokes the current JWT. With devise-jwt and a denylist strategy,
+        pass the token in the Authorization header; the server adds it to the denylist.
+      operationId: logout
+      responses:
+        '204':
+          description: Session invalidated successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/password-resets:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      description: |
+        Always returns 202 regardless of whether the email exists,
+        to prevent user enumeration attacks.
+      operationId: requestPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '202':
+          description: Request accepted — if the email exists a reset link will be sent
+
+  /users:
+    get:
+      tags: [Users]
+      summary: List users
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/AccountStatus'
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags: [Users]
+      summary: Create user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                status:
+                  $ref: '#/components/schemas/AccountStatus'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /users/{userId}:
+    get:
+      tags: [Users]
+      summary: Get user by ID
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags: [Users]
+      summary: Update user
+      operationId: updateUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                status:
+                  $ref: '#/components/schemas/AccountStatus'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /staff:
+    get:
+      tags: [Users]
+      summary: List staff members
+      operationId: listStaff
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+      responses:
+        '200':
+          description: Staff list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StaffMember'
+                  total:
+                    type: integer
+
+  /roles:
+    get:
+      tags: [Users]
+      summary: List roles
+      operationId: listRoles
+      responses:
+        '200':
+          description: Role list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+
+  /configuration/stations:
+    get:
+      tags: [Configuration]
+      summary: List therapy stations
+      operationId: listStations
+      responses:
+        '200':
+          description: Station list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TherapyStation'
+
+  /configuration/stations/{stationId}/rooms:
+    get:
+      tags: [Configuration]
+      summary: List rooms within a station
+      operationId: listStationRooms
+      parameters:
+        - name: stationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Room list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TherapyRoom'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /configuration/scheduling-policy:
+    get:
+      tags: [Configuration]
+      summary: Get scheduling policy (singleton — one per organisation)
+      operationId: getSchedulingPolicy
+      responses:
+        '200':
+          description: Current scheduling policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingPolicy'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    put:
+      tags: [Configuration]
+      summary: Update scheduling policy
+      operationId: updateSchedulingPolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchedulingPolicyInput'
+      responses:
+        '200':
+          description: Scheduling policy updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingPolicy'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /configuration/goal-domains:
+    get:
+      tags: [Configuration]
+      summary: List goal domains
+      operationId: listGoalDomains
+      responses:
+        '200':
+          description: Goal domain list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GoalDomain'
+
+  /students:
+    get:
+      tags: [Students]
+      summary: List students
+      operationId: listStudents
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/StudentStatus'
+      responses:
+        '200':
+          description: Student list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Student'
+                  total:
+                    type: integer
+    post:
+      tags: [Students]
+      summary: Create student
+      operationId: createStudent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentInput'
+      responses:
+        '201':
+          description: Student created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+
+  /students/{studentId}:
+    get:
+      tags: [Students]
+      summary: Get student by ID
+      operationId: getStudent
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Student details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /students/{studentId}/enrollment:
+    get:
+      tags: [Students]
+      summary: Get student enrollment
+      operationId: getEnrollment
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Enrollment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+    post:
+      tags: [Students]
+      summary: Create enrollment
+      operationId: createEnrollment
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '201':
+          description: Enrollment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+
+  /students/{studentId}/enrollment/confirm:
+    post:
+      tags: [Students]
+      summary: Confirm enrollment
+      operationId: confirmEnrollment
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Enrollment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /students/{studentId}/guardians:
+    get:
+      tags: [Students]
+      summary: List student guardians
+      operationId: listStudentGuardians
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Guardian list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StudentGuardian'
+
+  /students/{studentId}/attachments:
+    get:
+      tags: [Students]
+      summary: List student attachments
+      operationId: listStudentAttachments
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: Attachment list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StudentAttachment'
+    post:
+      tags: [Students]
+      summary: Create student attachment
+      operationId: createStudentAttachment
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentAttachmentInput'
+      responses:
+        '201':
+          description: Attachment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentAttachment'
+
+  /assessment-cycles:
+    post:
+      tags: [Assessment]
+      summary: Create assessment cycle
+      operationId: createAssessmentCycle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId]
+              properties:
+                studentId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Assessment cycle created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentCycle'
+
+  /assessment-cycles/{cycleId}:
+    get:
+      tags: [Assessment]
+      summary: Get assessment cycle
+      operationId: getAssessmentCycle
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Assessment cycle details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentCycle'
+
+  /assessment-cycles/{cycleId}/complete:
+    post:
+      tags: [Assessment]
+      summary: Complete assessment cycle
+      operationId: completeAssessmentCycle
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Assessment cycle completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssessmentCycle'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /assessment-cycles/{cycleId}/skills-assessment:
+    get:
+      tags: [Assessment]
+      summary: Get skills assessment
+      operationId: getSkillsAssessment
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Skills assessment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillsAssessment'
+
+  /goals:
+    get:
+      tags: [IUP & Goals]
+      summary: List goals
+      operationId: listGoals
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: domainId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            $ref: '#/components/schemas/GoalType'
+      responses:
+        '200':
+          description: Goal list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Goal'
+                  total:
+                    type: integer
+    post:
+      tags: [IUP & Goals]
+      summary: Create goal
+      operationId: createGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalInput'
+      responses:
+        '201':
+          description: Goal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+
+  /students/{studentId}/iups:
+    get:
+      tags: [IUP & Goals]
+      summary: List student IUPs
+      operationId: listStudentIUPs
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      responses:
+        '200':
+          description: IUP list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IUP'
+    post:
+      tags: [IUP & Goals]
+      summary: Create IUP
+      operationId: createIUP
+      parameters:
+        - $ref: '#/components/parameters/StudentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IUPInput'
+      responses:
+        '201':
+          description: IUP created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IUP'
+
+  /iups/{iupId}/finalize:
+    post:
+      tags: [IUP & Goals]
+      summary: Finalize IUP
+      operationId: finalizeIUP
+      parameters:
+        - name: iupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: IUP finalized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IUP'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /student-goals:
+    get:
+      tags: [IUP & Goals]
+      summary: List student goals
+      operationId: listStudentGoals
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: studentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: iupId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/GoalAssignmentStatus'
+      responses:
+        '200':
+          description: Student goal list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StudentGoal'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /student-goals/{studentGoalId}:
+    get:
+      tags: [IUP & Goals]
+      summary: Get student goal
+      operationId: getStudentGoal
+      parameters:
+        - name: studentGoalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Student goal details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentGoal'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /student-goals/{studentGoalId}/mastery-checks:
+    post:
+      tags: [IUP & Goals]
+      summary: Submit mastery check
+      operationId: submitMasteryCheck
+      parameters:
+        - name: studentGoalId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [primaryIndependencePercent]
+              properties:
+                primaryIndependencePercent:
+                  type: number
+                  format: float
+                  minimum: 0
+                  maximum: 100
+      responses:
+        '201':
+          description: Mastery check created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalMasteryCheck'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /mastery-checks/{masteryCheckId}/approve:
+    post:
+      tags: [IUP & Goals]
+      summary: Approve mastery check
+      operationId: approveMasteryCheck
+      parameters:
+        - name: masteryCheckId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Mastery check approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalMasteryCheck'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /teacher-student-assignments:
+    get:
+      tags: [Scheduling]
+      summary: List teacher-student assignments
+      operationId: listAssignments
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: teacherId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: studentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: scheduledDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Assignment list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TeacherStudentAssignment'
+                  total:
+                    type: integer
+    post:
+      tags: [Scheduling]
+      summary: Create teacher-student assignment
+      operationId: createAssignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeacherStudentAssignmentInput'
+      responses:
+        '201':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherStudentAssignment'
+
+  /therapy-sessions:
+    get:
+      tags: [Active Therapy]
+      summary: List therapy sessions
+      operationId: listSessions
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: teacherId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: studentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Session list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TherapySession'
+                  total:
+                    type: integer
+    post:
+      tags: [Active Therapy]
+      summary: Create therapy session
+      operationId: createSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TherapySessionInput'
+      responses:
+        '201':
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TherapySession'
+
+  /therapy-sessions/{sessionId}/trials:
+    post:
+      tags: [Active Therapy]
+      summary: Record trial (client-assigned UUID)
+      operationId: recordTrial
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrialInput'
+      responses:
+        '201':
+          description: Trial recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trial'
+
+  /therapy-sessions/{sessionId}/incidents:
+    post:
+      tags: [Active Therapy]
+      summary: Record behavior incident
+      operationId: recordIncident
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BehaviorIncidentInput'
+      responses:
+        '201':
+          description: Incident recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BehaviorIncident'
+
+  /therapy-sessions/{sessionId}/submit:
+    post:
+      tags: [Active Therapy]
+      summary: Submit session summary
+      operationId: submitSession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                qualitativeNotes:
+                  type: string
+      responses:
+        '200':
+          description: Session submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TherapySession'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /notifications:
+    get:
+      tags: [Communication]
+      summary: List notifications
+      operationId: listNotifications
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/OffsetParam'
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  total:
+                    type: integer
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+    OffsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+    StudentIdParam:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required — missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ForbiddenError:
+      description: Authorisation denied — authenticated but insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequestError:
+      description: Invalid request — malformed JSON or missing required fields
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Business rule validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ConflictError:
+      description: Conflict — e.g. duplicate email, capacity exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+    User:
+      type: object
+      required: [id, email, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        lockedUntil:
+          type: ["string", "null"]
+          format: date-time
+
+    AccountStatus:
+      type: string
+      enum: [active, inactive, locked]
+
+    StaffMember:
+      type: object
+      required: [id, userId, fullName, staffNumber]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        staffNumber:
+          type: string
+
+    Guardian:
+      type: object
+      required: [id, fullName, phone]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: ["string", "null"]
+          format: uuid
+        fullName:
+          type: string
+        phone:
+          type: string
+
+    Role:
+      type: object
+      required: [id, name, isActive]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        isSystemCritical:
+          type: boolean
+        isActive:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+
+    Permission:
+      type: object
+      required: [module, action]
+      properties:
+        module:
+          type: string
+        action:
+          type: string
+          enum: [view, create, edit, delete, approve]
+
+    TherapyStation:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    TherapyRoom:
+      type: object
+      required: [id, stationId, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    SchedulingPolicy:
+      type: object
+      required: [id, staffStudentCapacity, draftExpiryDays]
+      properties:
+        id:
+          type: string
+          format: uuid
+        staffStudentCapacity:
+          type: integer
+          minimum: 1
+        draftExpiryDays:
+          type: integer
+          minimum: 1
+        preTherapyDurationMinutes:
+          type: integer
+          minimum: 0
+        station1DurationMinutes:
+          type: integer
+          minimum: 1
+        station2DurationMinutes:
+          type: integer
+          minimum: 1
+
+    SchedulingPolicyInput:
+      type: object
+      required: [staffStudentCapacity, draftExpiryDays]
+      description: Writable fields for the scheduling policy singleton. id is server-managed.
+      properties:
+        staffStudentCapacity:
+          type: integer
+          minimum: 1
+        draftExpiryDays:
+          type: integer
+          minimum: 1
+        preTherapyDurationMinutes:
+          type: integer
+          minimum: 0
+        station1DurationMinutes:
+          type: integer
+          minimum: 1
+        station2DurationMinutes:
+          type: integer
+          minimum: 1
+
+    GoalAssignmentStatus:
+      type: string
+      enum: [active, in_progress, mastered, archived]
+
+    GoalDomain:
+      type: object
+      required: [id, name, displayOrder, isActive]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        displayOrder:
+          type: integer
+        isActive:
+          type: boolean
+
+    Student:
+      type: object
+      required: [id, name, dateOfBirth, programType, therapyGroup, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: object
+          required: [firstName, lastName]
+          properties:
+            firstName:
+              type: string
+            lastName:
+              type: string
+            middleName:
+              type: string
+        dateOfBirth:
+          type: string
+          format: date
+        diagnosis:
+          type: string
+        programType:
+          type: string
+          enum: [regular, pulled_out]
+        therapyGroup:
+          type: string
+          enum: [basic, functional_living]
+        status:
+          $ref: '#/components/schemas/StudentStatus'
+
+    StudentStatus:
+      type: string
+      enum: [in_assessment, assessment_complete, ready_for_iup, active_therapy, withdrawn, discharged]
+
+    StudentInput:
+      type: object
+      required: [name, dateOfBirth, programType, therapyGroup]
+      properties:
+        name:
+          type: object
+          required: [firstName, lastName]
+          properties:
+            firstName:
+              type: string
+            lastName:
+              type: string
+            middleName:
+              type: string
+        dateOfBirth:
+          type: string
+          format: date
+        diagnosis:
+          type: string
+        programType:
+          type: string
+          enum: [regular, pulled_out]
+        therapyGroup:
+          type: string
+          enum: [basic, functional_living]
+
+    Enrollment:
+      type: object
+      required: [id, studentId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        formSubmissionId:
+          type: ["string", "null"]
+          format: uuid
+        status:
+          type: string
+          enum: [draft, confirmed, purged]
+        enrollmentDate:
+          type: ["string", "null"]
+          format: date
+
+    StudentGuardian:
+      type: object
+      required: [id, studentId, guardianId, relationship, isPrimaryContact]
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        guardianId:
+          type: string
+          format: uuid
+        relationship:
+          type: string
+          enum: [parent, legal_guardian, other]
+        isPrimaryContact:
+          type: boolean
+
+    StudentAttachment:
+      type: object
+      required: [id, studentId, kind, mediaType, secureUri]
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [birth_certificate, medical_diagnosis, agreement, headshot, baseline_video]
+        mediaType:
+          type: string
+        secureUri:
+          type: string
+          format: uri
+        capturedAt:
+          type: string
+          format: date-time
+        isRequired:
+          type: boolean
+
+    StudentAttachmentInput:
+      type: object
+      required: [kind, mediaType, secureUri]
+      properties:
+        kind:
+          type: string
+          enum: [birth_certificate, medical_diagnosis, agreement, headshot, baseline_video]
+        mediaType:
+          type: string
+        secureUri:
+          type: string
+          format: uri
+
+    AssessmentCycle:
+      type: object
+      required: [id, studentId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress, complete, reviewed]
+        startedOn:
+          type: string
+          format: date
+        completedOn:
+          type: ["string", "null"]
+          format: date
+
+    SkillsAssessment:
+      type: object
+      required: [id, assessmentCycleId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        assessmentCycleId:
+          type: string
+          format: uuid
+        formSubmissionId:
+          type: ["string", "null"]
+          format: uuid
+        status:
+          type: string
+          enum: [draft, submitted]
+        needAnalysisSummary:
+          type: ["string", "null"]
+
+    Goal:
+      type: object
+      required: [id, goalDomainId, name, type, isActive]
+      properties:
+        id:
+          type: string
+          format: uuid
+        goalDomainId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/GoalType'
+        description:
+          type: string
+        isActive:
+          type: boolean
+
+    GoalType:
+      type: string
+      enum: [standard, task_analysis]
+
+    GoalInput:
+      type: object
+      required: [goalDomainId, name, type]
+      properties:
+        goalDomainId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/GoalType'
+        description:
+          type: string
+
+    IUP:
+      type: object
+      required: [id, studentId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        assessmentCycleId:
+          type: ["string", "null"]
+          format: uuid
+        formSubmissionId:
+          type: ["string", "null"]
+          format: uuid
+        status:
+          type: string
+          enum: [draft, active, archived]
+        finalizedOn:
+          type: ["string", "null"]
+          format: date
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentGoal'
+
+    IUPInput:
+      type: object
+      required: [assessmentCycleId]
+      properties:
+        assessmentCycleId:
+          type: string
+          format: uuid
+
+    StudentGoal:
+      type: object
+      required: [id, iupId, studentId, goalId, stationId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        iupId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        goalId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/GoalAssignmentStatus'
+        progressPercent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        clinicalNote:
+          type: ["string", "null"]
+
+    TeacherStudentAssignment:
+      type: object
+      required: [id, teacherId, studentId, sessionBlockDefinitionId, stationId, roomId, scheduledDate, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        teacherId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        sessionBlockDefinitionId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        scheduledDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [scheduled, cancelled, completed]
+
+    TeacherStudentAssignmentInput:
+      type: object
+      required: [teacherId, studentId, sessionBlockDefinitionId, stationId, roomId, scheduledDate]
+      properties:
+        teacherId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        sessionBlockDefinitionId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        scheduledDate:
+          type: string
+          format: date
+
+    TherapySession:
+      type: object
+      required: [id, teacherId, sessionBlockDefinitionId, stationId, roomId, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        teacherId:
+          type: string
+          format: uuid
+        sessionBlockDefinitionId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        startedAt:
+          type: ["string", "null"]
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        status:
+          type: string
+          enum: [in_progress, submitted, reviewed]
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionParticipant'
+
+    TherapySessionInput:
+      type: object
+      required: [teacherId, sessionBlockDefinitionId, stationId, roomId]
+      properties:
+        teacherId:
+          type: string
+          format: uuid
+        sessionBlockDefinitionId:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+
+    SessionParticipant:
+      type: object
+      required: [id, therapySessionId, studentId, cardPosition]
+      properties:
+        id:
+          type: string
+          format: uuid
+        therapySessionId:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        teacherStudentAssignmentId:
+          type: string
+          format: uuid
+        cardPosition:
+          type: string
+          enum: [active, secondary]
+
+    Trial:
+      type: object
+      required: [id, therapySessionId, sessionParticipantId, studentGoalId, promptLevelId, outcome, loggedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-assigned UUID for idempotent offline sync
+        therapySessionId:
+          type: string
+          format: uuid
+        sessionParticipantId:
+          type: string
+          format: uuid
+        studentGoalId:
+          type: string
+          format: uuid
+        studentGoalStepId:
+          type: ["string", "null"]
+          format: uuid
+          description: Required for task-analysis goals, absent for standard goals
+        promptLevelId:
+          type: string
+          format: uuid
+        outcome:
+          type: string
+          enum: [correct, incorrect, no_response]
+        loggedAt:
+          type: string
+          format: date-time
+
+    TrialInput:
+      type: object
+      required: [id, sessionParticipantId, studentGoalId, promptLevelId, outcome, loggedAt]
+      description: |
+        id and loggedAt are both required and set by the client before submission.
+        This supports offline-first recording where the server cannot know the exact log time.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-assigned UUID — duplicate submissions with the same id are ignored
+        sessionParticipantId:
+          type: string
+          format: uuid
+        studentGoalId:
+          type: string
+          format: uuid
+        studentGoalStepId:
+          type: ["string", "null"]
+          format: uuid
+          description: Required when the goal type is task_analysis; omit for standard goals
+        promptLevelId:
+          type: string
+          format: uuid
+        outcome:
+          type: string
+          enum: [correct, incorrect, no_response]
+        loggedAt:
+          type: string
+          format: date-time
+          description: Client-recorded timestamp of when the trial occurred
+
+    BehaviorIncident:
+      type: object
+      required: [id, therapySessionId, sessionParticipantId, activeStudentGoalId, recordedByUserId, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-assigned UUID for idempotent offline sync
+        therapySessionId:
+          type: string
+          format: uuid
+        sessionParticipantId:
+          type: string
+          format: uuid
+        activeStudentGoalId:
+          type: string
+          format: uuid
+        recordedByUserId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        behaviorNameSnapshot:
+          type: string
+        behaviorDefinitionSnapshot:
+          type: string
+        frequencySnapshot:
+          type: string
+        intensitySnapshot:
+          type: string
+        categorySnapshot:
+          type: string
+        locationSnapshot:
+          type: string
+        antecedentSnapshot:
+          type: string
+        consequenceSnapshot:
+          type: string
+        antecedentOtherText:
+          type: ["string", "null"]
+        consequenceOtherText:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    BehaviorIncidentInput:
+      type: object
+      required: [id, sessionParticipantId, activeStudentGoalId, occurredAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Client-assigned UUID for idempotent offline sync
+        sessionParticipantId:
+          type: string
+          format: uuid
+        activeStudentGoalId:
+          type: string
+          format: uuid
+        occurredAt:
+          type: string
+          format: date-time
+        behaviorNameSnapshot:
+          type: string
+        behaviorDefinitionSnapshot:
+          type: string
+        frequencySnapshot:
+          type: string
+        intensitySnapshot:
+          type: string
+        categorySnapshot:
+          type: string
+        locationSnapshot:
+          type: string
+        antecedentSnapshot:
+          type: string
+        consequenceSnapshot:
+          type: string
+        antecedentOtherText:
+          type: string
+        consequenceOtherText:
+          type: string
+        notes:
+          type: string
+
+    GoalMasteryCheck:
+      type: object
+      required: [id, studentGoalId, primaryTeacherId, status, primaryIndependencePercent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentGoalId:
+          type: string
+          format: uuid
+        primaryTeacherId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [draft, awaiting_verification, pending_approval, approved, rejected]
+        primaryIndependencePercent:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        submittedAt:
+          type: ["string", "null"]
+          format: date-time
+        rejectionReason:
+          type: ["string", "null"]
+
+    Notification:
+      type: object
+      required: [id, recipientUserId, type, payloadReference]
+      properties:
+        id:
+          type: string
+          format: uuid
+        recipientUserId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [stale_draft, mastery_decision, session_review, communication]
+        payloadReference:
+          type: string
+          description: JSON reference to related resource
+        readAt:
+          type: ["string", "null"]
+          format: date-time
