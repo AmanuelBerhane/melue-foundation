@@ -17,6 +17,7 @@ Ruby on Rails 8 API backend for the Melue application.
 * **Framework**: Rails 8.1 (API Mode)
 * **Database**: PostgreSQL
 * **Authentication**: Rodauth (JWT Token Auth)
+* **API Documentation**: OasRails (OpenAPI 3.1 with RapiDoc)
 * **Testing**: RSpec, FactoryBot, Faker, Shoulda Matchers, DatabaseCleaner
 * **Code Style**: RuboCop (Omakase style)
 * **Security Scanners**: Brakeman, Bundler Audit
@@ -57,6 +58,14 @@ bin/rails server
 ```
 The API server will run at `http://localhost:3000`.
 
+### 6. Access API Documentation
+Once the server is running, access the interactive API documentation at:
+```
+http://localhost:3000/docs
+```
+
+This provides a **live, interactive view** of all documented API endpoints using RapiDoc. See the [API Documentation](#api-documentation) section below for how to document your endpoints.
+
 ---
 
 ## Architecture & Service Layer Pattern
@@ -92,6 +101,75 @@ class EnrollmentService < ApplicationService
   end
 end
 ```
+
+---
+
+## API Documentation
+
+We use **OasRails** to generate interactive OpenAPI 3.1 documentation automatically from your code and YARD comments.
+
+### Viewing Documentation
+
+Access the interactive API documentation at:
+```
+http://localhost:3000/docs
+```
+
+This shows all documented endpoints with the ability to test them directly in the browser.
+
+### Documenting Your Endpoints
+
+To include an endpoint in the documentation, add YARD tags to your controller methods:
+
+```ruby
+class Api::V1::UsersController < Api::V1::BaseController
+  # @oas_include
+  # @summary Returns a list of users
+  # @tags Users
+  # @auth [bearer_jwt]
+  #
+  # @parameter limit(query) [Integer] Maximum number of users to return. default: (20) minimum: (1) maximum: (100)
+  # @parameter offset(query) [Integer] Number of users to skip for pagination. default: (0) minimum: (0)
+  #
+  # @response Success (200) [Array<Hash{ id: Integer, email: String, created_at: DateTime }>]
+  # @response_example Success (200) [JSON[{"id": 1, "email": "user@example.com", "created_at": "2024-01-01T00:00:00Z"}]]
+  def index
+    users = User.limit(params[:limit] || 20).offset(params[:offset] || 0)
+    render json: users
+  end
+end
+```
+
+### Key YARD Tags
+
+| Tag | Purpose | Example |
+|-----|---------|---------|
+| `@oas_include` | Mark endpoint for inclusion (required) | `# @oas_include` |
+| `@summary` | Brief endpoint description | `# @summary Get user by ID` |
+| `@tags` | Group endpoints by category | `# @tags Users` |
+| `@auth` | Specify auth requirements | `# @auth [bearer_jwt]` |
+| `@no_auth` | Mark endpoint as public | `# @no_auth` |
+| `@parameter` | Document query/path/header params | `# @parameter id(path) [!Integer] User ID` |
+| `@request_body` | Document request body schema | `# @request_body User data [!Hash{ name: String }]` |
+| `@response` | Document response schema | `# @response Success (200) [User]` |
+| `@response_example` | Add response examples | `# @response_example Success (200) [JSON{...}]` |
+
+### Full Documentation Guide
+
+For comprehensive documentation on using OasRails, including advanced features and examples, see:
+
+**[OAS_RAILS_GUIDE.md](./OAS_RAILS_GUIDE.md)**
+
+This guide covers:
+- Complete YARD tag reference
+- Request/response documentation patterns
+- Using reusable components
+- Authentication configuration
+- Response examples and schemas
+
+### Tracking API Progress
+
+The `/docs` page shows which endpoints are documented vs. implemented, helping the team track API development progress. Endpoints appear in the documentation only when marked with `@oas_include` and documented with YARD tags.
 
 ---
 
