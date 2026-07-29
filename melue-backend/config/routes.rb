@@ -7,4 +7,5 @@ Rails.application.routes.draw do
       # Mount versioned routes here.
     end
   end
+  mount OasRails::Engine => "/docs"
 end
