@@ -182,44 +182,6 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
     }
   end
 
-  def participant_dashboard_payload(participant)
-    goals = participant.student.active_goals_for_station(@session.therapy_station_id)
-                       .includes(:goal)
-
-    {
-      id: participant.id,
-      card_position: participant.card_position,
-      student: {
-        id: participant.student.id,
-        full_name: participant.student.full_name,
-        therapy_group: participant.student.therapy_group
-      },
-      current_focus_student_goal_id: participant.current_focus_student_goal_id,
-      goals: goals.map { |g| goal_pill_payload(g) },
-      recent_trials: participant.recent_trials(limit: 10).map { |t| trial_payload(t) }
-    }
-  end
-
-  def goal_pill_payload(student_goal)
-    {
-      id: student_goal.id,
-      name: student_goal.goal.name,
-      goal_type: student_goal.goal.goal_type,
-      status: student_goal.status,
-      progress_percent: student_goal.progress_percent
-    }
-  end
-
-  def trial_payload(trial)
-    {
-      id: trial.id,
-      outcome: trial.outcome,
-      prompt_label: trial.prompt_label_snapshot,
-      logged_at: trial.logged_at,
-      client_event_id: trial.client_event_id
-    }
-  end
-
   def prompt_level_payload(prompt_level)
     {
       id: prompt_level.id,

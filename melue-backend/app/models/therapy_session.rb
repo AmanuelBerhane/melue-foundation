@@ -30,6 +30,9 @@ class TherapySession < ApplicationRecord
 
   private
 
+  # Enforces the 2-participant invariant when completing a session.
+  # Creation-time enforcement is handled by TherapySessions::StartService,
+  # which atomically creates the session and both participants in one transaction.
   def exactly_two_participants_on_completion
     return unless status_completed?
 

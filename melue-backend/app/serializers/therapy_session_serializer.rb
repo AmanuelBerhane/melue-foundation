@@ -6,6 +6,9 @@ class TherapySessionSerializer < ApplicationSerializer
   private
 
   def serialize(session)
+    # Load prompt levels once to avoid repeated queries inside nested serializers
+    prompt_levels = PromptLevel.active.to_a
+
     {
       id: session.id,
       status: session.status,
@@ -15,7 +18,7 @@ class TherapySessionSerializer < ApplicationSerializer
       room: room_payload(session.therapy_room),
       block: block_payload(session.session_block_definition),
       participants: participants_payload(session),
-      prompt_levels: PromptLevelSerializer.new(PromptLevel.active).as_json
+      prompt_levels: PromptLevelSerializer.new(prompt_levels).as_json
     }
   end
 
@@ -45,9 +48,10 @@ class TherapySessionSerializer < ApplicationSerializer
 
   def participants_payload(session)
     # Ordered so active card always comes first, secondary second
+    # station_id passed explicitly to avoid N+1 in SessionParticipantSerializer
     session.session_participants
            .includes(:student, :current_focus_student_goal, :trials)
            .sort_by { |p| p.card_position_active? ? 0 : 1 }
-           .map { |p| SessionParticipantSerializer.new(p).as_json }
+           .map { |p| SessionParticipantSerializer.new(p, station_id: session.therapy_station_id).as_json }
   end
 end

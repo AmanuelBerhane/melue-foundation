@@ -2,6 +2,13 @@
 
 # Serializes a SessionParticipant with student card data, goal pills, and recent trial stream (FR-090, FR-091, FR-093).
 class SessionParticipantSerializer < ApplicationSerializer
+  # @param resource [SessionParticipant, Array<SessionParticipant>]
+  # @param station_id [String] pre-loaded therapy_station_id from the session to avoid N+1
+  def initialize(resource, station_id:)
+    super(resource)
+    @station_id = station_id
+  end
+
   private
 
   def serialize(participant)
@@ -24,14 +31,11 @@ class SessionParticipantSerializer < ApplicationSerializer
   end
 
   def goal_pills(participant)
-    # Assumes the session's station context is accessible through association
-    station_id = participant.therapy_session.therapy_station_id
-    goals = participant.student.active_goals_for_station(station_id)
+    goals = participant.student.active_goals_for_station(@station_id)
     GoalPillSerializer.new(goals).as_json
   end
 
   def recent_trials(participant)
-    trials = participant.recent_trials(limit: 10)
-    TrialSerializer.new(trials).as_json
+    TrialSerializer.new(participant.recent_trials(limit: 10)).as_json
   end
 end
