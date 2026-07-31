@@ -26,7 +26,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
     render json: {
       assignment: assignment_context(assignment),
       session: active_session ? session_context(active_session) : nil,
-      prompt_levels: PromptLevel.active.map { |p| prompt_level_payload(p) }
+      prompt_levels: PromptLevelSerializer.new(PromptLevel.active.to_a).as_json
     }
   end
 
@@ -123,9 +123,15 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   private
 
   def set_session
-    @session = TherapySession
-                 .includes(:therapy_station, :therapy_room, :session_block_definition)
-                 .find_by(id: params[:id] || params[:therapy_session_id])
+    # Only eager load associations needed for dashboard/show.
+    # update_active_goal only needs therapy_station_id (plain column) so
+    # we avoid loading associations it will never use.
+    scope = TherapySession
+    if action_name.in?(%w[show dashboard])
+      scope = scope.includes(:therapy_station, :therapy_room, :session_block_definition)
+    end
+
+    @session = scope.find_by(id: params[:id] || params[:therapy_session_id])
     render_not_found("Session not found") unless @session
   end
 
@@ -179,15 +185,6 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
       start_time: block.start_time.strftime("%H:%M"),
       end_time: block.end_time.strftime("%H:%M"),
       seconds_remaining: block.seconds_remaining
-    }
-  end
-
-  def prompt_level_payload(prompt_level)
-    {
-      id: prompt_level.id,
-      label: prompt_level.label,
-      color: prompt_level.color,
-      display_order: prompt_level.display_order
     }
   end
 end

@@ -50,7 +50,7 @@ class TherapySessionSerializer < ApplicationSerializer
     # Ordered so active card always comes first, secondary second
     # station_id passed explicitly to avoid N+1 in SessionParticipantSerializer
     session.session_participants
-           .includes(:student, :current_focus_student_goal, :trials)
+           .includes(:student)
            .sort_by { |p| p.card_position_active? ? 0 : 1 }
            .map { |p| SessionParticipantSerializer.new(p, station_id: session.therapy_station_id).as_json }
   end
