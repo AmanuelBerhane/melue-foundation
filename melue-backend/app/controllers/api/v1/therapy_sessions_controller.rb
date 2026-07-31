@@ -70,7 +70,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @response Session details (200) [Hash]
   # @response Not found (404) [Hash{ message: String }]
   def show
-    render json: { session: session_context(@session) }
+    render json: TherapySessionSerializer.new(@session).as_json
   end
 
   # GET /api/v1/therapy_sessions/:id/dashboard
@@ -85,26 +85,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @parameter id(path) [!String] Therapy session UUID
   # @response Dashboard payload (200) [Hash]
   def dashboard
-    participants = @session.session_participants
-                           .includes(
-                             :student,
-                             :teacher_student_assignment,
-                             current_focus_student_goal: :goal,
-                             trials: :prompt_level
-                           )
-
-    render json: {
-      session: {
-        id: @session.id,
-        status: @session.status,
-        started_at: @session.started_at,
-        station: { id: @session.therapy_station_id, name: @session.therapy_station.name },
-        room: { id: @session.therapy_room_id, name: @session.therapy_room.name },
-        block: block_payload(@session.session_block_definition)
-      },
-      participants: participants.map { |p| participant_dashboard_payload(p) },
-      prompt_levels: PromptLevel.active.map { |p| prompt_level_payload(p) }
-    }
+    render json: TherapySessionSerializer.new(@session).as_json
   end
 
   # PATCH /api/v1/therapy_sessions/:id/participants/:participant_id/active_goal

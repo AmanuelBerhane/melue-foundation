@@ -32,8 +32,8 @@ module Api::V1::TherapySessions
       )
 
       if result.success?
-        status = Trial.exists?(client_event_id: params[:client_event_id]) ? :ok : :created
-        render json: { trial: trial_payload(result.data) }, status: status
+        status_code = result.data.previously_new_record? ? :created : :ok
+        render json: { trial: TrialSerializer.new(result.data).as_json }, status: status_code
       else
         render json: { message: result.error }, status: :unprocessable_entity
       end
@@ -64,7 +64,7 @@ module Api::V1::TherapySessions
         limit: limit
       )
 
-      render json: { trials: trials.map { |t| trial_payload(t) } }
+      render json: { trials: TrialSerializer.new(trials).as_json }
     end
 
     private
@@ -72,18 +72,6 @@ module Api::V1::TherapySessions
     def set_session
       @session = TherapySession.find_by(id: params[:therapy_session_id])
       render json: { message: "Session not found" }, status: :not_found unless @session
-    end
-
-    def trial_payload(trial)
-      {
-        id: trial.id,
-        outcome: trial.outcome,
-        prompt_label: trial.prompt_label_snapshot,
-        prompt_level_id: trial.prompt_level_id,
-        logged_at: trial.logged_at,
-        client_event_id: trial.client_event_id,
-        student_goal_id: trial.student_goal_id
-      }
     end
   end
 end
