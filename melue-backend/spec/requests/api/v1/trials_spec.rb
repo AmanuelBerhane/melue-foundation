@@ -56,7 +56,7 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
     it "returns 201 and logs the trial" do
       expect {
         post "/api/v1/therapy_sessions/#{session.id}/trials",
-             params: trial_params, headers: headers
+             params: trial_params, headers: headers, as: :json
       }.to change(Trial, :count).by(1)
 
       expect(response).to have_http_status(:created)
@@ -67,11 +67,11 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
 
     it "returns 200 on duplicate client_event_id (idempotent)" do
       post "/api/v1/therapy_sessions/#{session.id}/trials",
-           params: trial_params, headers: headers
+           params: trial_params, headers: headers, as: :json
 
       expect {
         post "/api/v1/therapy_sessions/#{session.id}/trials",
-             params: trial_params, headers: headers
+             params: trial_params, headers: headers, as: :json
       }.not_to change(Trial, :count)
 
       expect(response).to have_http_status(:ok)
@@ -79,7 +79,7 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
 
     it "returns 422 when outcome is missing" do
       post "/api/v1/therapy_sessions/#{session.id}/trials",
-           params: trial_params.merge(outcome: nil), headers: headers
+           params: trial_params.merge(outcome: nil), headers: headers, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
     end
   end

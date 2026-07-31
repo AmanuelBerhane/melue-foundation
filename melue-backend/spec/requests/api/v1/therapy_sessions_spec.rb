@@ -63,7 +63,8 @@ RSpec.describe "Api::V1::TherapySessions", type: :request do
       expect {
         post "/api/v1/therapy_sessions/start",
              params: { assignment_id: assignment1.id },
-             headers: headers
+             headers: headers,
+             as: :json
       }.to change(TherapySession, :count).by(1)
 
       expect(response).to have_http_status(:created)
@@ -73,12 +74,14 @@ RSpec.describe "Api::V1::TherapySessions", type: :request do
     it "is idempotent — returns existing session on repeat" do
       post "/api/v1/therapy_sessions/start",
            params: { assignment_id: assignment1.id },
-           headers: headers
+           headers: headers,
+           as: :json
 
       expect {
         post "/api/v1/therapy_sessions/start",
              params: { assignment_id: assignment1.id },
-             headers: headers
+             headers: headers,
+             as: :json
       }.not_to change(TherapySession, :count)
 
       expect(response).to have_http_status(:created)
@@ -87,7 +90,8 @@ RSpec.describe "Api::V1::TherapySessions", type: :request do
     it "returns 404 when assignment does not exist" do
       post "/api/v1/therapy_sessions/start",
            params: { assignment_id: SecureRandom.uuid },
-           headers: headers
+           headers: headers,
+           as: :json
       expect(response).to have_http_status(:not_found)
     end
   end
@@ -135,7 +139,8 @@ RSpec.describe "Api::V1::TherapySessions", type: :request do
     it "returns 200 and updates the active goal" do
       patch "/api/v1/therapy_sessions/#{session.id}/participants/#{participant.id}/active_goal",
             params: { student_goal_id: goal.id },
-            headers: headers
+            headers: headers,
+            as: :json
 
       expect(response).to have_http_status(:ok)
       expect(participant.reload.current_focus_student_goal_id).to eq(goal.id)
@@ -146,7 +151,8 @@ RSpec.describe "Api::V1::TherapySessions", type: :request do
 
       patch "/api/v1/therapy_sessions/#{session.id}/participants/#{participant.id}/active_goal",
             params: { student_goal_id: other_goal.id },
-            headers: headers
+            headers: headers,
+            as: :json
 
       expect(response).to have_http_status(:unprocessable_entity)
     end

@@ -125,7 +125,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   def set_session
     @session = TherapySession
                  .includes(:therapy_station, :therapy_room, :session_block_definition)
-                 .find_by(id: params[:id])
+                 .find_by(id: params[:id] || params[:therapy_session_id])
     render_not_found("Session not found") unless @session
   end
 
