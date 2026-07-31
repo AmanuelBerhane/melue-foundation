@@ -1,8 +1,352 @@
 {
   "components": {
-    "parameters": { },
-    "requestBodies": {},
-    "responses": { },
-    "schemas": {}
+    "parameters": {
+      "StudentGoalIdQuery": {
+        "name": "student_goal_id",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "Optional StudentGoal UUID to filter by"
+      },
+      "ParticipantIdQuery": {
+        "name": "participant_id",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "string", "format": "uuid" },
+        "description": "SessionParticipant UUID"
+      },
+      "TrialStreamLimit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 50 },
+        "description": "Maximum number of trials to return"
+      }
+    },
+    "requestBodies": {
+      "StartSession": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["assignment_id"],
+              "properties": {
+                "assignment_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "ID of the TeacherStudentAssignment to start the session from"
+                }
+              }
+            }
+          }
+        }
+      },
+      "UpdateActiveGoal": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["student_goal_id"],
+              "properties": {
+                "student_goal_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "UUID of the StudentGoal to set as the current focus"
+                }
+              }
+            }
+          }
+        }
+      },
+      "LogTrial": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "participation_id",
+                "student_goal_id",
+                "prompt_level_id",
+                "outcome",
+                "client_event_id"
+              ],
+              "properties": {
+                "participation_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "UUID of the SessionParticipant"
+                },
+                "student_goal_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "UUID of the StudentGoal being worked on"
+                },
+                "prompt_level_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "UUID of the PromptLevel selected from the prompt bar"
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": ["correct", "incorrect", "no_response"],
+                  "description": "Trial outcome"
+                },
+                "client_event_id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "description": "Client-assigned UUID — used for idempotent offline sync"
+                },
+                "logged_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Client-recorded timestamp. Defaults to server time if omitted"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "TodaySessionContext": {
+        "description": "Today's assignment context, active session state, and prompt bar configuration",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "assignment": { "$ref": "#/components/schemas/AssignmentContext" },
+                "session": {
+                  "oneOf": [
+                    { "$ref": "#/components/schemas/SessionState" },
+                    { "type": "null" }
+                  ],
+                  "description": "null when no session has been started yet today"
+                },
+                "prompt_levels": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PromptLevel" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SessionStarted": {
+        "description": "Session created or existing in-progress session returned",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "session": { "$ref": "#/components/schemas/SessionState" }
+              }
+            }
+          }
+        }
+      },
+      "SessionDashboard": {
+        "description": "Full dashboard payload: station, room, block timer, student cards, goal pills, trial streams, prompt bar",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SessionDashboard" }
+          }
+        }
+      },
+      "ActiveGoalUpdated": {
+        "description": "Active goal updated for the participant",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "participant_id": { "type": "string", "format": "uuid" },
+                "current_focus_student_goal_id": { "type": "string", "format": "uuid" }
+              }
+            }
+          }
+        }
+      },
+      "TrialLogged": {
+        "description": "Trial recorded. Returns 201 on creation, 200 if client_event_id already exists (idempotent)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "trial": { "$ref": "#/components/schemas/Trial" }
+              }
+            }
+          }
+        }
+      },
+      "TrialStream": {
+        "description": "Last N trials for the participant, ordered by logged_at descending",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "trials": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Trial" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ],
+            "description": "Error message string, or array of validation error strings"
+          }
+        }
+      },
+      "PromptLevel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "label": { "type": "string", "description": "Configurable label e.g. FP, PP, G, +" },
+          "color": { "type": "string", "description": "Hex color for UI rendering" },
+          "display_order": { "type": "integer" },
+          "is_active": { "type": "boolean" }
+        }
+      },
+      "BlockContext": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "start_time": { "type": "string", "example": "08:00" },
+          "end_time": { "type": "string", "example": "09:30" },
+          "seconds_remaining": { "type": "integer", "description": "Seconds until the block ends" }
+        }
+      },
+      "AssignmentContext": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "scheduled_date": { "type": "string", "format": "date" },
+          "status": { "type": "string", "enum": ["scheduled", "cancelled", "completed"] },
+          "block": { "$ref": "#/components/schemas/BlockContext" },
+          "station": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" }
+            }
+          },
+          "room": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" }
+            }
+          }
+        }
+      },
+      "SessionState": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["in_progress", "completed"] },
+          "started_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "GoalPill": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "goal_type": { "type": "string", "enum": ["standard", "task_analysis"] },
+          "status": { "type": "string", "enum": ["active", "in_progress", "mastered", "archived"] },
+          "progress_percent": { "type": "number", "format": "float", "minimum": 0, "maximum": 100 }
+        }
+      },
+      "Trial": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "outcome": { "type": "string", "enum": ["correct", "incorrect", "no_response"] },
+          "prompt_label": { "type": "string", "description": "Snapshot of the prompt label at log time" },
+          "prompt_level_id": { "type": "string", "format": "uuid" },
+          "student_goal_id": { "type": "string", "format": "uuid" },
+          "student_goal_step_id": { "type": ["string", "null"], "format": "uuid" },
+          "client_event_id": { "type": "string", "format": "uuid" },
+          "logged_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "StudentCard": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "card_position": { "type": "string", "enum": ["active", "secondary"] },
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "full_name": { "type": "string" },
+              "therapy_group": { "type": "string", "enum": ["basic", "functional_living"] }
+            }
+          },
+          "current_focus_student_goal_id": { "type": ["string", "null"], "format": "uuid" },
+          "goals": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/GoalPill" }
+          },
+          "recent_trials": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Trial" }
+          }
+        }
+      },
+      "SessionDashboard": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "enum": ["in_progress", "completed"] },
+          "started_at": { "type": "string", "format": "date-time" },
+          "ended_at": { "type": ["string", "null"], "format": "date-time" },
+          "station": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" }
+            }
+          },
+          "room": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "format": "uuid" },
+              "name": { "type": "string" }
+            }
+          },
+          "block": { "$ref": "#/components/schemas/BlockContext" },
+          "participants": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": { "$ref": "#/components/schemas/StudentCard" }
+          },
+          "prompt_levels": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PromptLevel" }
+          }
+        }
+      }
+    }
   }
 }

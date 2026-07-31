@@ -15,8 +15,8 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @summary Get today's session dashboard context
   # @tags Active Therapy
   # @auth [bearer_jwt]
-  # @response Today's session context (200) [Hash{ session: Hash, block: Hash, prompt_levels: Array }]
-  # @response No scheduled assignment today (404) [Hash{ message: String }]
+  # @response_ref (200) #/components/responses/TodaySessionContext
+  # @response_ref (404) #/components/responses/Error
   def today_session
     assignment = todays_assignment
     return render_not_found("No scheduled assignment found for today") unless assignment
@@ -39,9 +39,9 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @summary Start a therapy session
   # @tags Active Therapy
   # @auth [bearer_jwt]
-  # @request_body Assignment ID to start session from [!Hash{ assignment_id: String }]
-  # @response Session started (201) [Hash{ session: Hash }]
-  # @response Validation error (422) [Hash{ message: String }]
+  # @request_body_ref #/components/requestBodies/StartSession
+  # @response_ref (201) #/components/responses/SessionStarted
+  # @response_ref (422) #/components/responses/Error
   def start
     assignment = TeacherStudentAssignment.find_by(id: params[:assignment_id])
     return render_not_found("Assignment not found") unless assignment
@@ -54,7 +54,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
     if result.success?
       render json: { session: session_context(result.data) }, status: :created
     else
-      render json: { message: result.error }, status: :unprocessable_entity
+      render_error(result.error, :unprocessable_entity)
     end
   end
 
@@ -66,9 +66,8 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @summary Get therapy session
   # @tags Active Therapy
   # @auth [bearer_jwt]
-  # @parameter id(path) [!String] Therapy session UUID
-  # @response Session details (200) [Hash]
-  # @response Not found (404) [Hash{ message: String }]
+  # @response_ref (200) #/components/responses/SessionDashboard
+  # @response_ref (404) #/components/responses/Error
   def show
     render json: TherapySessionSerializer.new(@session).as_json
   end
@@ -82,8 +81,8 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @summary Get full session dashboard
   # @tags Active Therapy
   # @auth [bearer_jwt]
-  # @parameter id(path) [!String] Therapy session UUID
-  # @response Dashboard payload (200) [Hash]
+  # @response_ref (200) #/components/responses/SessionDashboard
+  # @response_ref (404) #/components/responses/Error
   def dashboard
     render json: TherapySessionSerializer.new(@session).as_json
   end
@@ -97,11 +96,9 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   # @summary Update active goal for a participant
   # @tags Active Therapy
   # @auth [bearer_jwt]
-  # @parameter id(path) [!String] Therapy session UUID
-  # @parameter participant_id(path) [!String] SessionParticipant UUID
-  # @request_body Goal to focus on [!Hash{ student_goal_id: String }]
-  # @response Updated participant (200) [Hash]
-  # @response Validation error (422) [Hash{ message: String }]
+  # @request_body_ref #/components/requestBodies/UpdateActiveGoal
+  # @response_ref (200) #/components/responses/ActiveGoalUpdated
+  # @response_ref (422) #/components/responses/Error
   def update_active_goal
     participant = @session.session_participants.find_by(id: params[:participant_id])
     return render_not_found("Participant not found") unless participant
@@ -111,7 +108,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
       student_id: participant.student_id,
       therapy_station_id: @session.therapy_station_id
     )
-    return render json: { message: "Goal not found for this participant at this station" }, status: :unprocessable_entity unless goal
+    return render_error("Goal not found for this participant at this station", :unprocessable_entity) unless goal
 
     if participant.update(current_focus_student_goal: goal)
       render json: {
@@ -119,7 +116,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
         current_focus_student_goal_id: participant.current_focus_student_goal_id
       }
     else
-      render json: { message: participant.errors.full_messages.join(", ") }, status: :unprocessable_entity
+      render_error(participant.errors.full_messages, :unprocessable_entity)
     end
   end
 
@@ -133,7 +130,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   end
 
   def require_staff_member!
-    render json: { message: "Staff profile required" }, status: :forbidden unless current_staff_member
+    render_error("Staff profile required", :forbidden) unless current_staff_member
   end
 
   def current_staff_member
@@ -150,7 +147,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
   end
 
   def render_not_found(message)
-    render json: { message: message }, status: :not_found
+    render_error(message, :not_found)
   end
 
   # ── Payload helpers ──────────────────────────────────────────────────────────

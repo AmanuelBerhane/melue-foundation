@@ -15,11 +15,10 @@ module Api::V1::TherapySessions
     # @summary Log a trial
     # @tags Active Therapy
     # @auth [bearer_jwt]
-    # @parameter therapy_session_id(path) [!String] Therapy session UUID
-    # @request_body Trial data [!Hash{ participation_id: String, student_goal_id: String, prompt_level_id: String, outcome: String, client_event_id: String, logged_at: String }]
-    # @response Trial logged (201) [Hash{ trial: Hash }]
-    # @response Duplicate submission (200) [Hash{ trial: Hash }]
-    # @response Validation error (422) [Hash{ message: String }]
+    # @request_body_ref #/components/requestBodies/LogTrial
+    # @response_ref (201) #/components/responses/TrialLogged
+    # @response_ref (200) #/components/responses/TrialLogged
+    # @response_ref (422) #/components/responses/Error
     def create
       result = TherapySessions::LogTrialService.call(
         session: @session,
@@ -35,7 +34,7 @@ module Api::V1::TherapySessions
         status_code = result.data.previously_new_record? ? :created : :ok
         render json: { trial: TrialSerializer.new(result.data).as_json }, status: status_code
       else
-        render json: { message: result.error }, status: :unprocessable_entity
+        render_error(result.error, :unprocessable_entity)
       end
     end
 
@@ -47,14 +46,14 @@ module Api::V1::TherapySessions
     # @summary Get recent trial stream for a participant
     # @tags Active Therapy
     # @auth [bearer_jwt]
-    # @parameter therapy_session_id(path) [!String] Therapy session UUID
-    # @parameter participant_id(query) [!String] SessionParticipant UUID
-    # @parameter student_goal_id(query) [String] Optional StudentGoal UUID to filter by
-    # @parameter limit(query) [Integer] Max trials to return. default: (10) maximum: (50)
-    # @response Trial stream (200) [Array<Hash>]
+    # @parameter_ref #/components/parameters/ParticipantIdQuery
+    # @parameter_ref #/components/parameters/StudentGoalIdQuery
+    # @parameter_ref #/components/parameters/TrialStreamLimit
+    # @response_ref (200) #/components/responses/TrialStream
+    # @response_ref (404) #/components/responses/Error
     def stream
       participant = @session.session_participants.find_by(id: params[:participant_id])
-      return render json: { message: "Participant not found" }, status: :not_found unless participant
+      return render_error("Participant not found", :not_found) unless participant
 
       limit = [ params[:limit].to_i, 50 ].min
       limit = 10 if limit <= 0
@@ -71,7 +70,7 @@ module Api::V1::TherapySessions
 
     def set_session
       @session = TherapySession.find_by(id: params[:therapy_session_id])
-      render json: { message: "Session not found" }, status: :not_found unless @session
+      render_error("Session not found", :not_found) unless @session
     end
   end
 end

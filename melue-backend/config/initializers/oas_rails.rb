@@ -127,7 +127,7 @@ OasRails.configure do |config|
   ]
 
   # Response body template for default errors
-  config.response_body_of_default = "Hash{ message: String, code?: String, details?: Hash }"
+  config.response_body_of_default = "Hash{ error: String }"
 
   # ==============================================================================
   # UI Configuration
