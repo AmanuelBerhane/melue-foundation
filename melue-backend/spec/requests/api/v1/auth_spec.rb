@@ -17,7 +17,7 @@ RSpec.describe "Authentication API", type: :request do
 
     it "logs in with valid credentials and returns a JWT" do
       post "/api/v1/auth/login",
-           params: { email: "user@example.com", password: "password123" },
+           params: { email: "user@example.com", password: "Password123!" },
            as: :json
 
       expect(response).to have_http_status(:success)

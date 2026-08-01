@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :user do
-    email { Faker::Internet.unique.email }
-    password_hash { RodauthApp.rodauth.allocate.password_hash("password123") }
-    status { :verified }
+    sequence(:email) { |n| "user#{n}@melue.foundation" }
+    password_hash    { BCrypt::Password.create("Password123!") }
+    status           { 2 } # verified
   end
 end
