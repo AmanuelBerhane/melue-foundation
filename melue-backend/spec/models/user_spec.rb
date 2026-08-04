@@ -8,7 +8,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "validations" do
-    subject { User.create!(email: "test_user@melue.foundation", password_hash: "$2a$12$eImiTXuWVxfM37uY4JANjO5E.86J.qj3Rk4mGZ3y.uK98g3Y2m") }
+    subject(:user) { build(:user) }
 
     it { is_expected.to validate_presence_of(:email) }
     it { is_expected.to validate_uniqueness_of(:email).case_insensitive }
