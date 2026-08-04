@@ -9,8 +9,8 @@ Welcome to the API Documentation for the **Melue Foundation Therapy Management S
 
 ## Base URL
 
-* **Development:** `http://localhost:3000/api/v1`
-* **Production:** `https://api.melue.foundation/api/v1`
+* **Development:** `http://localhost:3000`
+* **Production:** `https://api.melue.foundation`
 
 ---
 
