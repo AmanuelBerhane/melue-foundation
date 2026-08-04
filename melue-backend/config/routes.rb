@@ -4,6 +4,16 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      namespace :admin do
+        resources :roles
+        resources :staff_members, only: %i[index show update] do
+          member do
+            put :update_status
+            post :reset_password
+          end
+        end
+      end
+
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
 
