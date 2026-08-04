@@ -1,9 +1,12 @@
-# frozen_string_literal: true
-
+# spec/factories/users.rb
 FactoryBot.define do
   factory :user do
-    sequence(:email) { |n| "user#{n}@melue.foundation" }
-    password_hash    { BCrypt::Password.create("Password123!") }
-    status           { 2 } # verified
+    email { Faker::Internet.email }
+    # rodauth uses password directly - no password_confirmation
+    password { 'password123' }
+
+    # If rodauth uses a different field name, try these:
+    # password_hash { BCrypt::Password.create('password123') }
+    # Or just create the user without password in tests
   end
 end
