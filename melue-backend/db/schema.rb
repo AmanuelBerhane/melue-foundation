@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_070035) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -46,6 +46,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.index ["student_id"], name: "index_iups_on_student_id"
   end
 
+  create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "action", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "resource", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "prompt_levels", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "color", null: false
     t.datetime "created_at", null: false
@@ -55,6 +63,56 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.datetime "updated_at", null: false
     t.index ["display_order"], name: "index_prompt_levels_on_display_order"
     t.index ["label"], name: "index_prompt_levels_on_label", unique: true
+  end
+
+  create_table "role_permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "permission_id", null: false
+    t.uuid "role_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["permission_id"], name: "index_role_permissions_on_permission_id"
+    t.index ["role_id"], name: "index_role_permissions_on_role_id"
+  end
+
+  create_table "roles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.boolean "is_system_critical", default: false, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_roles_on_name", unique: true
+  end
+
+  create_table "sensory_activities", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "activity_code", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.integer "display_order", default: 0, null: false
+    t.boolean "is_active", default: true, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["activity_code"], name: "index_sensory_activities_on_activity_code", unique: true
+  end
+
+  create_table "sensory_assessment_records", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "engagement_level"
+    t.text "remark"
+    t.string "response_reaction"
+    t.uuid "sensory_activity_id", null: false
+    t.uuid "sensory_assessment_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sensory_activity_id"], name: "index_sensory_assessment_records_on_sensory_activity_id"
+    t.index ["sensory_assessment_id"], name: "index_sensory_assessment_records_on_sensory_assessment_id"
+  end
+
+  create_table "sensory_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "status", default: "draft", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_sensory_assessments_on_status"
+    t.index ["student_id"], name: "index_sensory_assessments_on_student_id"
   end
 
   create_table "session_block_definitions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -210,6 +268,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.string "key", null: false
   end
 
+  create_table "user_roles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "role_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["role_id"], name: "index_user_roles_on_role_id"
+    t.index ["user_id"], name: "index_user_roles_on_user_id"
+  end
+
   create_table "user_verification_keys", force: :cascade do |t|
     t.datetime "email_last_sent", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.string "key", null: false
@@ -226,6 +293,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
 
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "iups", "students"
+  add_foreign_key "role_permissions", "permissions"
+  add_foreign_key "role_permissions", "roles"
+  add_foreign_key "sensory_assessment_records", "sensory_activities"
+  add_foreign_key "sensory_assessment_records", "sensory_assessments"
+  add_foreign_key "sensory_assessments", "students"
   add_foreign_key "session_participants", "student_goals", column: "current_focus_student_goal_id"
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
@@ -251,5 +323,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
   add_foreign_key "trials", "therapy_sessions"
   add_foreign_key "user_login_change_keys", "users", column: "id"
   add_foreign_key "user_password_reset_keys", "users", column: "id"
+  add_foreign_key "user_roles", "roles"
+  add_foreign_key "user_roles", "users"
   add_foreign_key "user_verification_keys", "users", column: "id"
 end

@@ -26,6 +26,13 @@ Rails.application.routes.draw do
           end
         end
       end
+
+      resources :sensory_activities, only: [ :index ]
+      resources :sensory_assessments, only: [ :create, :update, :show ] do
+        member do
+          post :submit
+        end
+      end
     end
   end
   mount OasRails::Engine => "/docs"

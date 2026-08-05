@@ -23,11 +23,11 @@ OasRails.configure do |config|
 
   config.servers = [
     {
-      url: "http://localhost:3000/api/v1",
+      url: "http://localhost:3000",
       description: "Local development server"
     },
     {
-      url: "https://api.melue.foundation/api/v1",
+      url: "https://api.melue.foundation",
       description: "Production server"
     }
   ]
