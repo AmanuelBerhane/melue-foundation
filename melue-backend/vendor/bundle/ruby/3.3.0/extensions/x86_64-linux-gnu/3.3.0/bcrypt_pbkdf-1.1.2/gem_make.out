@@ -1,0 +1,22 @@
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/bcrypt_pbkdf-1.1.2/ext/mri
+/usr/bin/ruby3.3 -I/usr/lib/ruby/vendor_ruby extconf.rb
+creating Makefile
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/bcrypt_pbkdf-1.1.2/ext/mri
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260805-15036-vmnj79 sitelibdir\=./.gem.20260805-15036-vmnj79 clean
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/bcrypt_pbkdf-1.1.2/ext/mri
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260805-15036-vmnj79 sitelibdir\=./.gem.20260805-15036-vmnj79
+compiling bcrypt_pbkdf.c
+compiling blowfish.c
+compiling bcrypt_pbkdf_ext.c
+compiling explicit_bzero.c
+compiling hash_sha512.c
+linking shared-object bcrypt_pbkdf_ext.so
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/bcrypt_pbkdf-1.1.2/ext/mri
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260805-15036-vmnj79 sitelibdir\=./.gem.20260805-15036-vmnj79 install
+/usr/bin/install -c -m 0755 bcrypt_pbkdf_ext.so ./.gem.20260805-15036-vmnj79
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/bcrypt_pbkdf-1.1.2/ext/mri
+make DESTDIR\= sitearchdir\=./.gem.20260805-15036-vmnj79 sitelibdir\=./.gem.20260805-15036-vmnj79 clean

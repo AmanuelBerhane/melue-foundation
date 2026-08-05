@@ -1,0 +1,19 @@
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/erb-6.0.6/ext/erb/escape
+/usr/bin/ruby3.3 -I/usr/lib/ruby/vendor_ruby extconf.rb
+checking for rb_ext_ractor_safe() in ruby.h... yes
+creating Makefile
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/erb-6.0.6/ext/erb/escape
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260805-15036-9y6kuh sitelibdir\=./.gem.20260805-15036-9y6kuh clean
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/erb-6.0.6/ext/erb/escape
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260805-15036-9y6kuh sitelibdir\=./.gem.20260805-15036-9y6kuh
+compiling escape.c
+linking shared-object erb/escape.so
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/erb-6.0.6/ext/erb/escape
+make -j13 DESTDIR\= sitearchdir\=./.gem.20260805-15036-9y6kuh sitelibdir\=./.gem.20260805-15036-9y6kuh install
+/usr/bin/install -c -m 0755 escape.so ./.gem.20260805-15036-9y6kuh/erb
+
+current directory: /home/kaliyg/workspace/melue-foundation/melue-backend/vendor/bundle/ruby/3.3.0/gems/erb-6.0.6/ext/erb/escape
+make DESTDIR\= sitearchdir\=./.gem.20260805-15036-9y6kuh sitelibdir\=./.gem.20260805-15036-9y6kuh clean

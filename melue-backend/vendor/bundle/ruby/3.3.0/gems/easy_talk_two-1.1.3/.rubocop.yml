@@ -1,0 +1,36 @@
+require:
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.2
+
+RSpec/SpecFilePathFormat:
+  Enabled: true
+
+RSpec/SpecFilePathSuffix:
+  Enabled: true
+
+RSpec/ExampleLength:
+  Max: 10
+  Exclude:
+    - 'spec/easy_talk/examples/**/*'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - 'spec/**/*'
+
+Layout/LineLength:
+  Exclude:
+    - 'spec/**/*'
+  
+RSpec/DescribeClass:
+  Exclude:
+    - 'spec/easy_talk/examples/**/*'
+
+RSpec/MultipleExpectations:
+  Max: 4
