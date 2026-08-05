@@ -7,7 +7,7 @@ RSpec.describe PushNotificationService, type: :service do
     context "when valid recipients and message details are provided" do
       it "returns a successful result" do
         service = described_class.new(
-          recipient_user_ids: ["user-uuid-1", "user-uuid-2"],
+          recipient_user_ids: [ "user-uuid-1", "user-uuid-2" ],
           title: "Session Completed",
           body: "Session summary has been submitted for review."
         )
