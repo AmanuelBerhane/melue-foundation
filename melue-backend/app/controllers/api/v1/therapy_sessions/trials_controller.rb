@@ -55,7 +55,7 @@ module Api::V1::TherapySessions
       participant = @session.session_participants.find_by(id: params[:participant_id])
       return render_error("Participant not found", :not_found) unless participant
 
-      limit = [ params[:limit].to_i, 50 ].min
+      limit = [params[:limit].to_i, 50].min
       limit = 10 if limit <= 0
 
       trials = participant.recent_trials(
