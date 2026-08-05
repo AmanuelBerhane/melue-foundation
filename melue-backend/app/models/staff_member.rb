@@ -43,4 +43,3 @@ class StaffMember < ApplicationRecord
       .where(scheduled_date: Date.current, session_block_definition_id: block_definition_id, status: :scheduled)
   end
 end
-

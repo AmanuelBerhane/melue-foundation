@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Students  
+module Students
   # Creates a new student with status "registered".
   # Validates that the student's age is appropriate for the selected therapy group:
   #   - Basic Therapy: ages 3–12

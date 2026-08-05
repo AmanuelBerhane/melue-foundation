@@ -24,9 +24,9 @@ module Students
       students = students.by_therapy_group(@params[:therapy_group])
 
       total_count = students.count
-      page = [(@params[:page].to_i), 1].max
+      page = [ (@params[:page].to_i), 1 ].max
       raw_per_page = @params[:per_page].present? ? @params[:per_page].to_i : DEFAULT_PER_PAGE
-      per_page = [[raw_per_page, 1].max, MAX_PER_PAGE].min
+      per_page = [ [ raw_per_page, 1 ].max, MAX_PER_PAGE ].min
 
       paginated = students.order(:last_name, :first_name)
                           .offset((page - 1) * per_page)
