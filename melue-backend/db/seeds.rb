@@ -212,6 +212,48 @@ end
 
 puts "  ✓ #{TeacherStudentAssignment.count} assignments (#{TeacherStudentAssignment.for_today.count} for today)"
 
+# ==============================================================================
+# 9. RBAC: Roles & Admin User
+# ==============================================================================
+admin_role = Role.find_or_create_by!(name: "System Administrator") do |r|
+  r.is_system_critical = true
+  r.description = "Full system access"
+end
+
+teacher_role = Role.find_or_create_by!(name: "Teacher") do |r|
+  r.is_system_critical = false
+  r.description = "Standard therapy provider"
+end
+
+# Create permissions for staff & role management
+manage_roles = Permission.find_or_create_by!(resource: 'roles', action: 'manage')
+manage_staff = Permission.find_or_create_by!(resource: 'staff_members', action: 'manage')
+view_roles = Permission.find_or_create_by!(resource: 'roles', action: 'index')
+view_staff = Permission.find_or_create_by!(resource: 'staff_members', action: 'index')
+create_roles = Permission.find_or_create_by!(resource: 'roles', action: 'create')
+
+# Give Admin all permissions explicitly (for testing)
+RolePermission.find_or_create_by!(role: admin_role, permission: manage_roles)
+RolePermission.find_or_create_by!(role: admin_role, permission: manage_staff)
+RolePermission.find_or_create_by!(role: admin_role, permission: view_roles)
+RolePermission.find_or_create_by!(role: admin_role, permission: view_staff)
+RolePermission.find_or_create_by!(role: admin_role, permission: create_roles)
+
+admin_user = User.find_or_create_by!(email: "admin@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2 # verified
+end
+
+admin_staff = StaffMember.find_or_create_by!(user: admin_user) do |s|
+  s.full_name    = "System Admin"
+  s.staff_number = "ADM-001"
+end
+
+UserRole.find_or_create_by!(user: admin_user, role: admin_role)
+UserRole.find_or_create_by!(user: teacher1_user, role: teacher_role)
+
+puts "  ✓ RBAC Admin seeded"
+
 puts ""
 puts "Done! Seed summary:"
 puts "  Prompt Levels : #{PromptLevel.count}"
@@ -225,5 +267,9 @@ puts "  Students      : #{Student.count}"
 puts "  IUPs          : #{Iup.count}"
 puts "  Student Goals : #{StudentGoal.count}"
 puts "  Assignments   : #{TeacherStudentAssignment.count}"
+puts "  Roles         : #{Role.count}"
+puts "  Permissions   : #{Permission.count}"
 puts ""
-puts "Login with: teacher1@melue.foundation / Password123!"
+puts "Login with:"
+puts "  Admin  : admin@melue.foundation / Password123!"
+puts "  Teacher: teacher1@melue.foundation / Password123!"
