@@ -4,6 +4,18 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      resources :student_goals, only: [] do
+        resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
+      end
+
+      resources :mastery_checks, only: [ :show ], controller: "goal_mastery_checks" do
+        member do
+          patch :approve
+          patch :reject
+        end
+        resources :verifications, only: [ :create ], controller: "goal_mastery_verifications"
+      end
+
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
 
