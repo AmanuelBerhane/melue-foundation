@@ -10,11 +10,39 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+
+  create_table "active_storage_attachments", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", force: :cascade do |t|
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.string "key", null: false
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
 
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -86,9 +114,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
   create_table "staff_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "full_name", null: false
+    t.string "role", default: "teacher", null: false
     t.string "staff_number", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["role"], name: "index_staff_members_on_role"
     t.index ["staff_number"], name: "index_staff_members_on_staff_number", unique: true
     t.index ["user_id"], name: "index_staff_members_on_user_id"
   end
@@ -116,6 +146,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.date "date_of_birth", null: false
     t.string "diagnosis"
     t.string "first_name", null: false
+    t.string "guardian_name"
+    t.string "guardian_phone"
     t.string "last_name", null: false
     t.string "middle_name"
     t.string "program_type", null: false
@@ -224,6 +256,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "iups", "students"
   add_foreign_key "session_participants", "student_goals", column: "current_focus_student_goal_id"

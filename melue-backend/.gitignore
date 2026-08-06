@@ -50,3 +50,4 @@ Thumbs.db
 # Ignore bootsnap cache.
 /tmp/cache/bootsnap/
 
+vendor/bundle/
