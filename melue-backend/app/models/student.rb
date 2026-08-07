@@ -6,6 +6,10 @@ class Student < ApplicationRecord
   has_many :iups, dependent: :restrict_with_error
   has_many :student_goals, dependent: :restrict_with_error
 
+  has_one_attached :headshot_photo
+  has_one_attached :baseline_video
+  has_many_attached :documents
+
   enum :program_type, { regular: "regular", pulled_out: "pulled_out" }, prefix: true
   enum :therapy_group, { basic: "basic", functional_living: "functional_living" }, prefix: true
   enum :status, {
