@@ -4,6 +4,31 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      namespace :admin do
+        resources :goal_domains do
+          put :reorder, on: :collection
+        end
+
+        resources :prompt_levels do
+          put :reorder, on: :collection
+        end
+
+        resources :session_block_definitions
+
+        resources :abc_dropdown_options do
+          put :reorder, on: :collection
+        end
+
+        resources :form_configurations do
+          member do
+            post :import
+            get :export
+          end
+        end
+
+        resource :session_schedule_config, only: %i[show update]
+      end
+
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
 

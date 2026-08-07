@@ -50,3 +50,6 @@ Thumbs.db
 # Ignore bootsnap cache.
 /tmp/cache/bootsnap/
 
+
+# Ignore Kiro AI assistant files.
+/.kiro/
