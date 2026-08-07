@@ -12,4 +12,8 @@ class Api::BaseController < ApplicationController
   def authenticate_user!
     rodauth.require_account
   end
+
+  def set_current_user
+    Current.user = current_user if respond_to?(:current_user)
+  end
 end
