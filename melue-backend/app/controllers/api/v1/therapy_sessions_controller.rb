@@ -135,14 +135,6 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
     render_not_found("Session not found") unless @session
   end
 
-  def require_staff_member!
-    render_error("Staff profile required", :forbidden) unless current_staff_member
-  end
-
-  def current_staff_member
-    @current_staff_member ||= StaffMember.find_by(user_id: current_user.id)
-  end
-
   def todays_assignment
     TeacherStudentAssignment
       .scheduled
@@ -150,10 +142,6 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
       .for_today
       .includes(:session_block_definition, :therapy_station, :therapy_room)
       .first
-  end
-
-  def render_not_found(message)
-    render_error(message, :not_found)
   end
 
   # ── Payload helpers ──────────────────────────────────────────────────────────
