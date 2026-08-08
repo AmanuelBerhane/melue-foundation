@@ -5,6 +5,8 @@ class Student < ApplicationRecord
   has_many :session_participants, dependent: :restrict_with_error
   has_many :iups, dependent: :restrict_with_error
   has_many :student_goals, dependent: :restrict_with_error
+  has_many :student_guardians, dependent: :restrict_with_error
+  has_many :guardians, through: :student_guardians
 
   enum :program_type, { regular: "regular", pulled_out: "pulled_out" }, prefix: true
   enum :therapy_group, { basic: "basic", functional_living: "functional_living" }, prefix: true

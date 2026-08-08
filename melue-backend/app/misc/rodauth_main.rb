@@ -4,9 +4,9 @@ class RodauthMain < Rodauth::Rails::Auth
   configure do
     # List of authentication features that are loaded.
     enable :create_account, :verify_account, :verify_account_grace_period,
-      :login, :logout, :jwt,
+      :login, :logout, :jwt, :jwt_refresh,
       :reset_password, :change_password, :change_login, :verify_login_change,
-      :close_account
+      :close_account, :lockout
 
     # See the Rodauth documentation for the list of available config options:
     # http://rodauth.jeremyevans.net/documentation.html
@@ -22,6 +22,14 @@ class RodauthMain < Rodauth::Rails::Auth
     verify_account_table :user_verification_keys
     verify_login_change_table :user_login_change_keys
     reset_password_table :user_password_reset_keys
+    jwt_refresh_token_table :user_jwt_refresh_keys
+    jwt_refresh_token_account_id_column :user_id
+
+    # ==> Account lockout (NFR-019: 5 failed logins -> 15 minute lockout)
+    account_login_failures_table :user_login_failures
+    account_lockouts_table :user_lockouts
+    max_invalid_logins 5
+    account_lockouts_deadline_interval Hash[minutes: 15]
 
     # The secret key used for hashing public-facing tokens for various features.
     # Defaults to Rails `secret_key_base`, but you can use your own secret key.
@@ -29,6 +37,29 @@ class RodauthMain < Rodauth::Rails::Auth
 
     # Set JWT secret, which is used to cryptographically protect the token.
     jwt_secret { hmac_secret }
+
+    # Role-aware session timeout (NFR-015): staff 15 min, parents 30 min.
+    # Uses session_value (the account id from the session) instead of account_id,
+    # because account_id dereferences @account which is nil when the request is
+    # unauthenticated (e.g. generating a login-required JWT response).
+    jwt_access_token_period do
+      user = session_value && User.find_by(id: session_value)
+      user ? user.session_timeout_seconds : 15.minutes
+    end
+
+    # Refresh token lifetime (FR-004): extend when "Remember this device" is checked.
+    # Default (no remember flag): 14 days. Remembered device: 30 days.
+    jwt_refresh_token_deadline_interval do
+      remember_device? ? Hash[days: 30] : Hash[days: 14]
+    end
+
+    # Helper for FR-004: true when the client sends "remember_device" in the login body.
+    auth_class_eval do
+      def remember_device?
+        v = param("remember_device")
+        v == true || v == "true"
+      end
+    end
 
     # Accept only JSON requests.
     only_json? true
@@ -79,6 +110,14 @@ class RodauthMain < Rodauth::Rails::Auth
       db.after_commit { email.deliver_later }
     end
 
+    # Customize the reset password email body.
+    create_reset_password_email do
+      RodauthMailer.reset_password(
+        rodauth.account[:email],
+        rodauth.reset_password_email_link
+      ).body.to_s
+    end
+
     # ==> Flash
     # Override default flash messages.
     # create_account_notice_flash "Your account has been created. Please verify your account by visiting the confirmation link sent to your email address."
@@ -124,6 +163,17 @@ class RodauthMain < Rodauth::Rails::Auth
     # after_close_account do
     #   Profile.find_by!(account_id: account_id).destroy
     # end
+
+    # After a successful login, derive the user's home route from their role (FR-006).
+    after_login do
+      user = User.find_by(id: account_id)
+      if user
+        set_session_value("home_route", user.home_route)
+        # Expose the role-based home route directly in the JSON login response.
+        json_response[:home_route] = user.home_route
+        json_response[:role] = user.primary_role&.name
+      end
+    end
 
     # ==> Deadlines
     # Change default deadlines for some actions.
