@@ -212,6 +212,36 @@ end
 
 puts "  ✓ #{TeacherStudentAssignment.count} assignments (#{TeacherStudentAssignment.for_today.count} for today)"
 
+# ==============================================================================
+# 9. Roles (FR-006 — role-based routing) & assignments
+# ==============================================================================
+role_names = [
+  Role::Names::TEACHER,
+  Role::Names::THERAPY_COORDINATOR,
+  Role::Names::PROGRAM_DIRECTOR,
+  Role::Names::DIRECTOR,
+  Role::Names::INSTITUTIONAL_ADMIN,
+  Role::Names::SYSTEM_ADMIN,
+  Role::Names::PARENT
+]
+
+role_names.each do |name|
+  is_system_critical = [ Role::Names::SYSTEM_ADMIN, Role::Names::INSTITUTIONAL_ADMIN ].include?(name)
+  Role.find_or_create_by!(name: name) do |r|
+    r.is_system_critical = is_system_critical
+    r.is_active          = true
+  end
+end
+
+puts "  ✓ #{Role.count} roles"
+
+# Assign the seeded teacher users their Teacher role (idempotent).
+[ teacher1_user, teacher2_user ].each do |u|
+  u.assign_role(Role::Names::TEACHER)
+end
+
+puts "  ✓ role assignments for #{RoleAssignment.count} assignments"
+
 puts ""
 puts "Done! Seed summary:"
 puts "  Prompt Levels : #{PromptLevel.count}"
@@ -225,5 +255,7 @@ puts "  Students      : #{Student.count}"
 puts "  IUPs          : #{Iup.count}"
 puts "  Student Goals : #{StudentGoal.count}"
 puts "  Assignments   : #{TeacherStudentAssignment.count}"
+puts "  Roles         : #{Role.count}"
+puts "  Role Assign   : #{RoleAssignment.count}"
 puts ""
 puts "Login with: teacher1@melue.foundation / Password123!"

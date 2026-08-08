@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_02_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -37,6 +37,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.index ["goal_domain_id"], name: "index_goals_on_goal_domain_id"
   end
 
+  create_table "guardians", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "full_name", null: false
+    t.string "phone"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["user_id"], name: "index_guardians_on_user_id"
+  end
+
   create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "finalized_on"
@@ -55,6 +64,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.datetime "updated_at", null: false
     t.index ["display_order"], name: "index_prompt_levels_on_display_order"
     t.index ["label"], name: "index_prompt_levels_on_label", unique: true
+  end
+
+  create_table "role_assignments", force: :cascade do |t|
+    t.datetime "assigned_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "created_at", null: false
+    t.datetime "revoked_at"
+    t.bigint "role_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["role_id"], name: "index_role_assignments_on_role_id"
+    t.index ["user_id", "role_id", "revoked_at"], name: "idx_role_assignments_user_role_revoked"
+    t.index ["user_id"], name: "index_role_assignments_on_user_id"
+  end
+
+  create_table "roles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "is_active", default: true, null: false
+    t.boolean "is_system_critical", default: false, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_roles_on_name", unique: true
   end
 
   create_table "session_block_definitions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -109,6 +139,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.index ["student_id", "status"], name: "index_student_goals_on_student_id_and_status"
     t.index ["student_id"], name: "index_student_goals_on_student_id"
     t.index ["therapy_station_id"], name: "index_student_goals_on_therapy_station_id"
+  end
+
+  create_table "student_guardians", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "guardian_id", null: false
+    t.boolean "is_primary_contact", default: false, null: false
+    t.string "relationship", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id"], name: "index_student_guardians_on_guardian_id"
+    t.index ["student_id", "guardian_id"], name: "idx_student_guardians_unique_pair", unique: true
+    t.index ["student_id"], name: "index_student_guardians_on_student_id"
   end
 
   create_table "students", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -198,10 +240,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
     t.index ["therapy_session_id"], name: "index_trials_on_therapy_session_id"
   end
 
+  create_table "user_jwt_refresh_keys", force: :cascade do |t|
+    t.datetime "deadline", null: false
+    t.string "key", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_user_jwt_refresh_keys_on_user_id"
+  end
+
+  create_table "user_lockouts", force: :cascade do |t|
+    t.datetime "deadline", null: false
+    t.datetime "email_last_sent", default: -> { "CURRENT_TIMESTAMP" }
+    t.string "key", null: false
+  end
+
   create_table "user_login_change_keys", force: :cascade do |t|
     t.datetime "deadline", null: false
     t.string "key", null: false
     t.string "login", null: false
+  end
+
+  create_table "user_login_failures", force: :cascade do |t|
+    t.integer "number", default: 1, null: false
   end
 
   create_table "user_password_reset_keys", force: :cascade do |t|
@@ -225,7 +284,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
   end
 
   add_foreign_key "goals", "goal_domains"
+  add_foreign_key "guardians", "users"
   add_foreign_key "iups", "students"
+  add_foreign_key "role_assignments", "roles"
+  add_foreign_key "role_assignments", "users"
   add_foreign_key "session_participants", "student_goals", column: "current_focus_student_goal_id"
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
@@ -235,6 +297,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
   add_foreign_key "student_goals", "iups"
   add_foreign_key "student_goals", "students"
   add_foreign_key "student_goals", "therapy_stations"
+  add_foreign_key "student_guardians", "guardians"
+  add_foreign_key "student_guardians", "students"
   add_foreign_key "teacher_student_assignments", "session_block_definitions"
   add_foreign_key "teacher_student_assignments", "staff_members", column: "teacher_id"
   add_foreign_key "teacher_student_assignments", "students"
@@ -249,7 +313,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_31_083926) do
   add_foreign_key "trials", "session_participants"
   add_foreign_key "trials", "student_goals"
   add_foreign_key "trials", "therapy_sessions"
+  add_foreign_key "user_jwt_refresh_keys", "users"
+  add_foreign_key "user_lockouts", "users", column: "id"
   add_foreign_key "user_login_change_keys", "users", column: "id"
+  add_foreign_key "user_login_failures", "users", column: "id"
   add_foreign_key "user_password_reset_keys", "users", column: "id"
   add_foreign_key "user_verification_keys", "users", column: "id"
 end
