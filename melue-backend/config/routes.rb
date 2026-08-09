@@ -4,6 +4,9 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      resources :notifications, only: [:index] do
+        member { post :mark_as_read }
+      end
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
 
