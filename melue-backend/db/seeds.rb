@@ -241,6 +241,85 @@ puts "  ✓ #{Role.count} roles"
 end
 
 puts "  ✓ role assignments for #{RoleAssignment.count} assignments"
+# 9. Preference Assessment Item Inventory (SRS 3.3.4, FR-047a)
+# ==============================================================================
+# Mirrors the physical "Preference Assessment.pdf" form exactly. Administrators
+# may extend this catalogue via the Form Builder (SCR-ADMIN-001); teachers who
+# need a one-off item add it as a custom item on the observation instead, which
+# never lands here (FR-047f).
+preference_inventory = {
+  "Visual" => [
+    "Phone",
+    "TV",
+    "Flashlight",
+    "Picture books",
+    "Balloon",
+    "Crayons or markers",
+    "Painting",
+    "Shadow",
+    "Beads",
+    "Pouring liquids"
+  ],
+  "Sensory" => [
+    "Lotion",
+    "Play doh",
+    "Sand play",
+    "Water play",
+    "Toys that bend or stretch",
+    "Finger painting",
+    "Soap bubbles",
+    "Shining"
+  ],
+  "Auditory" => [
+    "Toys that talk or sing",
+    "Music",
+    "Low pitch voice",
+    "Stress bans"
+  ],
+  "Movement" => [
+    "Movement",
+    "Rolling on floor",
+    "Being held upside down"
+  ],
+  "Toys" => [
+    "Tube car",
+    "Frog toy",
+    "Coloring tube",
+    "Fish toy",
+    "Fleep chain",
+    "Red plastic toy",
+    "Stress ball",
+    "Fleep red",
+    "Piano",
+    "Coloring glitter",
+    "Body part puzzle",
+    "Letter mat",
+    "Gross motor handle",
+    "See saw",
+    "Slide",
+    "Magnetic Apple",
+    "Mobile art",
+    "Watch",
+    "Large & small toys",
+    "Harmonica",
+    "Stretch spring",
+    "Bicycle",
+    "Number book",
+    "Seamer",
+    "Colours"
+  ]
+}
+
+preference_inventory.each do |category, item_names|
+  item_names.each do |item_name|
+    PreferenceInventoryItem.find_or_create_by!(category: category, name: item_name) do |item|
+      item.is_active = true
+    end
+  end
+end
+
+puts "  ✓ #{PreferenceInventoryItem.count} preference inventory items " \
+     "(#{preference_inventory.keys.size} categories)"
 
 puts ""
 puts "Done! Seed summary:"
@@ -257,5 +336,6 @@ puts "  Student Goals : #{StudentGoal.count}"
 puts "  Assignments   : #{TeacherStudentAssignment.count}"
 puts "  Roles         : #{Role.count}"
 puts "  Role Assign   : #{RoleAssignment.count}"
+puts "  Pref. Items   : #{PreferenceInventoryItem.count}"
 puts ""
 puts "Login with: teacher1@melue.foundation / Password123!"

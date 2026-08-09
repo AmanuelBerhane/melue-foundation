@@ -10,11 +10,50 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_02_000004) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_090004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+
+  create_table "active_storage_attachments", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
+    t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
+    t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
+  end
+
+  create_table "active_storage_blobs", force: :cascade do |t|
+    t.bigint "byte_size", null: false
+    t.string "checksum"
+    t.string "content_type"
+    t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.string "key", null: false
+    t.text "metadata"
+    t.string "service_name", null: false
+    t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
+  end
+
+  create_table "active_storage_variant_records", force: :cascade do |t|
+    t.bigint "blob_id", null: false
+    t.string "variation_digest", null: false
+    t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "assessment_cycles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.date "completed_on"
+    t.datetime "created_at", null: false
+    t.date "started_on", null: false
+    t.string "status", default: "in_progress", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["student_id", "status"], name: "index_assessment_cycles_on_student_id_and_status"
+    t.index ["student_id"], name: "index_assessment_cycles_on_student_id"
+  end
 
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -53,6 +92,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_000004) do
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
     t.index ["student_id"], name: "index_iups_on_student_id"
+  end
+
+  create_table "preference_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "created_at", null: false
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_preference_assessments_on_assessment_cycle_id", unique: true
+  end
+
+  create_table "preference_inventory_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "category", null: false
+    t.datetime "created_at", null: false
+    t.boolean "is_active", default: true, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category", "name"], name: "index_preference_inventory_items_on_category_and_name", unique: true
+    t.index ["is_active"], name: "index_preference_inventory_items_on_is_active"
+  end
+
+  create_table "preference_observations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "approached", default: false, null: false
+    t.decimal "combined_score", precision: 8, scale: 3, default: "0.0", null: false
+    t.string "context", null: false
+    t.datetime "created_at", null: false
+    t.string "custom_item_category"
+    t.string "custom_item_name"
+    t.integer "duration_seconds", default: 0, null: false
+    t.integer "frequency_count", default: 0, null: false
+    t.text "notes"
+    t.uuid "preference_assessment_id", null: false
+    t.uuid "preference_inventory_item_id"
+    t.integer "rank"
+    t.string "tier"
+    t.datetime "updated_at", null: false
+    t.index ["preference_assessment_id", "context", "custom_item_name"], name: "idx_pref_obs_unique_custom_per_context", unique: true, where: "(preference_inventory_item_id IS NULL)"
+    t.index ["preference_assessment_id", "context", "preference_inventory_item_id"], name: "idx_pref_obs_unique_item_per_context", unique: true, where: "(preference_inventory_item_id IS NOT NULL)"
+    t.index ["preference_assessment_id", "context", "rank"], name: "idx_pref_obs_rankings"
+    t.index ["preference_assessment_id"], name: "index_preference_observations_on_preference_assessment_id"
+    t.index ["preference_inventory_item_id"], name: "index_preference_observations_on_preference_inventory_item_id"
+    t.check_constraint "duration_seconds >= 0", name: "chk_pref_obs_duration_non_negative"
+    t.check_constraint "frequency_count >= 0", name: "chk_pref_obs_frequency_non_negative"
+    t.check_constraint "preference_inventory_item_id IS NOT NULL AND custom_item_name IS NULL OR preference_inventory_item_id IS NULL AND custom_item_name IS NOT NULL", name: "chk_pref_obs_item_xor_custom"
   end
 
   create_table "prompt_levels", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -283,11 +366,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_02_000004) do
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
   end
 
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "assessment_cycles", "students"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
   add_foreign_key "iups", "students"
   add_foreign_key "role_assignments", "roles"
   add_foreign_key "role_assignments", "users"
+  add_foreign_key "preference_assessments", "assessment_cycles"
+  add_foreign_key "preference_observations", "preference_assessments"
+  add_foreign_key "preference_observations", "preference_inventory_items"
   add_foreign_key "session_participants", "student_goals", column: "current_focus_student_goal_id"
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
