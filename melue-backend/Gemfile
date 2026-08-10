@@ -64,6 +64,8 @@ group :development, :test do
 
 
   gem "bullet"
+
+  gem "fiddle"
 end
 
 group :test do
@@ -85,3 +87,5 @@ gem "jwt", "~> 2.9", require: false
 gem "tilt", "~> 2.4", require: false
 
 gem "oas_rails", "~> 1.4"
+
+gem "rack-attack", "~> 6.8"

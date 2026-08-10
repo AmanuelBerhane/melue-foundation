@@ -29,6 +29,25 @@ Rails.application.routes.draw do
           end
         end
       end
+
+      # Preference item catalogue for SCR-012 (FR-047a)
+      resources :preference_inventory_items, only: %i[index]
+
+      resources :assessment_cycles, only: [] do
+        # Exactly one preference assessment per cycle (FR-047, FR-049)
+        resource :preference_assessment, only: %i[show create] do
+          # Finalise the assessment (FR-036)
+          post :submit
+
+          # Ranked top-preferences list (FR-047d, FR-048)
+          get :rankings
+
+          # Timer, counter, notes and custom items (FR-047b, FR-047e, FR-047f)
+          scope module: :preference_assessments do
+            resources :observations, only: %i[create update destroy]
+          end
+        end
+      end
     end
   end
   mount OasRails::Engine => "/docs"

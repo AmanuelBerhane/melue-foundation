@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_07_090004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -44,6 +44,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "assessment_cycles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.date "completed_on"
+    t.datetime "created_at", null: false
+    t.date "started_on", null: false
+    t.string "status", default: "in_progress", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["student_id", "status"], name: "index_assessment_cycles_on_student_id_and_status"
+    t.index ["student_id"], name: "index_assessment_cycles_on_student_id"
+  end
+
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -65,6 +76,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
     t.index ["goal_domain_id"], name: "index_goals_on_goal_domain_id"
   end
 
+  create_table "guardians", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "full_name", null: false
+    t.string "phone"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["user_id"], name: "index_guardians_on_user_id"
+  end
+
   create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "finalized_on"
@@ -72,6 +92,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
     t.index ["student_id"], name: "index_iups_on_student_id"
+  end
+
+  create_table "preference_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "created_at", null: false
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_preference_assessments_on_assessment_cycle_id", unique: true
+  end
+
+  create_table "preference_inventory_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "category", null: false
+    t.datetime "created_at", null: false
+    t.boolean "is_active", default: true, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category", "name"], name: "index_preference_inventory_items_on_category_and_name", unique: true
+    t.index ["is_active"], name: "index_preference_inventory_items_on_is_active"
+  end
+
+  create_table "preference_observations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "approached", default: false, null: false
+    t.decimal "combined_score", precision: 8, scale: 3, default: "0.0", null: false
+    t.string "context", null: false
+    t.datetime "created_at", null: false
+    t.string "custom_item_category"
+    t.string "custom_item_name"
+    t.integer "duration_seconds", default: 0, null: false
+    t.integer "frequency_count", default: 0, null: false
+    t.text "notes"
+    t.uuid "preference_assessment_id", null: false
+    t.uuid "preference_inventory_item_id"
+    t.integer "rank"
+    t.string "tier"
+    t.datetime "updated_at", null: false
+    t.index ["preference_assessment_id", "context", "custom_item_name"], name: "idx_pref_obs_unique_custom_per_context", unique: true, where: "(preference_inventory_item_id IS NULL)"
+    t.index ["preference_assessment_id", "context", "preference_inventory_item_id"], name: "idx_pref_obs_unique_item_per_context", unique: true, where: "(preference_inventory_item_id IS NOT NULL)"
+    t.index ["preference_assessment_id", "context", "rank"], name: "idx_pref_obs_rankings"
+    t.index ["preference_assessment_id"], name: "index_preference_observations_on_preference_assessment_id"
+    t.index ["preference_inventory_item_id"], name: "index_preference_observations_on_preference_inventory_item_id"
+    t.check_constraint "duration_seconds >= 0", name: "chk_pref_obs_duration_non_negative"
+    t.check_constraint "frequency_count >= 0", name: "chk_pref_obs_frequency_non_negative"
+    t.check_constraint "preference_inventory_item_id IS NOT NULL AND custom_item_name IS NULL OR preference_inventory_item_id IS NULL AND custom_item_name IS NOT NULL", name: "chk_pref_obs_item_xor_custom"
   end
 
   create_table "prompt_levels", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -83,6 +147,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
     t.datetime "updated_at", null: false
     t.index ["display_order"], name: "index_prompt_levels_on_display_order"
     t.index ["label"], name: "index_prompt_levels_on_label", unique: true
+  end
+
+  create_table "role_assignments", force: :cascade do |t|
+    t.datetime "assigned_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.datetime "created_at", null: false
+    t.datetime "revoked_at"
+    t.bigint "role_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["role_id"], name: "index_role_assignments_on_role_id"
+    t.index ["user_id", "role_id", "revoked_at"], name: "idx_role_assignments_user_role_revoked"
+    t.index ["user_id"], name: "index_role_assignments_on_user_id"
+  end
+
+  create_table "roles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "is_active", default: true, null: false
+    t.boolean "is_system_critical", default: false, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_roles_on_name", unique: true
   end
 
   create_table "session_block_definitions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -139,6 +224,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
     t.index ["student_id", "status"], name: "index_student_goals_on_student_id_and_status"
     t.index ["student_id"], name: "index_student_goals_on_student_id"
     t.index ["therapy_station_id"], name: "index_student_goals_on_therapy_station_id"
+  end
+
+  create_table "student_guardians", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "guardian_id", null: false
+    t.boolean "is_primary_contact", default: false, null: false
+    t.string "relationship", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id"], name: "index_student_guardians_on_guardian_id"
+    t.index ["student_id", "guardian_id"], name: "idx_student_guardians_unique_pair", unique: true
+    t.index ["student_id"], name: "index_student_guardians_on_student_id"
   end
 
   create_table "students", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -230,10 +327,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
     t.index ["therapy_session_id"], name: "index_trials_on_therapy_session_id"
   end
 
+  create_table "user_jwt_refresh_keys", force: :cascade do |t|
+    t.datetime "deadline", null: false
+    t.string "key", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_user_jwt_refresh_keys_on_user_id"
+  end
+
+  create_table "user_lockouts", force: :cascade do |t|
+    t.datetime "deadline", null: false
+    t.datetime "email_last_sent", default: -> { "CURRENT_TIMESTAMP" }
+    t.string "key", null: false
+  end
+
   create_table "user_login_change_keys", force: :cascade do |t|
     t.datetime "deadline", null: false
     t.string "key", null: false
     t.string "login", null: false
+  end
+
+  create_table "user_login_failures", force: :cascade do |t|
+    t.integer "number", default: 1, null: false
   end
 
   create_table "user_password_reset_keys", force: :cascade do |t|
@@ -258,8 +372,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "assessment_cycles", "students"
   add_foreign_key "goals", "goal_domains"
+  add_foreign_key "guardians", "users"
   add_foreign_key "iups", "students"
+  add_foreign_key "role_assignments", "roles"
+  add_foreign_key "role_assignments", "users"
+  add_foreign_key "preference_assessments", "assessment_cycles"
+  add_foreign_key "preference_observations", "preference_assessments"
+  add_foreign_key "preference_observations", "preference_inventory_items"
   add_foreign_key "session_participants", "student_goals", column: "current_focus_student_goal_id"
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
@@ -269,6 +390,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
   add_foreign_key "student_goals", "iups"
   add_foreign_key "student_goals", "students"
   add_foreign_key "student_goals", "therapy_stations"
+  add_foreign_key "student_guardians", "guardians"
+  add_foreign_key "student_guardians", "students"
   add_foreign_key "teacher_student_assignments", "session_block_definitions"
   add_foreign_key "teacher_student_assignments", "staff_members", column: "teacher_id"
   add_foreign_key "teacher_student_assignments", "students"
@@ -283,7 +406,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_104615) do
   add_foreign_key "trials", "session_participants"
   add_foreign_key "trials", "student_goals"
   add_foreign_key "trials", "therapy_sessions"
+  add_foreign_key "user_jwt_refresh_keys", "users"
+  add_foreign_key "user_lockouts", "users", column: "id"
   add_foreign_key "user_login_change_keys", "users", column: "id"
+  add_foreign_key "user_login_failures", "users", column: "id"
   add_foreign_key "user_password_reset_keys", "users", column: "id"
   add_foreign_key "user_verification_keys", "users", column: "id"
 end
