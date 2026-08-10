@@ -24,7 +24,7 @@ class PushNotificationService < ApplicationService
   private
 
   def deliver_notifications
-    Rails.logger.info <<~LOG
+    Rails.logger.debug <<~LOG if Rails.env.development? || Rails.env.test?
       [PushNotificationService] Dispatching Notification:
         Recipients: #{recipient_user_ids.join(', ')}
         Title: #{title}
