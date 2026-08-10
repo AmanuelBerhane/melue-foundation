@@ -1,6 +1,11 @@
 class User < ApplicationRecord
   include Rodauth::Rails.model
 
+  has_one :staff_member, dependent: :restrict_with_error
+
+  enum :status, { unverified: 1, verified: 2, closed: 3 }
+
+  validates :email, presence: true, uniqueness: { case_sensitive: false }
   has_many :role_assignments, dependent: :destroy
   has_many :roles, through: :role_assignments
   has_many :active_role_assignments, -> { active }, class_name: "RoleAssignment", inverse_of: :user
