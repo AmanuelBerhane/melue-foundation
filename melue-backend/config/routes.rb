@@ -4,6 +4,9 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      # Student registration and management
+      resources :students, only: %i[index show create update]
+
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
 

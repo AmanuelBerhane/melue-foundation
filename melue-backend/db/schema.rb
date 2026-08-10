@@ -199,9 +199,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_07_090004) do
   create_table "staff_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "full_name", null: false
+    t.string "role", default: "teacher", null: false
     t.string "staff_number", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["role"], name: "index_staff_members_on_role"
     t.index ["staff_number"], name: "index_staff_members_on_staff_number", unique: true
     t.index ["user_id"], name: "index_staff_members_on_user_id"
   end
@@ -241,6 +243,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_07_090004) do
     t.date "date_of_birth", null: false
     t.string "diagnosis"
     t.string "first_name", null: false
+    t.string "guardian_name"
+    t.string "guardian_phone"
     t.string "last_name", null: false
     t.string "middle_name"
     t.string "program_type", null: false
