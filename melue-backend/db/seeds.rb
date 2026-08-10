@@ -183,6 +183,83 @@ end
 puts "  ✓ #{Iup.count} IUPs, #{StudentGoal.count} student goals"
 
 # ==============================================================================
+# 7.5 ABC Dropdown Options
+# ==============================================================================
+abc_options = [
+  { category: 'antecedent', label: 'Denied access to preferred item', display_order: 1 },
+  { category: 'antecedent', label: 'Transition between activities', display_order: 2 },
+  { category: 'antecedent', label: 'Task demand presented', display_order: 3 },
+  { category: 'antecedent', label: 'Other', display_order: 99, is_other: true },
+
+  { category: 'behavior', label: 'Hitting', display_order: 1 },
+  { category: 'behavior', label: 'Screaming', display_order: 2 },
+  { category: 'behavior', label: 'Property destruction', display_order: 3 },
+  { category: 'behavior', label: 'Other', display_order: 99, is_other: true },
+
+  { category: 'consequence', label: 'Removed from area', display_order: 1 },
+  { category: 'consequence', label: 'Given break', display_order: 2 },
+  { category: 'consequence', label: 'Redirected to task', display_order: 3 },
+  { category: 'consequence', label: 'Other', display_order: 99, is_other: true }
+]
+
+abc_options.each do |attrs|
+  AbcDropdownOption.find_or_create_by!(category: attrs[:category], label: attrs[:label]) do |opt|
+    opt.display_order = attrs[:display_order]
+    opt.is_active = true
+    opt.is_other = attrs[:is_other] || false
+  end
+end
+
+puts "  ✓ #{AbcDropdownOption.count} ABC dropdown options"
+
+# ==============================================================================
+# 7.6 Form Configurations
+# ==============================================================================
+form_configs = [
+  {
+    form_type: 'enrollment',
+    form_name: 'Student Enrollment Form',
+    revision_number: 1,
+    organization_name: 'Default Organization',
+    field_schema: { 'fields' => [] }
+  },
+  {
+    form_type: 'iup',
+    form_name: 'Individualized Plan (IUP)',
+    revision_number: 1,
+    organization_name: 'Default Organization',
+    is_default: true,
+    field_schema: { 'fields' => [] }
+  },
+  {
+    form_type: 'ablls',
+    form_name: 'ABLLS Assessment',
+    revision_number: 1,
+    organization_name: 'Default Organization',
+    field_schema: { 'fields' => [] }
+  }
+]
+
+form_configs.each do |attrs|
+  FormConfiguration.find_or_create_by!(form_type: attrs[:form_type]) do |fc|
+    fc.form_name = attrs[:form_name]
+    fc.revision_number = attrs[:revision_number]
+    fc.organization_name = attrs[:organization_name]
+    fc.is_default = attrs[:is_default] || false
+    fc.field_schema = attrs[:field_schema]
+  end
+end
+
+puts "  ✓ #{FormConfiguration.count} form configurations"
+
+# ==============================================================================
+# 7.7 Session Schedule Configuration
+# ==============================================================================
+SessionScheduleConfig.instance
+
+puts "  ✓ Session schedule configuration initialized"
+
+# ==============================================================================
 # 8. Today's Teacher-Student Assignments (Morning Block A, Station 1, Room 1A)
 # ==============================================================================
 block_a  = SessionBlockDefinition.find_by!(name: "Morning Block A")
@@ -212,6 +289,115 @@ end
 
 puts "  ✓ #{TeacherStudentAssignment.count} assignments (#{TeacherStudentAssignment.for_today.count} for today)"
 
+# ==============================================================================
+# 9. Roles (FR-006 — role-based routing) & assignments
+# ==============================================================================
+role_names = [
+  Role::Names::TEACHER,
+  Role::Names::THERAPY_COORDINATOR,
+  Role::Names::PROGRAM_DIRECTOR,
+  Role::Names::DIRECTOR,
+  Role::Names::INSTITUTIONAL_ADMIN,
+  Role::Names::SYSTEM_ADMIN,
+  Role::Names::PARENT
+]
+
+role_names.each do |name|
+  is_system_critical = [ Role::Names::SYSTEM_ADMIN, Role::Names::INSTITUTIONAL_ADMIN ].include?(name)
+  Role.find_or_create_by!(name: name) do |r|
+    r.is_system_critical = is_system_critical
+    r.is_active          = true
+  end
+end
+
+puts "  ✓ #{Role.count} roles"
+
+# Assign the seeded teacher users their Teacher role (idempotent).
+[ teacher1_user, teacher2_user ].each do |u|
+  u.assign_role(Role::Names::TEACHER)
+end
+
+puts "  ✓ role assignments for #{RoleAssignment.count} assignments"
+# 9. Preference Assessment Item Inventory (SRS 3.3.4, FR-047a)
+# ==============================================================================
+# Mirrors the physical "Preference Assessment.pdf" form exactly. Administrators
+# may extend this catalogue via the Form Builder (SCR-ADMIN-001); teachers who
+# need a one-off item add it as a custom item on the observation instead, which
+# never lands here (FR-047f).
+preference_inventory = {
+  "Visual" => [
+    "Phone",
+    "TV",
+    "Flashlight",
+    "Picture books",
+    "Balloon",
+    "Crayons or markers",
+    "Painting",
+    "Shadow",
+    "Beads",
+    "Pouring liquids"
+  ],
+  "Sensory" => [
+    "Lotion",
+    "Play doh",
+    "Sand play",
+    "Water play",
+    "Toys that bend or stretch",
+    "Finger painting",
+    "Soap bubbles",
+    "Shining"
+  ],
+  "Auditory" => [
+    "Toys that talk or sing",
+    "Music",
+    "Low pitch voice",
+    "Stress bans"
+  ],
+  "Movement" => [
+    "Movement",
+    "Rolling on floor",
+    "Being held upside down"
+  ],
+  "Toys" => [
+    "Tube car",
+    "Frog toy",
+    "Coloring tube",
+    "Fish toy",
+    "Fleep chain",
+    "Red plastic toy",
+    "Stress ball",
+    "Fleep red",
+    "Piano",
+    "Coloring glitter",
+    "Body part puzzle",
+    "Letter mat",
+    "Gross motor handle",
+    "See saw",
+    "Slide",
+    "Magnetic Apple",
+    "Mobile art",
+    "Watch",
+    "Large & small toys",
+    "Harmonica",
+    "Stretch spring",
+    "Bicycle",
+    "Number book",
+    "Seamer",
+    "Colours"
+  ]
+}
+
+preference_inventory.each do |category, item_names|
+  item_names.each do |item_name|
+    PreferenceInventoryItem.find_or_create_by!(category: category, name: item_name) do |item|
+      item.is_active = true
+    end
+  end
+end
+
+puts "  ✓ #{PreferenceInventoryItem.count} preference inventory items " \
+     "(#{preference_inventory.keys.size} categories)"
+
 puts ""
 puts "Done! Seed summary:"
 puts "  Prompt Levels : #{PromptLevel.count}"
@@ -220,10 +406,16 @@ puts "  Rooms         : #{TherapyRoom.count}"
 puts "  Blocks        : #{SessionBlockDefinition.count}"
 puts "  Goal Domains  : #{GoalDomain.count}"
 puts "  Goals         : #{Goal.count}"
+puts "  ABC Options   : #{AbcDropdownOption.count}"
+puts "  Form Configs  : #{FormConfiguration.count}"
+puts "  Schedule Cfg  : #{SessionScheduleConfig.count}"
 puts "  Staff         : #{StaffMember.count}"
 puts "  Students      : #{Student.count}"
 puts "  IUPs          : #{Iup.count}"
 puts "  Student Goals : #{StudentGoal.count}"
 puts "  Assignments   : #{TeacherStudentAssignment.count}"
+puts "  Roles         : #{Role.count}"
+puts "  Role Assign   : #{RoleAssignment.count}"
+puts "  Pref. Items   : #{PreferenceInventoryItem.count}"
 puts ""
 puts "Login with: teacher1@melue.foundation / Password123!"

@@ -1,23 +1,32 @@
 class Student < ApplicationRecord
+
   has_many :teacher_student_assignments, dependent: :restrict_with_error
   has_many :session_participants, dependent: :restrict_with_error
   has_many :iups, dependent: :restrict_with_error
   has_many :student_goals, dependent: :restrict_with_error
+  has_many :student_guardians, dependent: :restrict_with_error
+  has_many :guardians, through: :student_guardians
 
-  has_many :documents, class_name: "StudentDocument", dependent: :destroy
+  has_one_attached :headshot
+
   has_one_attached :headshot_photo
   has_one_attached :baseline_video
+  has_many_attached :documents
+
+  has_many :documents, class_name: "StudentDocument", dependent: :destroy
 
   enum :program_type, { regular: "regular", pulled_out: "pulled_out" }, prefix: true
   enum :therapy_group, { basic: "basic", functional_living: "functional_living" }, prefix: true
 
+
   enum :status, {
-    # Enrollment wizard statuses
+
     draft: "draft",
     pending_review: "pending_review",
 
-    # Assessment phase
-    in_assessment: "In Assessment",
+    registered: "registered",
+    in_assessment: "in_assessment",
+
     assessment_complete: "assessment_complete",
     ready_for_iup: "ready_for_iup",
 
@@ -35,26 +44,46 @@ class Student < ApplicationRecord
   validates :program_type, :therapy_group, presence: true
   validates :status, presence: true
 
-  # Guardian fields
+  # Guardian fields 
   validates :guardian_name, :guardian_phone, presence: true
   validates :guardian_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
 
   validate :photo_format_and_size, if: -> { headshot_photo.attached? }
   validate :video_format_and_size, if: -> { baseline_video.attached? }
 
+  scope :search_by_name, ->(query) {
+    return all if query.blank?
 
-  # Full name
+    sanitized = "%#{sanitize_sql_like(query)}%"
+    where("first_name ILIKE :q OR last_name ILIKE :q", q: sanitized)
+  }
+
+  scope :by_program_type, ->(type) {
+    return all if type.blank?
+
+    where(program_type: type)
+  }
+
+  scope :by_therapy_group, ->(group) {
+    return all if group.blank?
+
+    where(therapy_group: group)
+  }
+
   def full_name
     [ first_name, middle_name, last_name ].compact_blank.join(" ")
   end
 
-  # Age calculation
   def age
     return nil unless date_of_birth
-    ((Date.current - date_of_birth).to_i / 365.25).floor
+
+    today = Date.current
+    age = today.year - date_of_birth.year
+    age -= 1 if today < date_of_birth + age.years
+    age
   end
 
-  # Age warning for therapy group
+  # Age warning for therapy group 
   def age_warning_for_group?
     return false unless therapy_group && age
 
@@ -66,7 +95,7 @@ class Student < ApplicationRecord
     end
   end
 
-  # Enrollment complete check
+  # Enrollment complete check 
   def enrollment_complete?
     required_fields_present? && required_documents_attached? && headshot_photo.attached?
   end
@@ -79,6 +108,28 @@ class Student < ApplicationRecord
   # Returns active student goals for a specific station
   def active_goals_for_station(therapy_station_id)
     student_goals.where(therapy_station_id: therapy_station_id, status: %w[active in_progress])
+  end
+
+  # Returns a goals summary: up to 2 active/in_progress goals per station 
+  def current_goals_summary
+    active_goals = student_goals
+      .includes(:goal, :therapy_station)
+      .where(status: %w[active in_progress])
+
+    active_goals
+      .group_by(&:therapy_station)
+      .map do |station, goals|
+        {
+          station: { id: station.id, name: station.name },
+          goals: goals.first(2).map do |sg|
+            {
+              id: sg.id,
+              goal_name: sg.goal_name,
+              progress_percent: sg.progress_percent.to_f
+            }
+          end
+        }
+      end
   end
 
   private
