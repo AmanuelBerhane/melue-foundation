@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class PromptLevel < ApplicationRecord
+  include Discard::Model
+
   has_many :trials, dependent: :restrict_with_error
 
   validates :label, presence: true, uniqueness: true

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class StudentGoal < ApplicationRecord
+  include Discard::Model
+
   belongs_to :iup
   belongs_to :student
   belongs_to :goal

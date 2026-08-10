@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class StaffMember < ApplicationRecord
+  include Discard::Model
+
   belongs_to :user
 
   has_many :teacher_student_assignments, foreign_key: :teacher_id, dependent: :restrict_with_error
