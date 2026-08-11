@@ -186,7 +186,7 @@ RSpec.describe EnrollmentService, type: :service do
 
       expect(result.success?).to be true
       # Use the actual stored value from the database
-      expect(result.data.status_before_type_cast).to eq('In Assessment')
+      expect(result.data.status_before_type_cast).to eq('in_assessment')
       # Also check that the status method returns the correct value
       expect(result.data.status).to eq('in_assessment')
       expect(result.data.enrolled_at).not_to be_nil

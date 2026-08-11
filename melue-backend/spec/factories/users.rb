@@ -1,7 +1,6 @@
 # spec/factories/users.rb
 FactoryBot.define do
   factory :user do
-
     sequence(:email) { |n| "user#{n}@melue.foundation" }
     password_hash    { BCrypt::Password.create("Password123!") }
     status           { 2 }

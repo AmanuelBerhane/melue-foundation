@@ -13,6 +13,7 @@ class User < ApplicationRecord
     role_sym = role_name.to_sym
     return false unless self.class.roles.key?(role_sym)
     role == role_sym.to_s
+  end
   has_one :staff_member, dependent: :restrict_with_error
 
   enum :status, { unverified: 1, verified: 2, closed: 3 }

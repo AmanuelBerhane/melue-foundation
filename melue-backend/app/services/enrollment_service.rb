@@ -77,7 +77,7 @@ class EnrollmentService < ApplicationService
   def complete_enrollment
     return failure("Student not found") unless student.persisted?
 
-    unless valid_for_completion?
+    unless student.required_fields_present?
       return failure("Missing required information")
     end
 
@@ -85,7 +85,7 @@ class EnrollmentService < ApplicationService
       return failure("Age (#{student.age}) may not be appropriate for #{student.therapy_group} group")
     end
 
-    unless required_documents_attached?
+    unless student.required_documents_attached?
       return failure("Missing required documents: Birth Certificate, Diagnosis Paper, and Agreement")
     end
 
@@ -94,7 +94,7 @@ class EnrollmentService < ApplicationService
     end
 
     Student.transaction do
-      student.status = "In Assessment"
+      student.status = "in_assessment"
       student.enrolled_at = Time.current
       student.assessment_started_at = Time.current
 
@@ -159,22 +159,5 @@ class EnrollmentService < ApplicationService
     else
       failure(student.errors.full_messages.join(", "))
     end
-  end
-
-  private
-
-  def valid_for_completion?
-    required_fields = [
-      :first_name, :last_name, :date_of_birth,
-      :guardian_name, :guardian_phone,
-      :program_type, :therapy_group
-    ]
-
-    required_fields.all? { |field| student.public_send(field).present? }
-  end
-
-  def required_documents_attached?
-    required_types = [ "birth_certificate", "diagnosis_paper", "agreement" ]
-    student.documents.where(document_type: required_types).count == required_types.size
   end
 end

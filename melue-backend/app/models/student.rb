@@ -1,5 +1,4 @@
 class Student < ApplicationRecord
-
   has_many :teacher_student_assignments, dependent: :restrict_with_error
   has_many :session_participants, dependent: :restrict_with_error
   has_many :iups, dependent: :restrict_with_error
@@ -44,7 +43,7 @@ class Student < ApplicationRecord
   validates :program_type, :therapy_group, presence: true
   validates :status, presence: true
 
-  # Guardian fields 
+  # Guardian fields
   validates :guardian_name, :guardian_phone, presence: true
   validates :guardian_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
 
@@ -83,7 +82,7 @@ class Student < ApplicationRecord
     age
   end
 
-  # Age warning for therapy group 
+  # Age warning for therapy group
   def age_warning_for_group?
     return false unless therapy_group && age
 
@@ -95,7 +94,17 @@ class Student < ApplicationRecord
     end
   end
 
-  # Enrollment complete check 
+  def required_fields_present?
+    [ first_name, last_name, date_of_birth, guardian_name, guardian_phone,
+     program_type, therapy_group ].all?(&:present?)
+  end
+
+  def required_documents_attached?
+    required_types = [ "birth_certificate", "diagnosis_paper", "agreement" ]
+    (documents.pluck(:document_type) & required_types).size == required_types.size
+  end
+
+  # Enrollment complete check
   def enrollment_complete?
     required_fields_present? && required_documents_attached? && headshot_photo.attached?
   end
@@ -110,7 +119,7 @@ class Student < ApplicationRecord
     student_goals.where(therapy_station_id: therapy_station_id, status: %w[active in_progress])
   end
 
-  # Returns a goals summary: up to 2 active/in_progress goals per station 
+  # Returns a goals summary: up to 2 active/in_progress goals per station
   def current_goals_summary
     active_goals = student_goals
       .includes(:goal, :therapy_station)
@@ -133,16 +142,6 @@ class Student < ApplicationRecord
   end
 
   private
-
-  def required_fields_present?
-    [ first_name, last_name, date_of_birth, guardian_name, guardian_phone,
-     program_type, therapy_group ].all?(&:present?)
-  end
-
-  def required_documents_attached?
-    required_types = [ "birth_certificate", "diagnosis_paper", "agreement" ]
-    (documents.pluck(:document_type) & required_types).size == required_types.size
-  end
 
   def photo_format_and_size
     unless headshot_photo.content_type.in?(%w[image/jpeg image/png image/webp])
