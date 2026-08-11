@@ -1,6 +1,23 @@
 class User < ApplicationRecord
   include Rodauth::Rails.model
 
+  enum :status, { unverified: 1, verified: 2, closed: 3 }
+  enum :role, {
+    system_admin: 0,
+    institutional_admin: 1,
+    therapist: 2,
+    clinical_staff: 3
+  }
+
+  def has_role?(role_name)
+    role_sym = role_name.to_sym
+    return false unless self.class.roles.key?(role_sym)
+    role == role_sym.to_s
+  has_one :staff_member, dependent: :restrict_with_error
+
+  enum :status, { unverified: 1, verified: 2, closed: 3 }
+
+  validates :email, presence: true, uniqueness: { case_sensitive: false }
   has_many :role_assignments, dependent: :destroy
   has_many :roles, through: :role_assignments
   has_many :active_role_assignments, -> { active }, class_name: "RoleAssignment", inverse_of: :user

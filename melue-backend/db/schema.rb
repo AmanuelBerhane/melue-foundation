@@ -16,6 +16,46 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
 
+  create_table "abc_dropdown_options", force: :cascade do |t|
+    t.integer "category", null: false
+    t.datetime "created_at", null: false
+    t.integer "display_order", null: false
+    t.boolean "is_active", default: true, null: false
+    t.boolean "is_other", default: false, null: false
+    t.string "label", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category", "display_order"], name: "index_abc_dropdown_options_on_category_and_display_order"
+    t.index ["category", "is_active"], name: "index_abc_dropdown_options_on_category_and_is_active"
+    t.index ["category", "is_other"], name: "index_abc_dropdown_options_on_category_and_is_other", unique: true, where: "(is_other = true)"
+  end
+
+  create_table "audit_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.jsonb "change_data", default: {}
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}
+    t.string "resource_id"
+    t.string "resource_type", null: false
+    t.bigint "user_id"
+    t.index ["action"], name: "index_audit_logs_on_action"
+    t.index ["created_at"], name: "index_audit_logs_on_created_at"
+    t.index ["resource_id"], name: "index_audit_logs_on_resource_id"
+    t.index ["resource_type"], name: "index_audit_logs_on_resource_type"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "form_configurations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.jsonb "field_schema", default: {}, null: false
+    t.string "form_name", null: false
+    t.integer "form_type", null: false
+    t.boolean "is_default", default: false, null: false
+    t.string "organization_name"
+    t.date "revision_date"
+    t.integer "revision_number", default: 1, null: false
+    t.datetime "updated_at", null: false
+    t.index ["field_schema"], name: "index_form_configurations_on_field_schema", using: :gin
+    t.index ["form_type"], name: "index_form_configurations_on_form_type"
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -66,6 +106,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_goal_domains_on_discarded_at"
+    t.index ["display_order"], name: "index_goal_domains_on_display_order"
+    t.index ["is_active"], name: "index_goal_domains_on_is_active"
     t.index ["name"], name: "index_goal_domains_on_name", unique: true
   end
 
@@ -162,6 +204,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_prompt_levels_on_discarded_at"
     t.index ["display_order"], name: "index_prompt_levels_on_display_order"
+    t.index ["is_active"], name: "index_prompt_levels_on_is_active"
     t.index ["label"], name: "index_prompt_levels_on_label", unique: true
   end
 
@@ -196,6 +239,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
     t.time "start_time", null: false
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_session_block_definitions_on_discarded_at"
+    t.index ["is_active"], name: "index_session_block_definitions_on_is_active"
   end
 
   create_table "session_participants", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -216,14 +260,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
     t.index ["therapy_session_id"], name: "index_session_participants_on_therapy_session_id"
   end
 
+  create_table "session_schedule_configs", force: :cascade do |t|
+    t.time "afternoon_end_time", null: false
+    t.time "afternoon_start_time", null: false
+    t.datetime "created_at", null: false
+    t.integer "draft_expiry_days", default: 7, null: false
+    t.time "morning_end_time", null: false
+    t.time "morning_start_time", null: false
+    t.integer "pre_therapy_duration_minutes", default: 15, null: false
+    t.integer "staff_to_student_capacity", default: 4, null: false
+    t.integer "station_1_duration_minutes", default: 30, null: false
+    t.integer "station_2_duration_minutes", default: 30, null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "staff_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
     t.string "full_name", null: false
+    t.string "role", default: "teacher", null: false
     t.string "staff_number", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["discarded_at"], name: "index_staff_members_on_discarded_at"
+    t.index ["role"], name: "index_staff_members_on_role"
     t.index ["staff_number"], name: "index_staff_members_on_staff_number", unique: true
     t.index ["user_id"], name: "index_staff_members_on_user_id"
   end
@@ -266,6 +326,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
     t.string "diagnosis"
     t.datetime "discarded_at"
     t.string "first_name", null: false
+    t.string "guardian_name"
+    t.string "guardian_phone"
     t.string "last_name", null: false
     t.string "middle_name"
     t.string "program_type", null: false
@@ -397,11 +459,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_10_093600) do
   create_table "users", force: :cascade do |t|
     t.citext "email", null: false
     t.string "password_hash"
+    t.integer "role", default: 2, null: false
     t.integer "status", default: 1, null: false
     t.index ["email"], name: "index_users_on_email", unique: true, where: "(status = ANY (ARRAY[1, 2]))"
+    t.index ["role"], name: "index_users_on_role"
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
   end
 
+  add_foreign_key "audit_logs", "users"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "assessment_cycles", "students"

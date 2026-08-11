@@ -2,6 +2,7 @@
 
 class SessionBlockDefinition < ApplicationRecord
   include Discard::Model
+  include Auditable
 
   has_many :teacher_student_assignments, dependent: :restrict_with_error
   has_many :therapy_sessions, dependent: :restrict_with_error
@@ -15,8 +16,6 @@ class SessionBlockDefinition < ApplicationRecord
   scope :active, -> { where(is_active: true) }
   scope :ordered, -> { order(:start_time) }
 
-  # Returns seconds remaining until this block ends relative to now.
-  # Returns 0 if the block has already ended.
   def seconds_remaining
     today_end = Time.current.change(
       hour: end_time.hour,
