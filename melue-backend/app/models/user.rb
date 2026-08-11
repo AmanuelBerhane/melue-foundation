@@ -14,9 +14,8 @@ class User < ApplicationRecord
     return false unless self.class.roles.key?(role_sym)
     role == role_sym.to_s
   end
-  has_one :staff_member, dependent: :restrict_with_error
 
-  enum :status, { unverified: 1, verified: 2, closed: 3 }
+  has_one :staff_member, dependent: :restrict_with_error
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
   has_many :role_assignments, dependent: :destroy
@@ -24,8 +23,6 @@ class User < ApplicationRecord
   has_many :active_role_assignments, -> { active }, class_name: "RoleAssignment", inverse_of: :user
   has_one :staff_member, dependent: :restrict_with_error
   has_one :guardian, dependent: :restrict_with_error
-
-  enum :status, { unverified: 1, verified: 2, closed: 3 }
 
   # Returns the user's currently active roles.
   def active_roles

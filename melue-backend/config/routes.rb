@@ -89,6 +89,15 @@ Rails.application.routes.draw do
           delete :remove_video
         end
       end
+
+      resources :staff_scheduling, only: [ :index ] do
+        collection do
+          get :teacher_schedule
+          get :capacity
+        end
+      end
+
+      resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
     end
   end
 

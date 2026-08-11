@@ -141,6 +141,16 @@ class Student < ApplicationRecord
       end
   end
 
+  def assigned_to_teacher_for_block?(teacher_id, date, block_id)
+    TeacherStudentAssignment
+      .scheduled
+      .where(student_id: id)
+      .where(teacher_id: teacher_id)
+      .where(scheduled_date: date)
+      .where(session_block_definition_id: block_id)
+      .exists?
+  end
+
   private
 
   def photo_format_and_size
