@@ -10,5 +10,9 @@ FactoryBot.define do
     # student and iup must be consistent — iup must belong to the same student
     student { association(:student) }
     iup     { association(:iup, student: student) }
+
+    trait :task_analysis do
+      goal { association(:goal, :task_analysis) }
+    end
   end
 end
