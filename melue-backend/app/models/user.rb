@@ -30,9 +30,12 @@ class User < ApplicationRecord
     role_assignments.create!(role: role)
   end
 
-  # Returns true if the user holds the given role (active assignment).
+  # Returns true if the user holds the given role (active assignment or role enum).
   def has_role?(role_name_or_record)
-    role_name = role_name_or_record.is_a?(Role) ? role_name_or_record.name : role_name_or_record
+    role_name = role_name_or_record.is_a?(Role) ? role_name_or_record.name : role_name_or_record.to_s
+
+    return true if role.present? && role.to_s == role_name
+
     active_roles.exists?(name: role_name)
   end
 
