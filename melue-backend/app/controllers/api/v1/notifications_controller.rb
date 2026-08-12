@@ -1,14 +1,13 @@
 # app/controllers/api/v1/notifications_controller.rb
 module Api
   module V1
-    class NotificationsController < ApplicationController
+    class NotificationsController < Api::V1::BaseController
       before_action :authenticate_user!
 
       def index
         notifications = Notification.for_recipient(current_user.id)
                                     .order(created_at: :desc)
-                                    .page(params[:page])
-        render json: notifications
+        render json: NotificationSerializer.new(notifications).as_json
       end
 
       def mark_as_read
