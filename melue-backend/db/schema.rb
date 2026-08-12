@@ -56,6 +56,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_07_090004) do
     t.datetime "updated_at", null: false
     t.index ["field_schema"], name: "index_form_configurations_on_field_schema", using: :gin
     t.index ["form_type"], name: "index_form_configurations_on_form_type"
+  end
+
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
