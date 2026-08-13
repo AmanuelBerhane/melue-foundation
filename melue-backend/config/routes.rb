@@ -98,6 +98,37 @@ Rails.application.routes.draw do
       end
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
+
+      # Program Director Caseload
+      namespace :program_directors do
+        resources :caseload, only: [ :index ]
+      end
+
+      # Student Goals
+      namespace :students do
+        resources :goals, only: [ :show ], controller: "students/goals"
+      end
+
+      # Goal Assignments
+      resources :goal_assignments, only: [ :create, :destroy ] do
+        member do
+          put :replace
+        end
+      end
+
+      # Student Charts
+      namespace :students do
+        resources :charts, only: [] do
+          collection do
+            get "goal_progress"
+            get "trial_distribution"
+            get "behavior_trends"
+            get "assessment_summary"
+            post "export"
+            post "share"
+          end
+        end
+      end
     end
   end
 
