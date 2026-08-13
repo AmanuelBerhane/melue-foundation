@@ -9,12 +9,6 @@ class User < ApplicationRecord
     clinical_staff: 3
   }
 
-  def has_role?(role_name)
-    role_sym = role_name.to_sym
-    return false unless self.class.roles.key?(role_sym)
-    role == role_sym.to_s
-  end
-
   has_one :staff_member, dependent: :restrict_with_error
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
@@ -37,9 +31,13 @@ class User < ApplicationRecord
     role_assignments.create!(role: role)
   end
 
-  # Returns true if the user holds the given role (active assignment).
+  # Returns true if the user holds the given role (active assignment or
+  # the legacy single-value role column).
   def has_role?(role_name_or_record)
     role_name = role_name_or_record.is_a?(Role) ? role_name_or_record.name : role_name_or_record
+    role_sym = role_name.to_sym
+    return true if self.class.roles.key?(role_sym) && role == role_sym.to_s
+
     active_roles.exists?(name: role_name)
   end
 

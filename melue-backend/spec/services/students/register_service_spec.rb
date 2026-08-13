@@ -14,6 +14,8 @@ RSpec.describe Students::RegisterService, type: :service do
       first_name: "Dawit",
       last_name: "Alemu",
       date_of_birth: 7.years.ago.to_date,
+      guardian_name: "Tigist Alemu",
+      guardian_phone: "+251911000000",
       program_type: "regular",
       therapy_group: "basic"
     }
@@ -24,6 +26,8 @@ RSpec.describe Students::RegisterService, type: :service do
       first_name: "Sara",
       last_name: "Wolde",
       date_of_birth: 15.years.ago.to_date,
+      guardian_name: "Tigist Wolde",
+      guardian_phone: "+251911000001",
       program_type: "regular",
       therapy_group: "functional_living"
     }

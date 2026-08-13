@@ -225,7 +225,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
   def authorize_enrollment_access
     # Check if user has permission to manage enrollments
     unless current_user && (current_user.can?(:create, :students) || current_user.can?(:manage, :students))
-      render json: { error: "Unauthorized" }, status: :forbidden
+      render json: { error: "Unauthorized" }, status: current_user ? :forbidden : :unauthorized
     end
   end
 
