@@ -109,6 +109,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["name"], name: "index_goal_domains_on_name", unique: true
   end
 
+  create_table "goal_mastery_checks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "approving_director_id"
+    t.datetime "created_at", null: false
+    t.uuid "initiating_teacher_id"
+    t.text "rejection_reason"
+    t.string "status"
+    t.uuid "student_goal_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["student_goal_id"], name: "index_goal_mastery_checks_on_student_goal_id"
+  end
+
+  create_table "goal_mastery_verifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "goal_mastery_check_id", null: false
+    t.text "notes"
+    t.string "outcome"
+    t.string "prompt_used"
+    t.datetime "updated_at", null: false
+    t.uuid "verifying_teacher_id"
+    t.index ["goal_mastery_check_id"], name: "index_goal_mastery_verifications_on_goal_mastery_check_id"
+  end
+
   create_table "goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -520,6 +542,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
   end
 
+  add_foreign_key "goal_mastery_checks", "student_goals"
+  add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "assessment_cycles", "students"

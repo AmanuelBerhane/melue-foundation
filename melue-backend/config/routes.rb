@@ -4,6 +4,20 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      # --- Feature Branch: Mastery Checks ---
+      resources :student_goals, only: [] do
+        resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
+      end
+
+      resources :mastery_checks, only: [ :show ], controller: "goal_mastery_checks" do
+        member do
+          patch :approve
+          patch :reject
+        end
+        resources :verifications, only: [ :create ], controller: "goal_mastery_verifications"
+      end
+
+      # --- Main Branch: Admin Routes ---
       namespace :admin do
         resources :roles
         resources :staff_members, only: %i[index show update] do
@@ -67,6 +81,9 @@ Rails.application.routes.draw do
       resources :sensory_assessments, only: [ :create, :update, :show ] do
         member do
           post :submit
+        end
+      end
+
       # Preference item catalogue for SCR-012 (FR-047a)
       resources :preference_inventory_items, only: %i[index]
 
@@ -87,5 +104,6 @@ Rails.application.routes.draw do
       end
     end
   end
+
   mount OasRails::Engine => "/docs"
 end

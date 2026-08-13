@@ -8,10 +8,12 @@ class StudentGoal < ApplicationRecord
 
   has_many :trials, dependent: :restrict_with_error
   has_many :session_participants, foreign_key: :current_focus_student_goal_id, dependent: :nullify
+  has_many :goal_mastery_checks, dependent: :destroy
 
   enum :status, {
     active: "active",
     in_progress: "in_progress",
+    pending_approval: "pending_approval",
     mastered: "mastered",
     archived: "archived"
   }, prefix: true
