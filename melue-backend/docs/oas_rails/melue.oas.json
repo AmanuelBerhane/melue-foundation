@@ -111,6 +111,50 @@
       }
     },
     "responses": {
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden: Institutional Admin access required",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Record not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "UnprocessableEntity": {
+        "description": "Validation error or referential integrity constraint",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "errors": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                },
+                "error": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
       "TodaySessionContext": {
         "description": "Today's assignment context, active session state, and prompt bar configuration",
         "content": {
@@ -212,6 +256,28 @@
             ],
             "description": "Error message string, or array of validation error strings"
           }
+        }
+      },
+      "GoalDomain": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string", "description": "Goal domain name (e.g. Communication, Social Skills)" },
+          "description": { "type": ["string", "null"], "description": "Optional description of the goal domain" },
+          "display_order": { "type": "integer", "description": "Sort order for display" },
+          "is_active": { "type": "boolean", "description": "Whether this domain is active" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "GoalDomainInput": {
+        "type": "object",
+        "required": ["name", "display_order"],
+        "properties": {
+          "name": { "type": "string", "description": "Goal domain name" },
+          "description": { "type": "string", "description": "Optional description" },
+          "display_order": { "type": "integer", "minimum": 0, "description": "Sort order for display" },
+          "is_active": { "type": "boolean", "description": "Whether this domain is active" }
         }
       },
       "PromptLevel": {

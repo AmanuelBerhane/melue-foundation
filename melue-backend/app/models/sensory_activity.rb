@@ -1,0 +1,2 @@
+class SensoryActivity < ApplicationRecord
+end
