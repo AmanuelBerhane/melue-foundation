@@ -3,7 +3,7 @@ require 'rails_helper'
 
 RSpec.describe 'Enrollments API', type: :request do
   let(:user) { create(:user) } # Use the factory without roles
-  let(:headers) { auth_headers(user) }
+  let(:headers) { authenticated_headers(user) }
 
   describe 'POST /api/v1/enrollments' do
     it 'creates a new enrollment draft' do

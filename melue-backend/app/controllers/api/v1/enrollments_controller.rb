@@ -1,4 +1,6 @@
 class Api::V1::EnrollmentsController < Api::V1::BaseController
+  before_action :authenticate_user!
+  before_action :set_current_user
   before_action :authorize_enrollment_access, except: [ :complete, :save_draft ]
   before_action :load_student, only: [ :show, :update_step, :complete, :save_draft, :attach_document, :upload_photo, :upload_video, :remove_photo, :remove_video ]
 
@@ -219,14 +221,10 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
 
   def load_student
     @student = Student.find(params[:id])
-    authorize! :manage, @student
   end
 
   def authorize_enrollment_access
-    # Check if user has permission to manage enrollments
-    unless current_user && (current_user.can?(:create, :students) || current_user.can?(:manage, :students))
-      render json: { error: "Unauthorized" }, status: current_user ? :forbidden : :unauthorized
-    end
+    require_staff_member!
   end
 
   def enrollment_params
