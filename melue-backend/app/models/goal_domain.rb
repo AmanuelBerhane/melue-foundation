@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class GoalDomain < ApplicationRecord
+  include Discard::Model
   include Auditable
 
   has_many :goals, dependent: :restrict_with_error

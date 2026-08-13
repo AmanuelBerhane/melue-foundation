@@ -105,6 +105,12 @@ Rails.application.routes.draw do
           end
         end
       end
+
+      # Offline Sync Endpoints
+      scope :sync do
+        get :pull, to: "syncs#pull"
+        post :push, to: "syncs#push"
+      end
     end
   end
 

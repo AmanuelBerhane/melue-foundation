@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Student < ApplicationRecord
+  include Discard::Model
+
   has_many :teacher_student_assignments, dependent: :restrict_with_error
   has_many :session_participants, dependent: :restrict_with_error
   has_many :iups, dependent: :restrict_with_error

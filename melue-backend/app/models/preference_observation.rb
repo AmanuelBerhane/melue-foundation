@@ -6,6 +6,8 @@
 # teacher's timer and counter. combined_score, rank and tier are derived — they
 # are written only by PreferenceAssessments::RankObservationsService.
 class PreferenceObservation < ApplicationRecord
+  include Discard::Model
+
   belongs_to :preference_assessment
 
   # Optional: a NULL item means a custom item the teacher typed in (FR-047f).
