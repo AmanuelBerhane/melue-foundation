@@ -160,6 +160,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["student_id"], name: "index_iups_on_student_id"
   end
 
+  create_table "notifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "payload_reference"
+    t.datetime "read_at", precision: nil
+    t.bigint "recipient_user_id"
+    t.string "type"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "action", null: false
     t.datetime "created_at", null: false

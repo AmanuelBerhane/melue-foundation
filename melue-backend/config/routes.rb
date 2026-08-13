@@ -4,6 +4,9 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      resources :notifications, only: [ :index ] do
+        member { post :mark_as_read }
+      end
       # --- Feature Branch: Mastery Checks ---
       resources :student_goals, only: [] do
         resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
