@@ -25,7 +25,7 @@ RSpec.describe "Api::V1::Syncs", type: :request do
           {
             type: "Student",
             operation: "insert",
-            data: { id: SecureRandom.uuid, first_name: "John", last_name: "Doe", date_of_birth: "2015-01-01", program_type: "regular", therapy_group: "basic" }
+            data: { id: SecureRandom.uuid, first_name: "John", last_name: "Doe", date_of_birth: "2015-01-01", program_type: "regular", therapy_group: "basic", guardian_name: "Parent Name", guardian_phone: "555-0124" }
           }
         ]
       }

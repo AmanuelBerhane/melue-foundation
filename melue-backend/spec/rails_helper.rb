@@ -33,3 +33,36 @@ Shoulda::Matchers.configure do |config|
     with.library :rails
   end
 end
+
+# Authentication helper for request specs
+module AuthenticationHelpers
+  def jwt_token(user)
+    # Generate a real JWT token for the user
+    payload = {
+      account_id: user.id,
+      exp: 24.hours.from_now.to_i
+    }
+    JWT.encode(payload, Rails.application.credentials.secret_key_base, 'HS256')
+  end
+
+  def authenticated_headers(user)
+    { 'Authorization': "Bearer #{jwt_token(user)}" }
+  end
+
+  def json
+    JSON.parse(response.body)
+  end
+
+  def auth_headers(user)
+    authenticated_headers(user)
+  end
+
+  # Helper to create a user with the right role
+  def create_admin_user
+    create(:user, role: :institutional_admin, status: :verified)
+  end
+end
+
+RSpec.configure do |config|
+  config.include AuthenticationHelpers, type: :request
+end

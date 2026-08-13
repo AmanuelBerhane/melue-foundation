@@ -20,6 +20,8 @@
     clinical_staff: 3
   }
 
+  has_one :staff_member, dependent: :restrict_with_error
+
   validates :email, presence: true, uniqueness: { case_sensitive: false }
 
   def has_permission?(resource, action)
