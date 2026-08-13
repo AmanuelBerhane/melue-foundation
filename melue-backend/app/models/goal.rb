@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Goal < ApplicationRecord
+  include Discard::Model
+
   belongs_to :goal_domain
 
   has_many :student_goals, dependent: :restrict_with_error
