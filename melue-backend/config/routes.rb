@@ -63,6 +63,10 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :sensory_activities, only: [ :index ]
+      resources :sensory_assessments, only: [ :create, :update, :show ] do
+        member do
+          post :submit
       # Preference item catalogue for SCR-012 (FR-047a)
       resources :preference_inventory_items, only: %i[index]
 

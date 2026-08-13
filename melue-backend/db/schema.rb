@@ -206,7 +206,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.datetime "assigned_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.datetime "created_at", null: false
     t.datetime "revoked_at"
-    t.bigint "role_id", null: false
+    t.uuid "role_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["role_id"], name: "index_role_assignments_on_role_id"
@@ -217,13 +217,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   create_table "role_permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.uuid "permission_id", null: false
-    t.bigint "role_id", null: false
+    t.uuid "role_id", null: false
     t.datetime "updated_at", null: false
     t.index ["permission_id"], name: "index_role_permissions_on_permission_id"
     t.index ["role_id"], name: "index_role_permissions_on_role_id"
   end
 
-  create_table "roles", force: :cascade do |t|
+  create_table "roles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
     t.boolean "is_active", default: true, null: false
@@ -231,6 +231,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_roles_on_name", unique: true
+  end
+
+  create_table "sensory_activities", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "activity_code", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.integer "display_order", default: 0, null: false
+    t.boolean "is_active", default: true, null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["activity_code"], name: "index_sensory_activities_on_activity_code", unique: true
+  end
+
+  create_table "sensory_assessment_records", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "engagement_level"
+    t.text "remark"
+    t.string "response_reaction"
+    t.uuid "sensory_activity_id", null: false
+    t.uuid "sensory_assessment_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sensory_activity_id"], name: "index_sensory_assessment_records_on_sensory_activity_id"
+    t.index ["sensory_assessment_id"], name: "index_sensory_assessment_records_on_sensory_assessment_id"
+  end
+
+  create_table "sensory_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "status", default: "draft", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_sensory_assessments_on_status"
+    t.index ["student_id"], name: "index_sensory_assessments_on_student_id"
   end
 
   create_table "session_block_definitions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -465,7 +497,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
 
   create_table "user_roles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.bigint "role_id", null: false
+    t.uuid "role_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["role_id"], name: "index_user_roles_on_role_id"
@@ -495,6 +527,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
   add_foreign_key "iups", "students"
+  add_foreign_key "sensory_assessment_records", "sensory_activities"
+  add_foreign_key "sensory_assessment_records", "sensory_assessments"
+  add_foreign_key "sensory_assessments", "students"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
