@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Api::V1::SensoryAssessments", type: :request do
-  let!(:student) { Student.first || Student.create!(first_name: "Test", last_name: "Student", date_of_birth: 5.years.ago, program_type: "regular", therapy_group: "basic") }
+  let!(:student) { Student.first || Student.create!(first_name: "Test", last_name: "Student", date_of_birth: 5.years.ago, program_type: "regular", therapy_group: "basic", guardian_name: "Guardian Name", guardian_phone: "555-0000") }
   let!(:activity) { SensoryActivity.create!(activity_code: "SEN-001", name: "Tactile", is_active: true, display_order: 1) }
 
   describe "POST /api/v1/sensory_assessments" do
