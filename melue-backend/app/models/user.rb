@@ -1,9 +1,14 @@
-class User < ApplicationRecord
+﻿class User < ApplicationRecord
   include Rodauth::Rails.model
 
   has_many :role_assignments, dependent: :destroy
   has_many :roles, through: :role_assignments
   has_many :active_role_assignments, -> { active }, class_name: "RoleAssignment", inverse_of: :user
+
+  has_many :user_roles, dependent: :destroy
+  has_many :permission_roles, through: :user_roles, source: :role
+  has_many :permissions, through: :permission_roles
+
   has_one :staff_member, dependent: :restrict_with_error
   has_one :guardian, dependent: :restrict_with_error
 
@@ -15,7 +20,13 @@ class User < ApplicationRecord
     clinical_staff: 3
   }
 
+  has_one :staff_member, dependent: :restrict_with_error
+
   validates :email, presence: true, uniqueness: { case_sensitive: false }
+
+  def has_permission?(resource, action)
+    permissions.exists?(resource: resource.to_s, action: action.to_s)
+  end
 
   # Returns the user's currently active roles.
   def active_roles

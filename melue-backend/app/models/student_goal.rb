@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class StudentGoal < ApplicationRecord
+  include Discard::Model
+
   belongs_to :iup
   belongs_to :student
   belongs_to :goal
@@ -12,10 +14,12 @@ class StudentGoal < ApplicationRecord
          -> { order(:step_number) },
          dependent: :destroy,
          inverse_of: :student_goal
+  has_many :goal_mastery_checks, dependent: :destroy
 
   enum :status, {
     active: "active",
     in_progress: "in_progress",
+    pending_approval: "pending_approval",
     mastered: "mastered",
     archived: "archived"
   }, prefix: true

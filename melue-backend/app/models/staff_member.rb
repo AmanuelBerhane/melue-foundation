@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class StaffMember < ApplicationRecord
+  include Discard::Model
+
   belongs_to :user
 
   has_many :teacher_student_assignments, foreign_key: :teacher_id, dependent: :restrict_with_error
@@ -41,5 +43,18 @@ class StaffMember < ApplicationRecord
   def todays_assignments(block_definition_id)
     teacher_student_assignments
       .where(scheduled_date: Date.current, session_block_definition_id: block_definition_id, status: :scheduled)
+  end
+
+  def current_assignment_count_for_date(date, block_id = nil)
+    scope = teacher_student_assignments.scheduled.where(scheduled_date: date)
+    scope = scope.where(session_block_definition_id: block_id) if block_id
+    scope.count
+  end
+
+  def available_for_date?(date, block_id = nil)
+    capacity_config = SessionScheduleConfig.instance
+    max_capacity = capacity_config.staff_to_student_capacity
+    current_count = current_assignment_count_for_date(date, block_id)
+    current_count < max_capacity
   end
 end
