@@ -2,7 +2,7 @@
 class CreateNotifications < ActiveRecord::Migration[7.1]
   def change
     create_table :notifications, id: :uuid do |t|
-      t.uuid    :recipient_user_id, null: false
+      t.bigint  :recipient_user_id, null: false
       t.string  :type, null: false        # careful: see note below on STI
       t.text    :payload_reference, null: false
       t.timestamp :read_at

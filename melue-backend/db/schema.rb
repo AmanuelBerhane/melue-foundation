@@ -164,7 +164,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.datetime "created_at", null: false
     t.text "payload_reference"
     t.datetime "read_at", precision: nil
-    t.uuid "recipient_user_id"
+    t.bigint "recipient_user_id"
     t.string "type"
     t.datetime "updated_at", null: false
   end
