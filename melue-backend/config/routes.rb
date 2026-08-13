@@ -4,7 +4,32 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      resources :notifications, only: [ :index ] do
+        member { post :mark_as_read }
+      end
+      # --- Feature Branch: Mastery Checks ---
+      resources :student_goals, only: [] do
+        resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
+      end
+
+      resources :mastery_checks, only: [ :show ], controller: "goal_mastery_checks" do
+        member do
+          patch :approve
+          patch :reject
+        end
+        resources :verifications, only: [ :create ], controller: "goal_mastery_verifications"
+      end
+
+      # --- Main Branch: Admin Routes ---
       namespace :admin do
+        resources :roles
+        resources :staff_members, only: %i[index show update] do
+          member do
+            put :update_status
+            post :reset_password
+          end
+        end
+
         resources :goal_domains do
           put :reorder, on: :collection
         end
@@ -28,6 +53,7 @@ Rails.application.routes.draw do
 
         resource :session_schedule_config, only: %i[show update]
       end
+
       # Student registration and management
       resources :students, only: %i[index show create update]
 
@@ -51,6 +77,13 @@ Rails.application.routes.draw do
           resources :trials, only: %i[create] do
             get :stream, on: :collection
           end
+        end
+      end
+
+      resources :sensory_activities, only: [ :index ]
+      resources :sensory_assessments, only: [ :create, :update, :show ] do
+        member do
+          post :submit
         end
       end
 
@@ -80,5 +113,6 @@ Rails.application.routes.draw do
       end
     end
   end
+
   mount OasRails::Engine => "/docs"
 end
