@@ -7,19 +7,19 @@ class ServiceResult
     @error = error
   end
 
-  def success?
-    @success
-  end
-
-  def failure?
-    !@success
-  end
-
   def self.success(data = nil)
     new(success: true, data: data)
   end
 
   def self.failure(error = nil)
     new(success: false, error: error)
+  end
+
+  def success?
+    @success
+  end
+
+  def failure?
+    !@success
   end
 end
