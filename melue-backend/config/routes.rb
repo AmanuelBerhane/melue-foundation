@@ -12,7 +12,33 @@ Rails.application.routes.draw do
             post :reset_password
           end
         end
+
+        resources :goal_domains do
+          put :reorder, on: :collection
+        end
+
+        resources :prompt_levels do
+          put :reorder, on: :collection
+        end
+
+        resources :session_block_definitions
+
+        resources :abc_dropdown_options do
+          put :reorder, on: :collection
+        end
+
+        resources :form_configurations do
+          member do
+            post :import
+            get :export
+          end
+        end
+
+        resource :session_schedule_config, only: %i[show update]
       end
+
+      # Student registration and management
+      resources :students, only: %i[index show create update]
 
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
@@ -33,6 +59,25 @@ Rails.application.routes.draw do
         scope module: :therapy_sessions do
           resources :trials, only: %i[create] do
             get :stream, on: :collection
+          end
+        end
+      end
+
+      # Preference item catalogue for SCR-012 (FR-047a)
+      resources :preference_inventory_items, only: %i[index]
+
+      resources :assessment_cycles, only: [] do
+        # Exactly one preference assessment per cycle (FR-047, FR-049)
+        resource :preference_assessment, only: %i[show create] do
+          # Finalise the assessment (FR-036)
+          post :submit
+
+          # Ranked top-preferences list (FR-047d, FR-048)
+          get :rankings
+
+          # Timer, counter, notes and custom items (FR-047b, FR-047e, FR-047f)
+          scope module: :preference_assessments do
+            resources :observations, only: %i[create update destroy]
           end
         end
       end

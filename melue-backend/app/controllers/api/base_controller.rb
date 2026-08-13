@@ -24,4 +24,8 @@ class Api::BaseController < ApplicationController
       render json: { error: "You do not have permission to #{action} #{resource}." }, status: :forbidden
     end
   end
+
+  def set_current_user
+    Current.user = current_user if respond_to?(:current_user)
+  end
 end
