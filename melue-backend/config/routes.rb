@@ -114,5 +114,22 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :api do
+    namespace :v1 do
+      resources :enrollments, only: [ :create, :show, :update ] do
+        member do
+          patch :update_step
+          post :complete
+          post :save_draft
+          post :attach_document
+          post :upload_photo
+          post :upload_video
+          delete :remove_photo
+          delete :remove_video
+        end
+      end
+    end
+  end
+
   mount OasRails::Engine => "/docs"
 end

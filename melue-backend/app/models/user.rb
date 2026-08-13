@@ -1,4 +1,4 @@
-class User < ApplicationRecord
+﻿class User < ApplicationRecord
   include Rodauth::Rails.model
 
   has_many :role_assignments, dependent: :destroy

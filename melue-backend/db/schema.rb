@@ -400,6 +400,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["user_id"], name: "index_staff_members_on_user_id"
   end
 
+  create_table "student_documents", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "document_type", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_type"], name: "index_student_documents_on_document_type"
+    t.index ["student_id"], name: "index_student_documents_on_student_id"
+  end
+
   create_table "student_goal_steps", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -449,11 +459,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   end
 
   create_table "students", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "assessment_started_at"
     t.datetime "created_at", null: false
     t.date "date_of_birth", null: false
     t.string "diagnosis"
+    t.datetime "enrolled_at"
     t.datetime "discarded_at"
     t.string "first_name", null: false
+    t.string "guardian_email"
     t.string "guardian_name"
     t.string "guardian_phone"
     t.string "last_name", null: false
@@ -463,6 +476,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.string "therapy_group", null: false
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
+  end
+
+  create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.uuid "goal_id", null: false
+    t.jsonb "mastery_criteria", default: {}, null: false
+    t.string "name", null: false
+    t.integer "step_number", null: false
+    t.datetime "updated_at", null: false
+    t.index ["goal_id", "step_number"], name: "idx_task_analysis_step_templates_on_goal_and_number", unique: true
+    t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
   end
 
   create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -640,6 +665,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   add_foreign_key "session_participants", "teacher_student_assignments"
   add_foreign_key "session_participants", "therapy_sessions"
   add_foreign_key "staff_members", "users"
+  add_foreign_key "student_documents", "students"
   add_foreign_key "student_goal_steps", "student_goals", on_delete: :cascade
   add_foreign_key "student_goal_steps", "task_analysis_step_templates", on_delete: :nullify
   add_foreign_key "student_goals", "goals"
