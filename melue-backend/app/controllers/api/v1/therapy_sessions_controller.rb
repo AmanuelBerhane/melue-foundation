@@ -3,7 +3,7 @@
 class Api::V1::TherapySessionsController < Api::V1::BaseController
   before_action :authenticate_user!
   before_action :require_staff_member!
-  before_action :set_session, only: %i[show dashboard update_active_goal]
+  before_action :set_session, only: %i[show dashboard update_active_goal swap]
 
   # GET /api/v1/today/session
   #
@@ -117,6 +117,27 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
       }
     else
       render_error(participant.errors.full_messages, :unprocessable_entity)
+    end
+  end
+
+  # POST /api/v1/therapy_sessions/:id/swap
+  #
+  # Swaps the Active and Secondary student card positions (FR-096).
+  # O(1) operation — does not mutate teacher-student assignments.
+  #
+  # @oas_include
+  # @summary Swap active/secondary student
+  # @tags Active Therapy
+  # @auth [bearer_jwt]
+  # @response_ref (200) #/components/responses/SessionDashboard
+  # @response_ref (422) #/components/responses/Error
+  def swap
+    result = Sessions::SwapActiveStudent.call(therapy_session: @session)
+
+    if result.success?
+      render json: TherapySessionSerializer.new(@session.reload).as_json
+    else
+      render_error(result.error, :unprocessable_entity)
     end
   end
 

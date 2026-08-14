@@ -61,6 +61,9 @@ Rails.application.routes.draw do
       get "today/session", to: "therapy_sessions#today_session"
 
       resources :therapy_sessions, only: %i[show] do
+        # Swap the active student in a session (FR-096)
+        post :swap, on: :member
+
         # Start a session from an assignment
         post :start, on: :collection
 

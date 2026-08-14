@@ -441,6 +441,94 @@ puts "  ✓ #{PreferenceInventoryItem.count} preference inventory items " \
      "(#{preference_inventory.keys.size} categories)"
 
 puts ""
+
+# ============================================================
+# FR-095 — Task Analysis Goal Bank, Step Templates & Student Steps
+# ============================================================
+
+puts "Seeding Task Analysis Step Templates..."
+
+task_analysis_goals = {
+  "Washing Hands" => [
+    "Turn on water",
+    "Wet hands",
+    "Apply soap",
+    "Lather for 20 seconds",
+    "Rinse hands",
+    "Turn off water",
+    "Dry hands"
+  ],
+  "Toileting - Urination" => [
+    "Initiate toileting",
+    "Go to toilet",
+    "Pull down pants",
+    "Sit / stand at toilet",
+    "Urinate",
+    "Wipe",
+    "Pull up pants"
+  ],
+  "Toileting - Request" => [
+    "Initiate request",
+    "Use verbal / sign / device",
+    "Wait for acknowledgment"
+  ],
+  "Dressing - Shoes" => [
+    "Pick up shoe",
+    "Put foot in shoe",
+    "Fasten / close shoe"
+  ],
+  "Dressing - Pants" => [
+    "Pick up pants",
+    "Step into pants",
+    "Pull pants up",
+    "Fasten (button / zip)"
+  ]
+}
+
+# Idempotent goal creation — every goal needs a valid goal_domain
+task_analysis_goals.each do |goal_name, steps|
+  goal = Goal.find_or_create_by!(
+    name: goal_name,
+    goal_domain: domain_records["Daily Living Skills"]
+  ) do |g|
+    g.goal_type = "task_analysis"
+    g.is_active = true
+  end
+  goal.update!(goal_type: "task_analysis") unless goal.goal_type == "task_analysis"
+
+  steps.each_with_index do |step_name, index|
+    goal.task_analysis_step_templates.find_or_create_by!(step_number: index + 1) do |t|
+      t.name = step_name
+    end
+  end
+
+  puts "  ✓ Seeded #{steps.size} steps for '#{goal_name}'"
+end
+
+# Give student1 an active task_analysis goal so steps can be instantiated
+washing_hands_goal = Goal.find_by!(name: "Washing Hands")
+StudentGoal.find_or_create_by!(iup: iup1, goal: washing_hands_goal, student: student1) do |sg|
+  sg.therapy_station = station1
+  sg.status          = "active"
+  sg.progress_percent = 0.0
+end
+
+# Instantiate StudentGoalStep records for every active task_analysis goal
+StudentGoal.where(status: %w[active in_progress]).find_each do |student_goal|
+  next unless student_goal.goal.goal_type == "task_analysis"
+
+  student_goal.goal.task_analysis_step_templates.ordered.each do |template|
+    student_goal.student_goal_steps.find_or_create_by!(step_number: template.step_number) do |step|
+      step.name                     = template.name
+      step.description              = template.description
+      step.task_analysis_step_template = template
+    end
+  end
+end
+
+puts "  ✓ #{StudentGoalStep.count} student goal steps instantiated"
+puts "Task Analysis templates seeding complete."
+
 puts "Done! Seed summary:"
 puts "  Prompt Levels : #{PromptLevel.count}"
 puts "  Stations      : #{TherapyStation.count}"

@@ -502,6 +502,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
   end
 
+  create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.uuid "goal_id", null: false
+    t.jsonb "mastery_criteria", default: {}, null: false
+    t.string "name", null: false
+    t.integer "step_number", null: false
+    t.datetime "updated_at", null: false
+    t.index ["goal_id", "step_number"], name: "idx_task_analysis_step_templates_on_goal_and_number", unique: true
+    t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
+  end
+
   create_table "teacher_student_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"

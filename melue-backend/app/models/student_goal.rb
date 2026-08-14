@@ -10,6 +10,10 @@ class StudentGoal < ApplicationRecord
 
   has_many :trials, dependent: :restrict_with_error
   has_many :session_participants, foreign_key: :current_focus_student_goal_id, dependent: :nullify
+  has_many :student_goal_steps,
+         -> { order(:step_number) },
+         dependent: :destroy,
+         inverse_of: :student_goal
   has_many :goal_mastery_checks, dependent: :destroy
 
   enum :status, {
