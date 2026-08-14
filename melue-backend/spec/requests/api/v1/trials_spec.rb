@@ -82,6 +82,74 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
            params: trial_params.merge(outcome: nil), headers: headers, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it "returns 422 when a step is provided for a standard goal" do
+      step = create(:student_goal_step, student_goal: goal)
+
+      post "/api/v1/therapy_sessions/#{session.id}/trials",
+           params: trial_params.merge(student_goal_step_id: step.id),
+           headers: headers,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    context "task analysis goals" do
+      let(:ta_goal) do
+        create(:student_goal, :task_analysis,
+               student: participant.student,
+               iup: iup,
+               therapy_station: station)
+      end
+      let!(:step1) { create(:student_goal_step, student_goal: ta_goal, step_number: 1, name: "Turn on water") }
+
+      let(:trial_params) do
+        {
+          participation_id:    participant.id,
+          student_goal_id:     ta_goal.id,
+          student_goal_step_id: step1.id,
+          prompt_level_id:     prompt.id,
+          outcome:             "correct",
+          client_event_id:     SecureRandom.uuid,
+          logged_at:           Time.current.iso8601
+        }
+      end
+
+      it "returns 201 and logs the trial against the step" do
+        expect {
+          post "/api/v1/therapy_sessions/#{session.id}/trials",
+               params: trial_params, headers: headers, as: :json
+        }.to change(Trial, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+        json = response.parsed_body
+        expect(json["trial"]["student_goal_step_id"]).to eq(step1.id)
+      end
+
+      it "returns 422 when the step is missing" do
+        post "/api/v1/therapy_sessions/#{session.id}/trials",
+             params: trial_params.except(:student_goal_step_id),
+             headers: headers,
+             as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it "returns 422 when the step belongs to another student goal" do
+        other_goal = create(:student_goal, :task_analysis,
+                            student: participant.student,
+                            iup: iup,
+                            therapy_station: station)
+        other_step = create(:student_goal_step, student_goal: other_goal)
+
+        post "/api/v1/therapy_sessions/#{session.id}/trials",
+             params: trial_params.merge(student_goal_step_id: other_step.id),
+             headers: headers,
+             as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
   end
 
   # ── GET /api/v1/therapy_sessions/:session_id/trials/stream ────────────────

@@ -24,6 +24,7 @@ module Api::V1::TherapySessions
         session: @session,
         participation_id: params[:participation_id],
         student_goal_id: params[:student_goal_id],
+        student_goal_step_id: params[:student_goal_step_id],
         prompt_level_id: params[:prompt_level_id],
         outcome: params[:outcome],
         client_event_id: params[:client_event_id],
