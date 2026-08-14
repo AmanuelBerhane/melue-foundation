@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_14_140544) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -27,35 +27,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["category", "display_order"], name: "index_abc_dropdown_options_on_category_and_display_order"
     t.index ["category", "is_active"], name: "index_abc_dropdown_options_on_category_and_is_active"
     t.index ["category", "is_other"], name: "index_abc_dropdown_options_on_category_and_is_other", unique: true, where: "(is_other = true)"
-  end
-
-  create_table "audit_logs", force: :cascade do |t|
-    t.string "action", null: false
-    t.jsonb "change_data", default: {}
-    t.datetime "created_at", null: false
-    t.jsonb "metadata", default: {}
-    t.string "resource_id"
-    t.string "resource_type", null: false
-    t.bigint "user_id"
-    t.index ["action"], name: "index_audit_logs_on_action"
-    t.index ["created_at"], name: "index_audit_logs_on_created_at"
-    t.index ["resource_id"], name: "index_audit_logs_on_resource_id"
-    t.index ["resource_type"], name: "index_audit_logs_on_resource_type"
-    t.index ["user_id"], name: "index_audit_logs_on_user_id"
-  end
-
-  create_table "form_configurations", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.jsonb "field_schema", default: {}, null: false
-    t.string "form_name", null: false
-    t.integer "form_type", null: false
-    t.boolean "is_default", default: false, null: false
-    t.string "organization_name"
-    t.date "revision_date"
-    t.integer "revision_number", default: 1, null: false
-    t.datetime "updated_at", null: false
-    t.index ["field_schema"], name: "index_form_configurations_on_field_schema", using: :gin
-    t.index ["form_type"], name: "index_form_configurations_on_form_type"
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -112,6 +83,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["resource_id"], name: "index_audit_logs_on_resource_id"
     t.index ["resource_type"], name: "index_audit_logs_on_resource_type"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "behavior_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.datetime "started_at"
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_behavior_assessments_on_assessment_cycle_id", unique: true
+    t.index ["discarded_at"], name: "index_behavior_assessments_on_discarded_at"
+    t.index ["status"], name: "index_behavior_assessments_on_status"
   end
 
   create_table "form_configurations", force: :cascade do |t|
@@ -386,6 +370,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "skills_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.integer "progress_percent", default: 0, null: false
+    t.datetime "started_at"
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_skills_assessments_on_assessment_cycle_id", unique: true
+    t.index ["discarded_at"], name: "index_skills_assessments_on_discarded_at"
+    t.index ["status"], name: "index_skills_assessments_on_status"
+  end
+
   create_table "staff_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
@@ -463,8 +461,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.datetime "created_at", null: false
     t.date "date_of_birth", null: false
     t.string "diagnosis"
-    t.datetime "enrolled_at"
     t.datetime "discarded_at"
+    t.datetime "enrolled_at"
     t.string "first_name", null: false
     t.string "guardian_email"
     t.string "guardian_name"
@@ -476,30 +474,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.string "therapy_group", null: false
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
-  end
-
-  create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.uuid "goal_id", null: false
-    t.jsonb "mastery_criteria", default: {}, null: false
-    t.string "name", null: false
-    t.integer "step_number", null: false
-    t.datetime "updated_at", null: false
-    t.index ["goal_id", "step_number"], name: "idx_task_analysis_step_templates_on_goal_and_number", unique: true
-    t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
-  end
-
-  create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "description"
-    t.uuid "goal_id", null: false
-    t.jsonb "mastery_criteria", default: {}, null: false
-    t.string "name", null: false
-    t.integer "step_number", null: false
-    t.datetime "updated_at", null: false
-    t.index ["goal_id", "step_number"], name: "idx_task_analysis_step_templates_on_goal_and_number", unique: true
-    t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
   end
 
   create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -653,18 +627,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
   end
 
-  add_foreign_key "goal_mastery_checks", "student_goals"
-  add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "assessment_cycles", "students"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "behavior_assessments", "assessment_cycles"
+  add_foreign_key "goal_mastery_checks", "student_goals"
+  add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
   add_foreign_key "iups", "students"
-  add_foreign_key "sensory_assessment_records", "sensory_activities"
-  add_foreign_key "sensory_assessment_records", "sensory_assessments"
-  add_foreign_key "sensory_assessments", "students"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
@@ -672,10 +644,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   add_foreign_key "role_assignments", "users"
   add_foreign_key "role_permissions", "permissions"
   add_foreign_key "role_permissions", "roles"
+  add_foreign_key "sensory_assessment_records", "sensory_activities"
+  add_foreign_key "sensory_assessment_records", "sensory_assessments"
+  add_foreign_key "sensory_assessments", "students"
   add_foreign_key "session_participants", "student_goals", column: "current_focus_student_goal_id"
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
   add_foreign_key "session_participants", "therapy_sessions"
+  add_foreign_key "skills_assessments", "assessment_cycles"
   add_foreign_key "staff_members", "users"
   add_foreign_key "student_documents", "students"
   add_foreign_key "student_goal_steps", "student_goals", on_delete: :cascade

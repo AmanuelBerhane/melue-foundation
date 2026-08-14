@@ -57,6 +57,10 @@ Rails.application.routes.draw do
       # Student registration and management
       resources :students, only: %i[index show create update]
 
+      # Assessment workflow endpoints (FR-034, FR-035, FR-036)
+      get  "assessments/dashboard", to: "assessments#dashboard"
+      post "assessments/launch",    to: "assessments#launch"
+
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
 
