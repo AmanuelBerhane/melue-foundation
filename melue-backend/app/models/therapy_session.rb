@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class TherapySession < ApplicationRecord
+  include Discard::Model
+
   belongs_to :teacher, class_name: "StaffMember"
   belongs_to :session_block_definition
   belongs_to :therapy_station

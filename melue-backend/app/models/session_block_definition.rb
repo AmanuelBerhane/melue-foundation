@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class SessionBlockDefinition < ApplicationRecord
+  include Discard::Model
   include Auditable
 
   has_many :teacher_student_assignments, dependent: :restrict_with_error

@@ -1,5 +1,16 @@
-class User < ApplicationRecord
+﻿class User < ApplicationRecord
   include Rodauth::Rails.model
+
+  has_many :role_assignments, dependent: :destroy
+  has_many :roles, through: :role_assignments
+  has_many :active_role_assignments, -> { active }, class_name: "RoleAssignment", inverse_of: :user
+
+  has_many :user_roles, dependent: :destroy
+  has_many :permission_roles, through: :user_roles, source: :role
+  has_many :permissions, through: :permission_roles
+
+  has_one :staff_member, dependent: :restrict_with_error
+  has_one :guardian, dependent: :restrict_with_error
 
   enum :status, { unverified: 1, verified: 2, closed: 3 }
   enum :role, {
@@ -9,20 +20,13 @@ class User < ApplicationRecord
     clinical_staff: 3
   }
 
-  def has_role?(role_name)
-    role_sym = role_name.to_sym
-    return false unless self.class.roles.key?(role_sym)
-    role == role_sym.to_s
-  end
-
   has_one :staff_member, dependent: :restrict_with_error
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
-  has_many :role_assignments, dependent: :destroy
-  has_many :roles, through: :role_assignments
-  has_many :active_role_assignments, -> { active }, class_name: "RoleAssignment", inverse_of: :user
-  has_one :staff_member, dependent: :restrict_with_error
-  has_one :guardian, dependent: :restrict_with_error
+
+  def has_permission?(resource, action)
+    permissions.exists?(resource: resource.to_s, action: action.to_s)
+  end
 
   # Returns the user's currently active roles.
   def active_roles
@@ -37,9 +41,12 @@ class User < ApplicationRecord
     role_assignments.create!(role: role)
   end
 
-  # Returns true if the user holds the given role (active assignment).
+  # Returns true if the user holds the given role (active assignment or role enum).
   def has_role?(role_name_or_record)
-    role_name = role_name_or_record.is_a?(Role) ? role_name_or_record.name : role_name_or_record
+    role_name = role_name_or_record.is_a?(Role) ? role_name_or_record.name : role_name_or_record.to_s
+
+    return true if role.present? && role.to_s == role_name
+
     active_roles.exists?(name: role_name)
   end
 

@@ -7,6 +7,8 @@
 # ("cannot complete until skills, behaviour and preference are submitted"),
 # belong to their own tasks and are deliberately not implemented yet.
 class AssessmentCycle < ApplicationRecord
+  include Discard::Model
+
   belongs_to :student
 
   has_one :preference_assessment, dependent: :destroy

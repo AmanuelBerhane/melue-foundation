@@ -1,12 +1,11 @@
-# This file is copied to spec/ when you run 'rails generate rspec:install'
-require 'spec_helper'
-ENV['RAILS_ENV'] ||= 'test'
-require_relative '../config/environment'
+require "spec_helper"
+ENV["RAILS_ENV"] ||= "test"
+require_relative "../config/environment"
+abort("The Rails environment is running in production mode!") if Rails.env.production?
+require "rspec/rails"
 
-
-require 'rspec/rails'
-require 'factory_bot_rails'
-require 'shoulda/matchers'
+# Load all files in spec/support/
+Rails.root.glob("spec/support/**/*.rb").sort_by(&:to_s).each { |f| require f }
 
 begin
   ActiveRecord::Migration.maintain_test_schema!
@@ -15,13 +14,19 @@ rescue ActiveRecord::PendingMigrationError => e
 end
 
 RSpec.configure do |config|
-  config.fixture_paths = [ Rails.root.join('spec/fixtures') ]
-  config.use_transactional_fixtures = true
+  # Infer spec type from file location (e.g. spec/models -> type: :model)
   config.infer_spec_type_from_file_location!
-  config.filter_rails_from_backtrace!
+
+  # Use FactoryBot shorthand (create, build, etc.) in all specs
   config.include FactoryBot::Syntax::Methods
+
+  # Use database_cleaner instead of transactional fixtures
+  config.use_transactional_fixtures = false
+
+  config.filter_rails_from_backtrace!
 end
 
+# Shoulda Matchers configuration
 Shoulda::Matchers.configure do |config|
   config.integrate do |with|
     with.test_framework :rspec

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Iup < ApplicationRecord
+  include Discard::Model
+
   belongs_to :student
 
   has_many :student_goals, dependent: :restrict_with_error
