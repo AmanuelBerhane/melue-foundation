@@ -9,6 +9,7 @@ class TherapySession < ApplicationRecord
   has_many :session_participants, dependent: :destroy
   has_many :students, through: :session_participants
   has_many :trials, dependent: :restrict_with_error
+  has_one :session_summary, dependent: :destroy
 
   enum :status, { in_progress: "in_progress", completed: "completed" }, prefix: true
 

@@ -49,6 +49,22 @@ Rails.application.routes.draw do
           resources :trials, only: %i[create] do
             get :stream, on: :collection
           end
+
+          resource :summary, only: %i[show], controller: :session_summaries do
+            patch :draft
+            post :submit
+            post :preview_pdf
+          end
+
+          get "participants/:participant_id/goals/:student_goal_id/trial_log",
+              to: "trial_logs#show",
+              as: :participant_goal_trial_log
+        end
+      end
+
+      namespace :therapy_coordinator do
+        resources :session_summaries, only: %i[index] do
+          patch :review, on: :member
         end
       end
     end
