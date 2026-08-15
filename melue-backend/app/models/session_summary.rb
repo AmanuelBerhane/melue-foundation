@@ -12,6 +12,8 @@ class SessionSummary < ApplicationRecord
   validate :reviewed_fields_consistency
   validate :submitted_fields_consistency
 
+  scope :submitted_or_reviewed, -> { where(status: %w[submitted reviewed]) }
+
   private
 
   def reviewed_fields_consistency

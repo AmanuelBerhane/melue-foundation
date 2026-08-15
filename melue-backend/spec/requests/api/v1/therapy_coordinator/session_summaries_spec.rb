@@ -50,6 +50,9 @@ RSpec.describe "Api::V1::TherapyCoordinator::SessionSummaries", type: :request d
         ids = response.parsed_body["session_summaries"].map { |s| s["id"] }
         expect(ids).to include(summary1.id, summary2.id)
         expect(ids).not_to include(draft_summary.id)
+        
+        pagination = response.parsed_body["pagination"]
+        expect(pagination["total_count"]).to eq(2)
       end
 
       it "filters by teacher_id" do

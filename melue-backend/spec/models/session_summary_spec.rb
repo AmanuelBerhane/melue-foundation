@@ -38,6 +38,21 @@ RSpec.describe SessionSummary, type: :model do
         expect(summary).to be_valid
       end
     end
+
+    context "when submitted" do
+      let(:therapy_session) { create(:therapy_session) }
+
+      it "is invalid without submitted_at" do
+        summary = build(:session_summary, status: :submitted, submitted_at: nil, therapy_session: therapy_session)
+        expect(summary).not_to be_valid
+        expect(summary.errors[:submitted_at]).to include("must be present for submitted/reviewed summaries")
+      end
+
+      it "is valid with submitted_at" do
+        summary = build(:session_summary, status: :submitted, submitted_at: Time.current, therapy_session: therapy_session)
+        expect(summary).to be_valid
+      end
+    end
   end
 
   describe "enums" do
@@ -47,6 +62,18 @@ RSpec.describe SessionSummary, type: :model do
         .backed_by_column_of_type(:string)
         .with_prefix(:status)
     }
+  end
+
+  describe "scopes" do
+    let!(:draft) { create(:session_summary, status: :draft) }
+    let!(:submitted) { create(:session_summary, :submitted) }
+    let!(:reviewed) { create(:session_summary, :reviewed) }
+
+    it "submitted_or_reviewed scope excludes drafts" do
+      results = SessionSummary.submitted_or_reviewed
+      expect(results).to include(submitted, reviewed)
+      expect(results).not_to include(draft)
+    end
   end
 
   describe "dependency on therapy_session" do

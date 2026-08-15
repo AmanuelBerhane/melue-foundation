@@ -27,10 +27,12 @@ module Api
         # @parameter student_id(query) [String] Filter by student UUID
         # @parameter sort_by(query) [String] Field to sort by (submitted_at, status, teacher, station)
         # @parameter sort_order(query) [String] Sort order (asc, desc)
-        # @response (200) Hash{ session_summaries: Array<Hash> }
+        # @parameter page(query) [Integer] Page number (default: 1)
+        # @parameter per_page(query) [Integer] Items per page (default: 50, max: 100)
+        # @response (200) Hash{ session_summaries: Array<Hash>, pagination: Hash }
         # @response (403) Hash{ error: String }
         def index
-          scope = SessionSummary.includes(
+          scope = SessionSummary.submitted_or_reviewed.includes(
             therapy_session: [
               :teacher,
               :therapy_station,
@@ -40,11 +42,8 @@ module Api
             ]
           )
 
-          # Status filter: default to submitted & reviewed (exclude drafts unless requested)
           if params[:status].present?
             scope = scope.where(status: params[:status])
-          else
-            scope = scope.where(status: %w[submitted reviewed])
           end
 
           # Date range filters
@@ -78,7 +77,14 @@ module Api
                     scope.order(submitted_at: :desc, created_at: :desc)
           end
 
-          summaries_payload = scope.map do |summary|
+          page = [params[:page].to_i, 1].max
+          per_page = [[params[:per_page].to_i, 1].max, 100].min
+          per_page = 50 if per_page == 1 && params[:per_page].blank?
+
+          paginated_scope = scope.offset((page - 1) * per_page).limit(per_page)
+          total_count = scope.count
+
+          summaries_payload = paginated_scope.map do |summary|
             session = summary.therapy_session
             {
               id: summary.id,
@@ -101,7 +107,15 @@ module Api
             }
           end
 
-          render json: { session_summaries: summaries_payload }, status: :ok
+          render json: {
+            session_summaries: summaries_payload,
+            pagination: {
+              current_page: page,
+              per_page: per_page,
+              total_count: total_count,
+              total_pages: (total_count.to_f / per_page).ceil
+            }
+          }, status: :ok
         end
 
         # PATCH /api/v1/therapy_coordinator/session_summaries/:id/review
