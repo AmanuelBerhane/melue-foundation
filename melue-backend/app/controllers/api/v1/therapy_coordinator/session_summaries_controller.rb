@@ -77,8 +77,8 @@ module Api
                     scope.order(submitted_at: :desc, created_at: :desc)
           end
 
-          page = [params[:page].to_i, 1].max
-          per_page = [[params[:per_page].to_i, 1].max, 100].min
+          page = [ params[:page].to_i, 1 ].max
+          per_page = [ [ params[:per_page].to_i, 1 ].max, 100 ].min
           per_page = 50 if per_page == 1 && params[:per_page].blank?
 
           paginated_scope = scope.offset((page - 1) * per_page).limit(per_page)

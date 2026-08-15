@@ -140,7 +140,7 @@ module SessionSummaries
       end
 
       duration_minutes = ((end_time - start_time) / 60.0).round
-      [duration_minutes, 0].max
+      [ duration_minutes, 0 ].max
     end
   end
 end
