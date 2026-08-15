@@ -289,7 +289,246 @@ end
 
 puts "  ✓ #{TeacherStudentAssignment.count} assignments (#{TeacherStudentAssignment.for_today.count} for today)"
 
+# ==============================================================================
+# 9. RBAC: Roles & Admin User
+# ==============================================================================
+admin_role = Role.find_or_create_by!(name: "System Administrator") do |r|
+  r.is_system_critical = true
+  r.description = "Full system access"
+end
+
+teacher_role = Role.find_or_create_by!(name: "Teacher") do |r|
+  r.is_system_critical = false
+  r.description = "Standard therapy provider"
+end
+
+# Create permissions for staff & role management
+manage_roles = Permission.find_or_create_by!(resource: 'roles', action: 'manage')
+manage_staff = Permission.find_or_create_by!(resource: 'staff_members', action: 'manage')
+view_roles = Permission.find_or_create_by!(resource: 'roles', action: 'index')
+view_staff = Permission.find_or_create_by!(resource: 'staff_members', action: 'index')
+create_roles = Permission.find_or_create_by!(resource: 'roles', action: 'create')
+
+# Give Admin all permissions explicitly (for testing)
+RolePermission.find_or_create_by!(role: admin_role, permission: manage_roles)
+RolePermission.find_or_create_by!(role: admin_role, permission: manage_staff)
+RolePermission.find_or_create_by!(role: admin_role, permission: view_roles)
+RolePermission.find_or_create_by!(role: admin_role, permission: view_staff)
+RolePermission.find_or_create_by!(role: admin_role, permission: create_roles)
+
+admin_user = User.find_or_create_by!(email: "admin@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2 # verified
+end
+
+admin_staff = StaffMember.find_or_create_by!(user: admin_user) do |s|
+  s.full_name    = "System Admin"
+  s.staff_number = "ADM-001"
+end
+
+UserRole.find_or_create_by!(user: admin_user, role: admin_role)
+UserRole.find_or_create_by!(user: teacher1_user, role: teacher_role)
+
+puts "  ✓ RBAC Admin seeded"
+
+# ==============================================================================
+# 9. Roles (FR-006 — role-based routing) & assignments
+# ==============================================================================
+role_names = [
+  Role::Names::TEACHER,
+  Role::Names::THERAPY_COORDINATOR,
+  Role::Names::PROGRAM_DIRECTOR,
+  Role::Names::DIRECTOR,
+  Role::Names::INSTITUTIONAL_ADMIN,
+  Role::Names::SYSTEM_ADMIN,
+  Role::Names::PARENT
+]
+
+role_names.each do |name|
+  is_system_critical = [ Role::Names::SYSTEM_ADMIN, Role::Names::INSTITUTIONAL_ADMIN ].include?(name)
+  Role.find_or_create_by!(name: name) do |r|
+    r.is_system_critical = is_system_critical
+    r.is_active          = true
+  end
+end
+
+puts "  ✓ #{Role.count} roles"
+
+# Assign the seeded teacher users their Teacher role (idempotent).
+[ teacher1_user, teacher2_user ].each do |u|
+  u.assign_role(Role::Names::TEACHER)
+end
+
+puts "  ✓ role assignments for #{RoleAssignment.count} assignments"
+# 9. Preference Assessment Item Inventory (SRS 3.3.4, FR-047a)
+# ==============================================================================
+# Mirrors the physical "Preference Assessment.pdf" form exactly. Administrators
+# may extend this catalogue via the Form Builder (SCR-ADMIN-001); teachers who
+# need a one-off item add it as a custom item on the observation instead, which
+# never lands here (FR-047f).
+preference_inventory = {
+  "Visual" => [
+    "Phone",
+    "TV",
+    "Flashlight",
+    "Picture books",
+    "Balloon",
+    "Crayons or markers",
+    "Painting",
+    "Shadow",
+    "Beads",
+    "Pouring liquids"
+  ],
+  "Sensory" => [
+    "Lotion",
+    "Play doh",
+    "Sand play",
+    "Water play",
+    "Toys that bend or stretch",
+    "Finger painting",
+    "Soap bubbles",
+    "Shining"
+  ],
+  "Auditory" => [
+    "Toys that talk or sing",
+    "Music",
+    "Low pitch voice",
+    "Stress bans"
+  ],
+  "Movement" => [
+    "Movement",
+    "Rolling on floor",
+    "Being held upside down"
+  ],
+  "Toys" => [
+    "Tube car",
+    "Frog toy",
+    "Coloring tube",
+    "Fish toy",
+    "Fleep chain",
+    "Red plastic toy",
+    "Stress ball",
+    "Fleep red",
+    "Piano",
+    "Coloring glitter",
+    "Body part puzzle",
+    "Letter mat",
+    "Gross motor handle",
+    "See saw",
+    "Slide",
+    "Magnetic Apple",
+    "Mobile art",
+    "Watch",
+    "Large & small toys",
+    "Harmonica",
+    "Stretch spring",
+    "Bicycle",
+    "Number book",
+    "Seamer",
+    "Colours"
+  ]
+}
+
+preference_inventory.each do |category, item_names|
+  item_names.each do |item_name|
+    PreferenceInventoryItem.find_or_create_by!(category: category, name: item_name) do |item|
+      item.is_active = true
+    end
+  end
+end
+
+puts "  ✓ #{PreferenceInventoryItem.count} preference inventory items " \
+     "(#{preference_inventory.keys.size} categories)"
+
 puts ""
+
+# ============================================================
+# FR-095 — Task Analysis Goal Bank, Step Templates & Student Steps
+# ============================================================
+
+puts "Seeding Task Analysis Step Templates..."
+
+task_analysis_goals = {
+  "Washing Hands" => [
+    "Turn on water",
+    "Wet hands",
+    "Apply soap",
+    "Lather for 20 seconds",
+    "Rinse hands",
+    "Turn off water",
+    "Dry hands"
+  ],
+  "Toileting - Urination" => [
+    "Initiate toileting",
+    "Go to toilet",
+    "Pull down pants",
+    "Sit / stand at toilet",
+    "Urinate",
+    "Wipe",
+    "Pull up pants"
+  ],
+  "Toileting - Request" => [
+    "Initiate request",
+    "Use verbal / sign / device",
+    "Wait for acknowledgment"
+  ],
+  "Dressing - Shoes" => [
+    "Pick up shoe",
+    "Put foot in shoe",
+    "Fasten / close shoe"
+  ],
+  "Dressing - Pants" => [
+    "Pick up pants",
+    "Step into pants",
+    "Pull pants up",
+    "Fasten (button / zip)"
+  ]
+}
+
+# Idempotent goal creation — every goal needs a valid goal_domain
+task_analysis_goals.each do |goal_name, steps|
+  goal = Goal.find_or_create_by!(
+    name: goal_name,
+    goal_domain: domain_records["Daily Living Skills"]
+  ) do |g|
+    g.goal_type = "task_analysis"
+    g.is_active = true
+  end
+  goal.update!(goal_type: "task_analysis") unless goal.goal_type == "task_analysis"
+
+  steps.each_with_index do |step_name, index|
+    goal.task_analysis_step_templates.find_or_create_by!(step_number: index + 1) do |t|
+      t.name = step_name
+    end
+  end
+
+  puts "  ✓ Seeded #{steps.size} steps for '#{goal_name}'"
+end
+
+# Give student1 an active task_analysis goal so steps can be instantiated
+washing_hands_goal = Goal.find_by!(name: "Washing Hands")
+StudentGoal.find_or_create_by!(iup: iup1, goal: washing_hands_goal, student: student1) do |sg|
+  sg.therapy_station = station1
+  sg.status          = "active"
+  sg.progress_percent = 0.0
+end
+
+# Instantiate StudentGoalStep records for every active task_analysis goal
+StudentGoal.where(status: %w[active in_progress]).find_each do |student_goal|
+  next unless student_goal.goal.goal_type == "task_analysis"
+
+  student_goal.goal.task_analysis_step_templates.ordered.each do |template|
+    student_goal.student_goal_steps.find_or_create_by!(step_number: template.step_number) do |step|
+      step.name                     = template.name
+      step.description              = template.description
+      step.task_analysis_step_template = template
+    end
+  end
+end
+
+puts "  ✓ #{StudentGoalStep.count} student goal steps instantiated"
+puts "Task Analysis templates seeding complete."
+
 puts "Done! Seed summary:"
 puts "  Prompt Levels : #{PromptLevel.count}"
 puts "  Stations      : #{TherapyStation.count}"
@@ -306,4 +545,6 @@ puts "  IUPs          : #{Iup.count}"
 puts "  Student Goals : #{StudentGoal.count}"
 puts "  Assignments   : #{TeacherStudentAssignment.count}"
 puts ""
-puts "Login with: teacher1@melue.foundation / Password123!"
+puts "Login with:"
+puts "  Admin  : admin@melue.foundation / Password123!"
+puts "  Teacher: teacher1@melue.foundation / Password123!"

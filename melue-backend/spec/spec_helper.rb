@@ -12,7 +12,8 @@
 # the additional setup, and require it from the spec files that actually need
 # it.
 #
-# See https://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+# See https://rspec.info/features/8-0/rspec-core/configuration/
+
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate
   # assertion/expectation library such as wrong or the stdlib/minitest
@@ -22,9 +23,9 @@ RSpec.configure do |config|
     # and `failure_message` of custom matchers include text for helper methods
     # defined using `chain`, e.g.:
     #     be_bigger_than(2).and_smaller_than(4).description
-    #     # => "be bigger than 2 and smaller than 4"
+    #   => "be bigger than 2 and smaller than 4"
     # ...rather than:
-    #     # => "be bigger than 2"
+    #   => "be bigger than 2"
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true
   end
 
@@ -44,9 +45,9 @@ RSpec.configure do |config|
   # triggering implicit auto-inclusion in groups with matching metadata.
   config.shared_context_metadata_behavior = :apply_to_host_groups
 
-# The settings below are suggested to provide a good initial experience
-# with RSpec, but feel free to customize to your heart's content.
-=begin
+  # The settings below are suggested to provide a good initial experience
+  # with RSpec, but feel free to customize to your heart's content.
+
   # This allows you to limit a spec run to individual examples or groups
   # you care about by tagging them with `:focus` metadata. When nothing
   # is tagged with `:focus`, all examples get run. RSpec also provides
@@ -77,7 +78,7 @@ RSpec.configure do |config|
   # Print the 10 slowest examples and example groups at the
   # end of the spec run, to help surface which specs are running
   # particularly slow.
-  config.profile_examples = 10
+  # config.profile_examples = 10
 
   # Run specs in random order to surface order dependencies. If you find an
   # order dependency and want to debug it, you can fix the order by providing
@@ -90,5 +91,4 @@ RSpec.configure do |config|
   # test failures related to randomization by passing the same `--seed` value
   # as the one that triggered the failure.
   Kernel.srand config.seed
-=end
 end
