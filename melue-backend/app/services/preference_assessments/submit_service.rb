@@ -7,9 +7,9 @@ module PreferenceAssessments
   # status flips, so the submitted record is internally consistent even if the
   # last write happened to skip a re-rank.
   #
-  # Note: FR-050 — marking the parent cycle "Assessment Complete" once skills,
-  # behaviour and preference are all submitted — is owned by the assessment
-  # cycle task and is deliberately not triggered here.
+  # FR-050 — marking the parent cycle complete once skills, behaviour and
+  # preference are all submitted — is handled by the PreferenceAssessment
+  # after-save hook.
   class SubmitService < ApplicationService
     # @param preference_assessment [PreferenceAssessment]
     def initialize(preference_assessment:)
