@@ -37,5 +37,10 @@ FactoryBot.define do
     trait :with_clinical_note do
       clinical_note { Faker::Lorem.sentence }
     end
+
+    # ===== TRAIT =====
+    trait :task_analysis do
+      goal { association(:goal, :task_analysis) }
+    end
   end
 end

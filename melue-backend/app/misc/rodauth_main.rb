@@ -113,8 +113,8 @@ class RodauthMain < Rodauth::Rails::Auth
     # Customize the reset password email body.
     create_reset_password_email do
       RodauthMailer.reset_password(
-        rodauth.account[:email],
-        rodauth.reset_password_email_link
+        account[:email],
+        reset_password_email_link
       ).body.to_s
     end
 
