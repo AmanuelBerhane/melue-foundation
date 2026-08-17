@@ -2,6 +2,10 @@
 
 module Assessments
   class DashboardService < ApplicationService
+    def self.call(teacher: nil)
+      new(teacher: teacher).call
+    end
+
     def initialize(teacher:)
       @teacher = teacher   # StaffMember
     end

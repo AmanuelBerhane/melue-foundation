@@ -1,16 +1,15 @@
-# frozen_string_literal: true
-
+# app/serializers/assessments/dashboard_serializer.rb
 module Assessments
   class DashboardSerializer
-    def initialize(payload)
-      @payload = payload
+    def initialize(data)
+      @data = data
     end
 
     def as_json(*)
       {
-        summary: @payload[:summary],
-        assessment_period: @payload[:assessment_period],
-        students: @payload[:students]
+        summary: @data[:summary],
+        students: @data[:students],
+        assessment_period: @data[:assessment_period]
       }
     end
   end

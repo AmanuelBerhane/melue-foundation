@@ -136,6 +136,22 @@ Rails.application.routes.draw do
         end
       end
 
+      # Behavior Assessment (MR-23)
+      namespace :assessments do
+        resources :mass, only: [ :create, :update ] do
+          member { post :submit }
+        end
+
+        resources :fast, only: [ :create, :update ] do
+          member { post :submit }
+        end
+      end
+
+      # Behavior Incidents (FR-045, FR-046)
+      resources :students, only: [] do
+        resources :behavior_incidents, only: [ :index, :create, :update, :destroy ]
+      end
+
       resources :staff_scheduling, only: [ :index ] do
         collection do
           get :teacher_schedule
