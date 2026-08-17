@@ -140,6 +140,13 @@ Rails.application.routes.draw do
       end
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
+
+      namespace :reports do
+        get :foundation_overview
+        get :session_summaries
+        get :weekly_summaries
+        get :student_progress
+      end
     end
   end
 
