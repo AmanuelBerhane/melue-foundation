@@ -1,7 +1,7 @@
-# spec/services/charts/goal_progress_service_spec.rb
+# spec/services/charts/trial_distribution_service_spec.rb
 require 'rails_helper'
 
-RSpec.describe Charts::GoalProgressService, type: :service do
+RSpec.describe Charts::TrialDistributionService, type: :service do
   let(:student) { create(:student) }
   let(:student_goal) { create(:student_goal, student: student) }
   let(:therapy_session) { create(:therapy_session) }
@@ -12,29 +12,23 @@ RSpec.describe Charts::GoalProgressService, type: :service do
       current_focus_student_goal: student_goal
     )
   end
+  let(:prompt_level) { create(:prompt_level, label: 'FP') }
 
   describe '#call' do
-    it 'returns goal progress data' do
+    it 'returns trial distribution data' do
       create(:trial,
         student_goal: student_goal,
         session_participant: session_participant,
         therapy_session: therapy_session,
-        outcome: 'correct',
-        logged_at: 2.days.ago
+        prompt_level: prompt_level,
+        outcome: 'correct'
       )
       create(:trial,
         student_goal: student_goal,
         session_participant: session_participant,
         therapy_session: therapy_session,
-        outcome: 'incorrect',
-        logged_at: 1.day.ago
-      )
-      create(:trial,
-        student_goal: student_goal,
-        session_participant: session_participant,
-        therapy_session: therapy_session,
-        outcome: 'correct',
-        logged_at: Time.current
+        prompt_level: prompt_level,
+        outcome: 'incorrect'
       )
 
       service = described_class.new(student_goal)
@@ -42,7 +36,7 @@ RSpec.describe Charts::GoalProgressService, type: :service do
 
       expect(result.success?).to be true
       expect(result.data[:goal_id]).to eq(student_goal.id)
-      expect(result.data[:data_points]).to be_present
+      expect(result.data[:distribution]).to be_present
     end
 
     it 'filters by date range' do
@@ -50,12 +44,14 @@ RSpec.describe Charts::GoalProgressService, type: :service do
         student_goal: student_goal,
         session_participant: session_participant,
         therapy_session: therapy_session,
+        prompt_level: prompt_level,
         logged_at: 10.days.ago
       )
       create(:trial,
         student_goal: student_goal,
         session_participant: session_participant,
         therapy_session: therapy_session,
+        prompt_level: prompt_level,
         logged_at: 2.days.ago
       )
 
@@ -63,32 +59,7 @@ RSpec.describe Charts::GoalProgressService, type: :service do
       result = service.call
 
       expect(result.success?).to be true
-      expect(result.data[:data_points].size).to be <= 2
-    end
-
-    it 'calculates success rate correctly' do
-      2.times do
-        create(:trial,
-          student_goal: student_goal,
-          session_participant: session_participant,
-          therapy_session: therapy_session,
-          outcome: 'correct',
-          logged_at: 1.day.ago
-        )
-      end
-      create(:trial,
-        student_goal: student_goal,
-        session_participant: session_participant,
-        therapy_session: therapy_session,
-        outcome: 'incorrect',
-        logged_at: 1.day.ago
-      )
-
-      service = described_class.new(student_goal)
-      result = service.call
-
-      expect(result.success?).to be true
-      expect(result.data[:data_points].first[:success_rate]).to eq(66.67)
+      expect(result.data[:distribution].size).to be <= 2
     end
 
     it 'returns failure if student_goal not found' do

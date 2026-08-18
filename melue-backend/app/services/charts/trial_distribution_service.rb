@@ -1,6 +1,6 @@
-# app/services/charts/goal_progress_service.rb
+# app/services/charts/trial_distribution_service.rb
 module Charts
-  class GoalProgressService < ApplicationService
+  class TrialDistributionService < ApplicationService
     attr_reader :student_goal, :start_date, :end_date
 
     def initialize(student_goal, start_date = nil, end_date = nil)
@@ -14,7 +14,7 @@ module Charts
 
       trials = student_goal.trials
         .where(logged_at: start_date..end_date)
-        .order(logged_at: :asc)
+        .includes(:prompt_level)
 
       data = {
         goal_id: student_goal.id,
@@ -22,7 +22,7 @@ module Charts
         student_name: student_goal.student.full_name,
         start_date: start_date.to_date,
         end_date: end_date.to_date,
-        data_points: build_data_points(trials)
+        distribution: build_distribution(trials)
       }
 
       success(data)
@@ -30,22 +30,20 @@ module Charts
 
     private
 
-    def build_data_points(trials)
-      grouped = trials.group_by { |t| t.logged_at.to_date }
+    def build_distribution(trials)
+      grouped = trials.group_by { |t| t.prompt_level&.label || "Unknown" }
 
-      grouped.map do |date, day_trials|
-        total = day_trials.count
-        correct = day_trials.count { |t| t.outcome == "correct" }
-        incorrect = day_trials.count { |t| t.outcome == "incorrect" }
-        no_response = day_trials.count { |t| t.outcome == "no_response" }
+      grouped.map do |label, prompt_trials|
+        total = prompt_trials.count
+        correct = prompt_trials.count { |t| t.outcome == "correct" }
+        incorrect = prompt_trials.count { |t| t.outcome == "incorrect" }
 
         {
-          date: date,
+          prompt_label: label,
           total_trials: total,
           correct: correct,
           incorrect: incorrect,
-          no_response: no_response,
-          success_rate: total > 0 ? (correct.to_f / total * 100).round(2) : 0
+          no_response: prompt_trials.count { |t| t.outcome == "no_response" }
         }
       end
     end

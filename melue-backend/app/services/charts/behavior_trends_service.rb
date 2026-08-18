@@ -12,18 +12,42 @@ module Charts
     def call
       return failure("Student not found") unless student
 
-      # TODO: Replace with real behavior incident model when implemented
-      # For now, return empty data structure
+      # Get behavior incidents for the student
+      incidents = BehaviorIncident
+        .for_student(student.id)
+        .for_date_range(start_date, end_date)
+        .order(occurred_at: :asc)
+
       data = {
         student_id: student.id,
         student_name: student.full_name,
         start_date: start_date.to_date,
         end_date: end_date.to_date,
-        message: "Behavior incident data will be available when the ABC tracking module is implemented",
-        data_points: []
+        data_points: build_data_points(incidents)
       }
 
       success(data)
+    end
+
+    private
+
+    def build_data_points(incidents)
+      return [] if incidents.empty?
+
+      grouped = incidents.group_by { |i| i.occurred_at.to_date }
+
+      grouped.map do |date, day_incidents|
+        {
+          date: date,
+          total_incidents: day_incidents.count,
+          by_category: day_incidents.group_by(&:category).map do |category, category_incidents|
+            { category: category, count: category_incidents.count }
+          end,
+          by_intensity: day_incidents.group_by(&:intensity).map do |intensity, intensity_incidents|
+            { intensity: intensity, count: intensity_incidents.count }
+          end
+        }
+      end
     end
   end
 end

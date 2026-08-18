@@ -7,6 +7,8 @@ class Student < ApplicationRecord
   has_many :student_goals, dependent: :restrict_with_error
   has_many :student_guardians, dependent: :restrict_with_error
   has_many :guardians, through: :student_guardians
+
+  has_many :assessment_cycles, dependent: :restrict_with_error
   has_many :behavior_incidents, dependent: :restrict_with_error
 
   has_one_attached :headshot

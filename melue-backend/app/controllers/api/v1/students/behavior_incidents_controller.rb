@@ -17,7 +17,7 @@ class Api::V1::Students::BehaviorIncidentsController < Api::V1::BaseController
     if incident.save
       render json: incident, status: :created
     else
-      render json: { error: incident.errors.full_messages.join(", ") }, status: :unprocessable_entity
+      render json: { error: incident.errors.full_messages.join(", ") }, status: :unprocessable_content
     end
   end
 
@@ -27,7 +27,7 @@ class Api::V1::Students::BehaviorIncidentsController < Api::V1::BaseController
     if incident.update(incident_params)
       render json: incident
     else
-      render json: { error: incident.errors.full_messages.join(", ") }, status: :unprocessable_entity
+      render json: { error: incident.errors.full_messages.join(", ") }, status: :unprocessable_content
     end
   end
 

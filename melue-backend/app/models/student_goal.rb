@@ -36,6 +36,10 @@ class StudentGoal < ApplicationRecord
   delegate :name, to: :goal, prefix: true
   delegate :goal_type, to: :goal
 
+  def mastered?
+    status == "mastered"
+  end
+
   private
 
   def student_matches_iup

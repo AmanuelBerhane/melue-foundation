@@ -2,97 +2,141 @@
 class Api::V1::GoalAssignmentsController < Api::V1::BaseController
   before_action :authenticate_user!
   before_action :require_program_director!
-  before_action :set_student, only: [ :create ]
+  before_action :set_student_goal, only: [ :replace, :destroy ]
 
-  # @oas_include
-  # @summary Assign a goal to a student
-  # @tags Goal Assignments
-  # @auth [bearer_jwt]
-  #
-  # @request_body Assignment data [Hash{ student_id: !String, goal_id: !String, station_id: !String, iup_id: String, notes: String }]
-  #
-  # @response Created (201) [StudentGoal]
-  # @response_error Unprocessable (422) [Hash{ error: String }]
   def create
-    service = Goals::AssignmentService.new(
-      @student,
-      params[:goal_id],
-      params[:station_id],
-      params[:iup_id],
-      params[:notes],
-      current_user
+    student = Student.find(params[:student_id])
+    goal = Goal.find(params[:goal_id])
+
+    # Check if goal is active
+    unless goal.is_active
+      return render json: { error: "Goal is not active" }, status: :unprocessable_content
+    end
+
+    station = TherapyStation.find(params[:station_id])
+    iup = params[:iup_id].present? ? Iup.find(params[:iup_id]) : create_iup(student)
+
+    # Check capacity
+    if student.student_goals.where(therapy_station: station, status: "active").count >= 2
+      return render json: { error: "Student already has 2 goals for this station" },
+                    status: :unprocessable_content
+    end
+
+    student_goal = student.student_goals.create!(
+      goal: goal,
+      therapy_station: station,
+      iup: iup,
+      status: "active"
     )
 
-    result = service.call
-
-    if result.success?
-      render json: result.data, status: :created
-    else
-      render json: { error: result.error }, status: :unprocessable_entity
-    end
+    render json: student_goal, status: :created
+  rescue ActiveRecord::RecordNotFound => e
+    render json: { error: "#{e.model} not found" }, status: :not_found
+  rescue => e
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
-  # @oas_include
-  # @summary Replace a student goal with a new goal
-  # @tags Goal Assignments
-  # @auth [bearer_jwt]
-  #
-  # @parameter id(path) [!String] Student Goal ID
-  # @request_body Replacement data [Hash{ new_goal_id: !String }]
-  #
-  # @response Success (200) [Hash{ archived_goal: Hash, new_goal: Hash }]
-  # @response_error Not Found (404) [Hash{ error: String }]
   def replace
-    student_goal = StudentGoal.find(params[:id])
-    service = Goals::ReplacementService.new(student_goal, params[:new_goal_id], current_user)
-    result = service.call
-
-    if result.success?
-      render json: result.data
-    else
-      render json: { error: result.error }, status: :unprocessable_entity
+    # Check if student_goal is already archived
+    if @student_goal.status == "archived"
+      return render json: { error: "Goal is already archived" }, status: :unprocessable_content
     end
+
+    new_goal = Goal.find(params[:new_goal_id])
+
+    # Check if new_goal is active
+    unless new_goal.is_active
+      return render json: { error: "Goal is not active" }, status: :unprocessable_content
+    end
+
+    # Check if the student already has 2 active goals for this station
+    active_goals_count = @student_goal.student.student_goals
+                            .where(therapy_station: @student_goal.therapy_station, status: "active")
+                            .where.not(id: @student_goal.id)
+                            .count
+
+    if active_goals_count >= 2
+      return render json: { error: "Student already has 2 goals for this station" },
+                    status: :unprocessable_content
+    end
+
+    # Archive the current goal - use update_column to skip validations
+    @student_goal.update_column(:status, "archived")
+
+    # Update clinical note separately if needed
+    if @student_goal.respond_to?(:clinical_note=)
+      note = [ @student_goal.clinical_note, "Replaced with goal #{new_goal.id} at #{Time.current}" ].compact.join("\n")
+      @student_goal.update_column(:clinical_note, note)
+    end
+
+    # Create new goal assignment
+    new_student_goal = @student_goal.student.student_goals.create!(
+      goal: new_goal,
+      therapy_station: @student_goal.therapy_station,
+      iup: @student_goal.iup,
+      status: "active"
+    )
+
+    render json: {
+      archived_goal: @student_goal,
+      new_goal: new_student_goal
+    }, status: :ok
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Student goal not found" }, status: :not_found
+    render json: { error: "Goal not found" }, status: :not_found
+  rescue => e
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
-  # @oas_include
-  # @summary Remove a goal from a student
-  # @tags Goal Assignments
-  # @auth [bearer_jwt]
-  #
-  # @parameter id(path) [!String] Student Goal ID
-  # @request_body Removal data [Hash{ reason: String }]
-  #
-  # @response Success (200) [Hash{ message: String }]
-  # @response_error Not Found (404) [Hash{ error: String }]
   def destroy
-    student_goal = StudentGoal.find(params[:id])
-    service = Goals::RemovalService.new(student_goal, params[:reason], current_user)
-    result = service.call
-
-    if result.success?
-      render json: { message: result.data[:message], student_goal: result.data[:student_goal] }
-    else
-      render json: { error: result.error }, status: :unprocessable_entity
+    # Check if already archived
+    if @student_goal.status == "archived"
+      return render json: { error: "Goal is already archived" },
+                    status: :unprocessable_content
     end
-  rescue ActiveRecord::RecordNotFound
-    render json: { error: "Student goal not found" }, status: :not_found
+
+    # Check confirmation - handle string "true" and boolean true
+    confirmation = params[:confirmation]
+    unless confirmation == true || confirmation == "true" || confirmation == "1"
+      return render json: { error: "Confirmation required to remove goal" },
+                    status: :unprocessable_content
+    end
+
+    # Archive the goal - use update_column to skip validations
+    @student_goal.update_column(:status, "archived")
+
+    # Update clinical note separately if needed
+    if @student_goal.respond_to?(:clinical_note=)
+      note = [ @student_goal.clinical_note, "Removed: #{params[:reason] || 'No reason provided'}" ].compact.join("\n")
+      @student_goal.update_column(:clinical_note, note)
+    end
+
+    render json: {
+      message: "Goal assignment successfully removed",
+      student_goal_id: @student_goal.id
+    }, status: :ok
+  rescue => e
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
   private
 
-  def set_student
-    @student = Student.find(params[:student_id])
+  def set_student_goal
+    @student_goal = StudentGoal.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: "Student not found" }, status: :not_found
+    render json: { error: "Student goal not found" }, status: :not_found
+  end
+
+  def create_iup(student)
+    student.iups.create!(status: "active")
   end
 
   def require_program_director!
-    # Check if user has a staff_member with program_director role
-    staff_member = StaffMember.find_by(user_id: current_user.id)
-    unless staff_member&.role_program_director?
+    unless current_staff_member&.role_program_director?
       render json: { error: "Unauthorized - Program Director access required" }, status: :forbidden
     end
+  end
+
+  def current_staff_member
+    @current_staff_member ||= StaffMember.find_by(user_id: current_user.id)
   end
 end
