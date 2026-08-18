@@ -143,6 +143,8 @@ student1 = Student.find_or_create_by!(first_name: "Yonas", last_name: "Girma") d
   s.therapy_group = "basic"
   s.program_type  = "regular"
   s.status        = "active_therapy"
+  s.guardian_name = "Girma Parent"
+  s.guardian_phone = "555-1234"
 end
 
 student2 = Student.find_or_create_by!(first_name: "Meron", last_name: "Haile") do |s|
@@ -150,6 +152,8 @@ student2 = Student.find_or_create_by!(first_name: "Meron", last_name: "Haile") d
   s.therapy_group = "basic"
   s.program_type  = "regular"
   s.status        = "active_therapy"
+  s.guardian_name = "Haile Parent"
+  s.guardian_phone = "555-5678"
 end
 
 puts "  ✓ #{Student.count} students"
