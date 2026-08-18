@@ -7,7 +7,7 @@ Rails.application.routes.draw do
       resources :notifications, only: [ :index ] do
         member { post :mark_as_read }
       end
-      # --- Feature Branch: Mastery Checks ---
+
       resources :student_goals, only: [] do
         resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
       end
@@ -20,7 +20,7 @@ Rails.application.routes.draw do
         resources :verifications, only: [ :create ], controller: "goal_mastery_verifications"
       end
 
-      # --- Main Branch: Admin Routes ---
+      # --- Admin Routes ---
       namespace :admin do
         resources :roles
         resources :staff_members, only: %i[index show update] do
@@ -56,6 +56,10 @@ Rails.application.routes.draw do
 
       # Student registration and management
       resources :students, only: %i[index show create update]
+
+      # Assessment workflow endpoints (FR-034, FR-035, FR-036)
+      get  "assessments/dashboard", to: "assessments#dashboard"
+      post "assessments/launch",    to: "assessments#launch"
 
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"
@@ -132,6 +136,22 @@ Rails.application.routes.draw do
         end
       end
 
+      # Behavior Assessment (MR-23)
+      namespace :assessments do
+        resources :mass, only: [ :create, :update ] do
+          member { post :submit }
+        end
+
+        resources :fast, only: [ :create, :update ] do
+          member { post :submit }
+        end
+      end
+
+      # Behavior Incidents (FR-045, FR-046)
+      resources :students, only: [] do
+        resources :behavior_incidents, only: [ :index, :create, :update, :destroy ]
+      end
+
       resources :staff_scheduling, only: [ :index ] do
         collection do
           get :teacher_schedule
@@ -141,6 +161,38 @@ Rails.application.routes.draw do
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
 
+      # Program Director Caseload
+      namespace :program_directors do
+        resources :caseload, only: [ :index ]
+      end
+
+      # Student Goals
+      namespace :students do
+        resources :goals, only: [ :show ], controller: "students/goals"
+      end
+
+      # Goal Assignments
+      resources :goal_assignments, only: [ :create, :destroy ] do
+        member do
+          put :replace
+        end
+      end
+
+      # Student Charts
+      namespace :students do
+        resources :charts, only: [] do
+          collection do
+            get "goal_progress"
+            get "trial_distribution"
+            get "behavior_trends"
+            get "assessment_summary"
+            post "export"
+            post "share"
+          end
+        end
+      end
+
+      # Reports
       namespace :reports do
         get :foundation_overview
         get :session_summaries
