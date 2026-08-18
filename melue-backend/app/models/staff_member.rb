@@ -8,6 +8,7 @@ class StaffMember < ApplicationRecord
   has_many :teacher_student_assignments, foreign_key: :teacher_id, dependent: :restrict_with_error
   has_many :therapy_sessions, foreign_key: :teacher_id, dependent: :restrict_with_error
   has_many :goal_mastery_checks, foreign_key: :primary_teacher_id, dependent: :restrict_with_error
+  has_many :ablls_assessments, dependent: :restrict_with_error
 
   enum :role, {
     teacher: "teacher",
