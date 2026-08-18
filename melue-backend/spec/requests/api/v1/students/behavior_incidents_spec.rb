@@ -41,9 +41,9 @@ RSpec.describe 'Behavior Incidents API', type: :request do
       {
         behavior_name: 'Aggression',
         behavior_definition: 'Physical aggression towards peers',
-        frequency: 'frequently',  # Valid enum value
-        intensity: 'moderate',    # Valid enum value
-        category: 'safety_concerns',  # Valid enum value
+        frequency: 'frequently',
+        intensity: 'moderate',
+        category: 'safety_concerns',
         antecedent: 'Transition between activities',
         consequence: 'Time out',
         location: 'Classroom',
@@ -119,6 +119,9 @@ RSpec.describe 'Behavior Incidents API', type: :request do
           headers: headers
 
       expect(response).to have_http_status(:not_found)
+      if response.content_type.include?('application/json')
+        expect(json['error']).to be_present
+      end
     end
   end
 
@@ -138,8 +141,11 @@ RSpec.describe 'Behavior Incidents API', type: :request do
 
   describe 'Authentication' do
     it 'returns unauthorized when not authenticated' do
+      # The controller uses authenticate_user! which raises an error when not authenticated
+      # This test should pass because the controller will return 401
       get "/api/v1/students/#{student.id}/behavior_incidents"
 
+      # If your app uses a different authentication method, this might return 401
       expect(response).to have_http_status(:unauthorized)
     end
   end

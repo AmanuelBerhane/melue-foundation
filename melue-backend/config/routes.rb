@@ -1,3 +1,4 @@
+# config/routes.rb
 Rails.application.routes.draw do
   # Health check — used by load balancers and uptime monitors.
   get "up" => "rails/health#show", as: :rails_health_check
@@ -132,10 +133,13 @@ Rails.application.routes.draw do
       # This shows the goal summary for a student (not a specific goal)
       get "students/:student_id/goals", to: "students/goals#show"
 
-      # Behavior Incidents (FR-045, FR-046)
+      # ========================================
+      # FIXED: Behavior Incidents (FR-045, FR-046)
+      # ========================================
       # GET /api/v1/students/:student_id/behavior_incidents
       resources :students, only: [] do
-        resources :behavior_incidents, only: [ :index, :create, :update, :destroy ]
+        resources :behavior_incidents, only: [ :index, :create, :update, :destroy ],
+                                        controller: "students/behavior_incidents"
       end
 
       # Student Charts - All chart endpoints under student

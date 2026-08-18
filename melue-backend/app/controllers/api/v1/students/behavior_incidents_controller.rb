@@ -2,6 +2,7 @@
 class Api::V1::Students::BehaviorIncidentsController < Api::V1::BaseController
   before_action :authenticate_user!
   before_action :set_student
+  before_action :set_incident, only: [ :update, :destroy ]
 
   def index
     incidents = BehaviorIncident.for_student(@student.id)
@@ -22,18 +23,15 @@ class Api::V1::Students::BehaviorIncidentsController < Api::V1::BaseController
   end
 
   def update
-    incident = @student.behavior_incidents.find(params[:id])
-
-    if incident.update(incident_params)
-      render json: incident
+    if @incident.update(incident_params)
+      render json: @incident
     else
-      render json: { error: incident.errors.full_messages.join(", ") }, status: :unprocessable_content
+      render json: { error: @incident.errors.full_messages.join(", ") }, status: :unprocessable_content
     end
   end
 
   def destroy
-    incident = @student.behavior_incidents.find(params[:id])
-    incident.destroy
+    @incident.destroy
     render json: { message: "Incident deleted successfully" }
   end
 
@@ -43,6 +41,12 @@ class Api::V1::Students::BehaviorIncidentsController < Api::V1::BaseController
     @student = Student.find(params[:student_id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Student not found" }, status: :not_found
+  end
+
+  def set_incident
+    @incident = @student.behavior_incidents.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Incident not found" }, status: :not_found
   end
 
   def incident_params
