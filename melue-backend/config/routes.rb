@@ -7,7 +7,7 @@ Rails.application.routes.draw do
       resources :notifications, only: [ :index ] do
         member { post :mark_as_read }
       end
-      # --- Feature Branch: Mastery Checks ---
+
       resources :student_goals, only: [] do
         resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
       end
@@ -20,7 +20,7 @@ Rails.application.routes.draw do
         resources :verifications, only: [ :create ], controller: "goal_mastery_verifications"
       end
 
-      # --- Main Branch: Admin Routes ---
+      # --- Admin Routes ---
       namespace :admin do
         resources :roles
         resources :staff_members, only: %i[index show update] do
@@ -161,24 +161,24 @@ Rails.application.routes.draw do
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
 
-      # Program Director Caseload
+      # Program Director Caseload 
       namespace :program_directors do
         resources :caseload, only: [ :index ]
       end
 
-      # Student Goals
+      # Student Goals 
       namespace :students do
         resources :goals, only: [ :show ], controller: "students/goals"
       end
 
-      # Goal Assignments
+      # Goal Assignments 
       resources :goal_assignments, only: [ :create, :destroy ] do
         member do
           put :replace
         end
       end
 
-      # Student Charts
+      # Student Charts 
       namespace :students do
         resources :charts, only: [] do
           collection do
@@ -190,6 +190,14 @@ Rails.application.routes.draw do
             post "share"
           end
         end
+      end
+
+      # Reports 
+      namespace :reports do
+        get :foundation_overview
+        get :session_summaries
+        get :weekly_summaries
+        get :student_progress
       end
     end
   end
