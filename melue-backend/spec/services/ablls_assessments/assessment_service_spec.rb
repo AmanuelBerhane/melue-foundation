@@ -20,7 +20,7 @@ RSpec.describe AbllsAssessments::AssessmentService, type: :service do
       expect(assessment).to be_status_draft
       expect(assessment.started_at).to be_present
       expect(assessment.ablls_responses.count).to eq(2)
-      expect(assessment.ablls_responses.pluck(:score).uniq).to eq([nil])
+      expect(assessment.ablls_responses.pluck(:score).uniq).to eq([ nil ])
     end
 
     it "is idempotent — returns existing assessment" do

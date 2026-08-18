@@ -785,4 +785,3 @@ puts ""
 puts "Login with:"
 puts "  Admin  : admin@melue.foundation / Password123!"
 puts "  Teacher: teacher1@melue.foundation / Password123!"
-

@@ -29,11 +29,11 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
   end
 
   def cycle_path(suffix = nil)
-    ["/api/v1/assessment_cycles/#{cycle.id}/ablls_assessment", suffix].compact.join("/")
+    [ "/api/v1/assessment_cycles/#{cycle.id}/ablls_assessment", suffix ].compact.join("/")
   end
 
   def assessment_path(assessment, suffix = nil)
-    ["/api/v1/ablls_assessments/#{assessment.id}", suffix].compact.join("/")
+    [ "/api/v1/ablls_assessments/#{assessment.id}", suffix ].compact.join("/")
   end
 
   # ── POST create ────────────────────────────────────────────────────────────
