@@ -161,24 +161,24 @@ Rails.application.routes.draw do
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
 
-      # Program Director Caseload 
+      # Program Director Caseload
       namespace :program_directors do
         resources :caseload, only: [ :index ]
       end
 
-      # Student Goals 
+      # Student Goals
       namespace :students do
         resources :goals, only: [ :show ], controller: "students/goals"
       end
 
-      # Goal Assignments 
+      # Goal Assignments
       resources :goal_assignments, only: [ :create, :destroy ] do
         member do
           put :replace
         end
       end
 
-      # Student Charts 
+      # Student Charts
       namespace :students do
         resources :charts, only: [] do
           collection do
@@ -192,7 +192,7 @@ Rails.application.routes.draw do
         end
       end
 
-      # Reports 
+      # Reports
       namespace :reports do
         get :foundation_overview
         get :session_summaries
