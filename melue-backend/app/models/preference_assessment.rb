@@ -21,6 +21,8 @@ class PreferenceAssessment < ApplicationRecord
 
   delegate :student, :student_id, to: :assessment_cycle
 
+  after_save :maybe_complete_cycle, if: :saved_change_to_status?
+
   # Ranked observations, best first. Unranked rows sort last so a freshly
   # created observation never displaces a scored one.
   def ranked_observations(context: nil, limit: nil)
@@ -28,5 +30,13 @@ class PreferenceAssessment < ApplicationRecord
     scope = scope.where(context: context) if context.present?
     scope = scope.limit(limit) if limit
     scope
+  end
+
+  private
+
+  # FR-050: the cycle is complete only once skills, behaviour and preference
+  # are all submitted. Each assessment flips the trigger when it submits.
+  def maybe_complete_cycle
+    assessment_cycle.check_and_mark_complete! if status_submitted?
   end
 end
