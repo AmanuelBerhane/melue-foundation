@@ -417,6 +417,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "session_summaries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "qualitative_notes"
+    t.datetime "reviewed_at"
+    t.bigint "reviewed_by_user_id"
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.uuid "therapy_session_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["reviewed_by_user_id"], name: "index_session_summaries_on_reviewed_by_user_id"
+    t.index ["status", "submitted_at"], name: "index_session_summaries_on_status_and_submitted_at"
+    t.index ["status"], name: "index_session_summaries_on_status"
+    t.index ["submitted_at"], name: "index_session_summaries_on_submitted_at"
+    t.index ["therapy_session_id"], name: "index_session_summaries_on_therapy_session_id", unique: true
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'submitted'::character varying, 'reviewed'::character varying]::text[])", name: "session_summaries_status_check"
+  end
+
   create_table "staff_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
@@ -688,6 +705,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
   add_foreign_key "session_participants", "therapy_sessions"
+  add_foreign_key "session_summaries", "therapy_sessions"
+  add_foreign_key "session_summaries", "users", column: "reviewed_by_user_id"
   add_foreign_key "staff_members", "users"
   add_foreign_key "student_documents", "students"
   add_foreign_key "student_goal_steps", "student_goals", on_delete: :cascade

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Api::V1::BaseController < Api::BaseController
   private
 
@@ -8,7 +10,7 @@ class Api::V1::BaseController < Api::BaseController
   end
 
   def current_staff_member
-    @current_staff_member ||= StaffMember.find_by(user_id: current_user.id)
+    @current_staff_member ||= StaffMember.find_by(user_id: current_user.id) if current_user
   end
 
   def render_not_found(message)
