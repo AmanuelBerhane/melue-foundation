@@ -143,6 +143,8 @@ student1 = Student.find_or_create_by!(first_name: "Yonas", last_name: "Girma") d
   s.therapy_group = "basic"
   s.program_type  = "regular"
   s.status        = "active_therapy"
+  s.guardian_name = "Girma Parent"
+  s.guardian_phone = "555-1234"
 end
 
 student2 = Student.find_or_create_by!(first_name: "Meron", last_name: "Haile") do |s|
@@ -150,6 +152,8 @@ student2 = Student.find_or_create_by!(first_name: "Meron", last_name: "Haile") d
   s.therapy_group = "basic"
   s.program_type  = "regular"
   s.status        = "active_therapy"
+  s.guardian_name = "Haile Parent"
+  s.guardian_phone = "555-5678"
 end
 
 puts "  ✓ #{Student.count} students"
@@ -529,21 +533,254 @@ end
 puts "  ✓ #{StudentGoalStep.count} student goal steps instantiated"
 puts "Task Analysis templates seeding complete."
 
+# ==============================================================================
+# 10. ABLLS Domains & Skill Items (FR-037, SCR-TEA-002)
+# ==============================================================================
+# Domain codes follow the standard ABLLS-R structure.
+# TODO: Replace placeholder skill item descriptions with actual clinical
+#       content from the physical ABLLS form. The schema and seed mechanism
+#       are fully functional — only the clinical text is placeholder.
+
+puts "Seeding ABLLS domains and skill items..."
+
+ablls_domain_definitions = [
+  { code: "A", name: "Cooperation and Reinforcer Effectiveness", position: 1 },
+  { code: "B", name: "Visual Performance", position: 2 },
+  { code: "C", name: "Receptive Language", position: 3 },
+  { code: "D", name: "Motor Imitation", position: 4 },
+  { code: "E", name: "Vocal Imitation", position: 5 },
+  { code: "F", name: "Requests (Mands)", position: 6 },
+  { code: "G", name: "Labeling (Tacts)", position: 7 },
+  { code: "H", name: "Intraverbals", position: 8 },
+  { code: "I", name: "Spontaneous Vocalizations", position: 9 },
+  { code: "J", name: "Syntax and Grammar", position: 10 },
+  { code: "K", name: "Play and Leisure", position: 11 },
+  { code: "L", name: "Social Interaction", position: 12 },
+  { code: "M", name: "Group Instruction", position: 13 },
+  { code: "N", name: "Classroom Routines", position: 14 },
+  { code: "P", name: "Generalized Responding", position: 15 },
+  { code: "Q", name: "Reading", position: 16 },
+  { code: "R", name: "Math", position: 17 },
+  { code: "S", name: "Writing", position: 18 },
+  { code: "T", name: "Spelling", position: 19 },
+  { code: "U", name: "Dressing", position: 20 },
+  { code: "V", name: "Eating", position: 21 },
+  { code: "W", name: "Grooming", position: 22 },
+  { code: "X", name: "Toileting", position: 23 },
+  { code: "Y", name: "Gross Motor", position: 24 },
+  { code: "Z", name: "Fine Motor", position: 25 }
+]
+
+# Seed domains
+ablls_domain_records = {}
+ablls_domain_definitions.each do |attrs|
+  domain = AbllsDomain.find_or_create_by!(code: attrs[:code]) do |d|
+    d.name      = attrs[:name]
+    d.position  = attrs[:position]
+    d.is_active = true
+  end
+  ablls_domain_records[attrs[:code]] = domain
+end
+
+puts "  ✓ #{AbllsDomain.count} ABLLS domains"
+
+# Seed representative skill items per domain.
+# Each domain gets a configurable number of items with identifiers like B1, B2, etc.
+ablls_skill_items_seed = {
+  "A" => [
+    "Willingly goes with a teacher to the teaching area",
+    "Accepts reinforcers from a teacher",
+    "Sits in a chair at a table for 2 minutes",
+    "Attends to reinforcers for at least 5 seconds"
+  ],
+  "B" => [
+    "Attends to a visual stimulus for at least 3 seconds",
+    "Tracks a moving object across midline",
+    "Matches identical objects",
+    "Matches identical pictures",
+    "Sorts objects by color"
+  ],
+  "C" => [
+    "Looks at or orients toward a sound source",
+    "Follows instruction to sit down",
+    "Follows instruction to stand up",
+    "Follows instruction to come here",
+    "Identifies common objects when named"
+  ],
+  "D" => [
+    "Imitates gross motor movements (arms up)",
+    "Imitates touching body parts",
+    "Imitates actions with objects",
+    "Imitates fine motor movements",
+    "Imitates a sequence of 2 movements"
+  ],
+  "E" => [
+    "Imitates vowel sounds",
+    "Imitates consonant-vowel combinations",
+    "Imitates single words",
+    "Imitates two-word phrases"
+  ],
+  "F" => [
+    "Requests preferred items using words or signs",
+    "Requests help",
+    "Requests attention from an adult",
+    "Requests break or cessation of activity",
+    "Requests using a multi-word phrase"
+  ],
+  "G" => [
+    "Labels common objects",
+    "Labels pictures of common objects",
+    "Labels actions in pictures",
+    "Labels colors",
+    "Labels shapes"
+  ],
+  "H" => [
+    "Fills in words of familiar songs",
+    "Answers simple 'what' questions",
+    "Answers 'where' questions about common objects",
+    "Answers 'who' questions",
+    "Describes the function of common objects"
+  ],
+  "I" => [
+    "Spontaneously vocalizes (babbles/jargon)",
+    "Spontaneously produces recognizable words",
+    "Spontaneously produces word combinations",
+    "Initiates comments about the environment"
+  ],
+  "J" => [
+    "Uses noun-verb combinations",
+    "Uses pronouns correctly",
+    "Uses prepositions in speech",
+    "Uses plurals correctly"
+  ],
+  "K" => [
+    "Independently explores toys and materials",
+    "Engages in cause-and-effect play",
+    "Engages in pretend play",
+    "Plays simple games with rules",
+    "Plays cooperatively with peers for 5 minutes"
+  ],
+  "L" => [
+    "Makes eye contact with familiar adults",
+    "Responds to greetings from others",
+    "Initiates greetings",
+    "Shares items with peers",
+    "Takes turns with peers during activities"
+  ],
+  "M" => [
+    "Sits appropriately in a group for 3 minutes",
+    "Attends to teacher during group instruction",
+    "Responds to group instructions",
+    "Raises hand to answer questions in group"
+  ],
+  "N" => [
+    "Follows transition routine between activities",
+    "Follows classroom clean-up routine",
+    "Hangs up backpack/coat independently",
+    "Lines up when directed"
+  ],
+  "P" => [
+    "Responds to instructions in a novel environment",
+    "Responds to instructions from a novel teacher",
+    "Generalizes labeling to novel examples",
+    "Generalizes requesting skills across settings"
+  ],
+  "Q" => [
+    "Identifies letters of the alphabet",
+    "Associates letters with their sounds",
+    "Reads simple CVC words",
+    "Reads common sight words"
+  ],
+  "R" => [
+    "Rote counts to 10",
+    "Counts objects with one-to-one correspondence",
+    "Identifies written numerals 1-10",
+    "Compares quantities (more/less)"
+  ],
+  "S" => [
+    "Holds a writing utensil with appropriate grip",
+    "Traces lines and shapes",
+    "Copies letters from a model",
+    "Writes first name independently"
+  ],
+  "T" => [
+    "Spells own first name orally",
+    "Spells simple CVC words",
+    "Identifies beginning sounds in words"
+  ],
+  "U" => [
+    "Removes shoes independently",
+    "Puts on shoes independently",
+    "Removes pullover shirt",
+    "Puts on pullover shirt",
+    "Fastens large buttons"
+  ],
+  "V" => [
+    "Drinks from an open cup",
+    "Eats with a spoon independently",
+    "Eats with a fork independently",
+    "Uses a napkin when prompted"
+  ],
+  "W" => [
+    "Washes hands with soap and water",
+    "Dries hands with a towel",
+    "Brushes teeth with assistance",
+    "Wipes face with a cloth"
+  ],
+  "X" => [
+    "Indicates need to use the toilet",
+    "Uses the toilet for urination",
+    "Uses the toilet for bowel movements",
+    "Pulls pants up/down for toileting"
+  ],
+  "Y" => [
+    "Walks independently",
+    "Runs without falling",
+    "Climbs stairs alternating feet",
+    "Kicks a ball forward",
+    "Catches a large ball with two hands"
+  ],
+  "Z" => [
+    "Picks up small objects using pincer grasp",
+    "Stacks 6 or more blocks",
+    "Strings large beads",
+    "Uses scissors to cut along a straight line",
+    "Completes simple puzzles (4-6 pieces)"
+  ]
+}
+
+ablls_skill_items_seed.each do |domain_code, descriptions|
+  domain = ablls_domain_records[domain_code]
+  descriptions.each_with_index do |desc, index|
+    identifier = "#{domain_code}#{index + 1}"
+    AbllsSkillItem.find_or_create_by!(identifier: identifier) do |item|
+      item.ablls_domain = domain
+      item.description  = desc
+      item.position     = index + 1
+      item.is_active    = true
+    end
+  end
+end
+
+puts "  ✓ #{AbllsSkillItem.count} ABLLS skill items across #{AbllsDomain.count} domains"
+
 puts "Done! Seed summary:"
-puts "  Prompt Levels : #{PromptLevel.count}"
-puts "  Stations      : #{TherapyStation.count}"
-puts "  Rooms         : #{TherapyRoom.count}"
-puts "  Blocks        : #{SessionBlockDefinition.count}"
-puts "  Goal Domains  : #{GoalDomain.count}"
-puts "  Goals         : #{Goal.count}"
-puts "  ABC Options   : #{AbcDropdownOption.count}"
-puts "  Form Configs  : #{FormConfiguration.count}"
-puts "  Schedule Cfg  : #{SessionScheduleConfig.count}"
-puts "  Staff         : #{StaffMember.count}"
-puts "  Students      : #{Student.count}"
-puts "  IUPs          : #{Iup.count}"
-puts "  Student Goals : #{StudentGoal.count}"
-puts "  Assignments   : #{TeacherStudentAssignment.count}"
+puts "  Prompt Levels  : #{PromptLevel.count}"
+puts "  Stations       : #{TherapyStation.count}"
+puts "  Rooms          : #{TherapyRoom.count}"
+puts "  Blocks         : #{SessionBlockDefinition.count}"
+puts "  Goal Domains   : #{GoalDomain.count}"
+puts "  Goals          : #{Goal.count}"
+puts "  ABC Options    : #{AbcDropdownOption.count}"
+puts "  Form Configs   : #{FormConfiguration.count}"
+puts "  Schedule Cfg   : #{SessionScheduleConfig.count}"
+puts "  Staff          : #{StaffMember.count}"
+puts "  Students       : #{Student.count}"
+puts "  IUPs           : #{Iup.count}"
+puts "  Student Goals  : #{StudentGoal.count}"
+puts "  Assignments    : #{TeacherStudentAssignment.count}"
+puts "  ABLLS Domains  : #{AbllsDomain.count}"
+puts "  ABLLS Items    : #{AbllsSkillItem.count}"
 puts ""
 puts "Login with:"
 puts "  Admin  : admin@melue.foundation / Password123!"
