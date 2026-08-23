@@ -27,4 +27,16 @@ module Authorization
     render json: { error: "Forbidden: Therapy Coordinator access required" },
            status: :forbidden
   end
+
+  def current_user_has_role?(role_names)
+    current_user.role_assignments.where(revoked_at: nil).joins(:role).exists?(
+      roles: { name: role_names }
+    )
+  end
+
+  def authorize_iup_management
+    unless current_user_has_role?(["Program Director", "Director", "Coordinator"])
+      render_error("Insufficient permissions for this action", :forbidden)
+    end
+  end
 end
