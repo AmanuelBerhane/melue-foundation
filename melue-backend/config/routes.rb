@@ -105,6 +105,29 @@ Rails.application.routes.draw do
           end
         end
       end
+
+      # ── Parent (Guardian) Portal ─────────────────────────────────────────────
+      namespace :parent do
+        # High-level overview: guardian profile, all children, unread counts
+        get "dashboard", to: "dashboard#index"
+
+        # Children list and individual child profile
+        resources :students, only: %i[index show] do
+          # Submitted/reviewed session history for this child
+          resources :sessions, only: [:index], controller: "sessions"
+
+          # Guardian-submitted home updates
+          resources :home_observations, only: %i[index create], controller: "home_observations"
+
+          # Staff ↔ guardian message thread for this child
+          resources :communications, only: %i[index create], controller: "communications"
+        end
+
+        # Mark a specific message as read (no student_id nesting needed)
+        resources :communications, only: [] do
+          member { patch :mark_read }
+        end
+      end
     end
   end
 
