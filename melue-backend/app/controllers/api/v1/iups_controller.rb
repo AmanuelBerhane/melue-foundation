@@ -147,7 +147,10 @@ module Api
           return render_error("Form submission not found", :unprocessable_entity)
         end
 
-        permitted_values = params.require(:form_values).permit!.to_h
+        form_values = params.require(:form_values)
+        permitted_keys = @iup.form_submission.form_configuration.field_schema["fields"]&.map { |f| f["key"] } || []
+        permitted_values = form_values.to_unsafe_h.slice(*permitted_keys)
+
         @iup.form_submission.update!(values: @iup.form_submission.values.merge(permitted_values))
 
         render json: {

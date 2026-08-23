@@ -16,7 +16,8 @@ module Api
         result = Iups::AssignGoalService.call(
           iup: @iup,
           goal: Goal.find(params[:goal_id]),
-          therapy_station: TherapyStation.find(params[:therapy_station_id])
+          therapy_station: TherapyStation.find(params[:therapy_station_id]),
+          current_user: current_user
         )
 
         if result.success?
@@ -54,7 +55,8 @@ module Api
       def update
         result = Iups::ReplaceGoalService.call(
           student_goal: @student_goal,
-          new_goal: Goal.find(params[:new_goal_id])
+          new_goal: Goal.find(params[:new_goal_id]),
+          current_user: current_user
         )
 
         if result.success?

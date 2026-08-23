@@ -65,7 +65,7 @@ RSpec.describe "Api::V1::Iups", type: :request do
     end
 
     it "filters by status" do
-      get "/api/v1/iups", params: { status: "active" }, headers: headers, as: :json
+      get "/api/v1/iups", params: { status: "active" }, headers: headers
 
       expect(response).to have_http_status(:ok)
       statuses = response.parsed_body["iups"].map { |i| i["status"] }

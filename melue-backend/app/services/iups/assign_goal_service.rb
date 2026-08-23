@@ -2,11 +2,12 @@
 
 module Iups
   class AssignGoalService < ApplicationService
-    def initialize(iup:, goal:, therapy_station:)
+    def initialize(iup:, goal:, therapy_station:, current_user: nil)
       @iup = iup
       @goal = goal
       @therapy_station = therapy_station
       @student = iup.student
+      @current_user = current_user
     end
 
     def call
@@ -76,11 +77,14 @@ module Iups
     end
 
     def log_assignment
+      user_id = @current_user&.id || Current.user&.id
+      return unless user_id
+
       AuditLog.create!(
         resource_type: "StudentGoal",
         resource_id: @student_goal.id.to_s,
         action: "goal_assigned",
-        user_id: Current.user&.id,
+        user_id: user_id,
         change_data: {
           goal_id: @goal.id,
           goal_name: @goal.name,
