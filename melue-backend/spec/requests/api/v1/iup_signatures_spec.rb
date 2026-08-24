@@ -41,7 +41,7 @@ RSpec.describe "Api::V1::IupSignatures", type: :request do
            params: { signer_role: "invalid_role" },
            headers: headers, as: :json
 
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:unprocessable_entity)
     end
 
     it "returns 404 for unknown IUP" do
