@@ -12,7 +12,7 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
 
   let(:student) { create(:student) }
   let(:iup) { create(:iup, :draft, student: student) }
-  let(:goal) { create(:goal, applicable_therapy_groups: [student.therapy_group]) }
+  let(:goal) { create(:goal, applicable_therapy_groups: [ student.therapy_group ]) }
   let(:station) { create(:therapy_station) }
 
   # --- CREATE ---
@@ -42,8 +42,8 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
     end
 
     it "enforces max 2 goals per station" do
-      create(:student_goal, iup: iup, student: student, therapy_station: station, goal: create(:goal, applicable_therapy_groups: [student.therapy_group]))
-      create(:student_goal, iup: iup, student: student, therapy_station: station, goal: create(:goal, applicable_therapy_groups: [student.therapy_group]))
+      create(:student_goal, iup: iup, student: student, therapy_station: station, goal: create(:goal, applicable_therapy_groups: [ student.therapy_group ]))
+      create(:student_goal, iup: iup, student: student, therapy_station: station, goal: create(:goal, applicable_therapy_groups: [ student.therapy_group ]))
 
       post "/api/v1/iups/#{iup.id}/goals",
            params: { goal_id: goal.id, therapy_station_id: station.id },
@@ -56,7 +56,7 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
   # --- UPDATE (replace goal) ---
   describe "PATCH /api/v1/iups/:iup_id/goals/:id" do
     let(:student_goal) { create(:student_goal, iup: iup, student: student, therapy_station: station, goal: goal) }
-    let(:new_goal) { create(:goal, applicable_therapy_groups: [student.therapy_group]) }
+    let(:new_goal) { create(:goal, applicable_therapy_groups: [ student.therapy_group ]) }
 
     it "replaces the goal assignment" do
       patch "/api/v1/iups/#{iup.id}/goals/#{student_goal.id}",

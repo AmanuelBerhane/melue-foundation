@@ -23,7 +23,7 @@ module Iups
 
       response_count = ablls.ablls_responses.count
       scored_count = ablls.ablls_responses.where.not(score: nil).count
-      
+
       "ABLLS Assessment completed: #{scored_count}/#{response_count} items scored"
     end
 

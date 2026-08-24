@@ -10,7 +10,7 @@ module Iups
     def call
       validate_signatures_present
       validate_iup_complete
-      
+
       ActiveRecord::Base.transaction do
         archive_previous_active_iup
         finalize_iup
@@ -18,7 +18,7 @@ module Iups
         transition_student_status
         log_finalization
       end
-      
+
       success(iup: @iup.reload)
     rescue ValidationError => e
       failure(e.message)
@@ -34,7 +34,7 @@ module Iups
 
     def validate_iup_complete
       validation_result = Iups::ValidateService.call(iup: @iup)
-      
+
       unless validation_result.success?
         raise ValidationError, "IUP validation failed: #{validation_result.error[:errors].join(', ')}"
       end
@@ -73,7 +73,7 @@ module Iups
 
     def transition_student_status
       student = @iup.student
-      
+
       if student.status == "ready_for_iup"
         student.update!(status: "active_therapy")
       end

@@ -13,13 +13,13 @@ module Iups
     def call
       validate_goal_eligibility
       validate_station_capacity
-      
+
       ActiveRecord::Base.transaction do
         assign_goal
         create_task_analysis_steps if @goal.goal_type_task_analysis?
         log_assignment
       end
-      
+
       success(student_goal: @student_goal)
     rescue ValidationError => e
       failure(e.message)
@@ -62,7 +62,7 @@ module Iups
 
     def create_task_analysis_steps
       templates = @goal.task_analysis_step_templates.order(:step_number)
-      
+
       templates.each do |template|
         StudentGoalStep.create!(
           student_goal: @student_goal,

@@ -12,7 +12,7 @@ module Iups
 
     def call
       validate_replacement_goal
-      
+
       ActiveRecord::Base.transaction do
         capture_old_goal_name
         remove_existing_steps
@@ -20,7 +20,7 @@ module Iups
         create_new_steps if @new_goal.goal_type_task_analysis?
         log_replacement
       end
-      
+
       success(student_goal: @student_goal.reload)
     rescue ValidationError => e
       failure(e.message)
@@ -55,7 +55,7 @@ module Iups
 
     def create_new_steps
       templates = @new_goal.task_analysis_step_templates.order(:step_number)
-      
+
       templates.each do |template|
         StudentGoalStep.create!(
           student_goal: @student_goal,

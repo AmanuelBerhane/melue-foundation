@@ -151,8 +151,8 @@ Rails.application.routes.draw do
           get :validate
           post :finalize
         end
-        resources :goals, only: [:create, :update, :destroy], controller: "iup_goals"
-        resources :signatures, only: [:create], controller: "iup_signatures"
+        resources :goals, only: [ :create, :update, :destroy ], controller: "iup_goals"
+        resources :signatures, only: [ :create ], controller: "iup_signatures"
       end
 
       resources :goals, only: [] do

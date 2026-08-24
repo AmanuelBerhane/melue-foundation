@@ -35,7 +35,7 @@ module Authorization
   end
 
   def authorize_iup_management
-    unless current_user_has_role?(["Program Director", "Director", "Coordinator"])
+    unless current_user_has_role?([ "Program Director", "Director", "Coordinator" ])
       render_error("Insufficient permissions for this action", :forbidden)
     end
   end

@@ -8,7 +8,7 @@ class CreateIupSignatures < ActiveRecord::Migration[8.1]
       t.text :signature_evidence
       t.timestamps
 
-      t.index [:iup_id, :signer_role], unique: true
+      t.index [ :iup_id, :signer_role ], unique: true
       t.index :signed_at
     end
 

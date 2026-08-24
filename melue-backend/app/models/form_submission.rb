@@ -7,7 +7,7 @@ class FormSubmission < ApplicationRecord
   enum :status, { draft: "draft", submitted: "submitted", finalized: "finalized" }, prefix: true
 
   validates :status, presence: true
-  validates :values, exclusion: { in: [nil], message: "can't be nil" }
+  validates :values, exclusion: { in: [ nil ], message: "can't be nil" }
   validates :submittable_id, uniqueness: { scope: :submittable_type }
 
   def update_field(field_key, value)

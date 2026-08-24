@@ -22,7 +22,7 @@ module Api
           )
         end
 
-        page = [params[:page].to_i, 1].max
+        page = [ params[:page].to_i, 1 ].max
         per_page = 50
 
         paginated_scope = scope.offset((page - 1) * per_page).limit(per_page)

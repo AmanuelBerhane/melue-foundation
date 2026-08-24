@@ -11,13 +11,13 @@ module Iups
 
     def call
       validate_signer_authorization
-      
+
       ActiveRecord::Base.transaction do
         capture_signature
         send_guardian_notification if @signer_role == "program_director"
         log_signature
       end
-      
+
       success(signature: @signature)
     rescue ValidationError => e
       failure(e.message)
@@ -45,7 +45,7 @@ module Iups
         iup: @iup,
         signer_role: @signer_role
       )
-      
+
       @signature.update!(
         signer_user: @signer_user,
         signed_at: Time.current,
@@ -55,9 +55,9 @@ module Iups
 
     def send_guardian_notification
       guardian = @iup.student.student_guardians.find_by(is_primary_contact: true)&.guardian
-      
+
       return unless guardian&.user
-      
+
       Notification.create!(
         recipient: guardian.user,
         type: "IupSignatureRequest",

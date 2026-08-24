@@ -9,7 +9,7 @@ class CreateFormSubmissions < ActiveRecord::Migration[8.1]
       t.timestamps
       t.datetime :discarded_at
 
-      t.index [:submittable_type, :submittable_id], unique: true
+      t.index [ :submittable_type, :submittable_id ], unique: true
       t.index :values, using: :gin
       t.index :status
       t.index :discarded_at

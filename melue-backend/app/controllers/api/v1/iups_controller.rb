@@ -7,9 +7,9 @@ module Api
 
       before_action :authenticate_user!
       before_action :set_current_user
-      before_action :authorize_iup_management, only: [:create, :update, :destroy]
-      before_action :authorize_finalization, only: [:finalize]
-      before_action :set_iup, only: [:show, :update, :destroy, :validate, :finalize]
+      before_action :authorize_iup_management, only: [ :create, :update, :destroy ]
+      before_action :authorize_finalization, only: [ :finalize ]
+      before_action :set_iup, only: [ :show, :update, :destroy, :validate, :finalize ]
 
       def create
         result = Iups::CreateService.call(
@@ -42,7 +42,7 @@ module Api
         scope = Iup.kept.includes(:student, :assessment_cycle)
 
         scope = scope.where(status: params[:status]) if params[:status].present?
-        
+
         if params[:student_name].present?
           sanitized_name = ActiveRecord::Base.sanitize_sql_like(params[:student_name].downcase)
           scope = scope.joins(:student).where(
@@ -54,8 +54,8 @@ module Api
         scope = scope.where("iups.finalized_on >= ?", params[:date_from]) if params[:date_from].present?
         scope = scope.where("iups.finalized_on <= ?", params[:date_to]) if params[:date_to].present?
 
-        page = [params[:page].to_i, 1].max
-        per_page = [[params[:per_page].to_i, 1].max, 100].min
+        page = [ params[:page].to_i, 1 ].max
+        per_page = [ [ params[:per_page].to_i, 1 ].max, 100 ].min
         per_page = 50 if per_page == 1 && params[:per_page].blank?
 
         paginated_scope = scope.offset((page - 1) * per_page).limit(per_page)
@@ -70,7 +70,7 @@ module Api
             },
             status: iup.status,
             finalized_on: iup.finalized_on,
-            assessment_cycle_period: iup.assessment_cycle ? 
+            assessment_cycle_period: iup.assessment_cycle ?
               "#{iup.assessment_cycle.started_on} to #{iup.assessment_cycle.completed_on}" : nil,
             created_at: iup.created_at
           }
@@ -193,7 +193,7 @@ module Api
 
       def validate
         result = Iups::ValidateService.call(iup: @iup)
-        
+
         if result.success?
           render json: { valid: true, errors: [] }, status: :ok
         else
@@ -228,7 +228,7 @@ module Api
       private
 
       def authorize_finalization
-        unless current_user_has_role?(["Program Director"])
+        unless current_user_has_role?([ "Program Director" ])
           render_error("Only Program Directors can finalize IUPs", :forbidden)
         end
       end

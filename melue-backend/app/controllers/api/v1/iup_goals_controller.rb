@@ -9,8 +9,8 @@ module Api
       before_action :set_current_user
       before_action :authorize_iup_management
       before_action :set_iup
-      before_action :ensure_iup_is_draft, only: [:create, :update, :destroy]
-      before_action :set_student_goal, only: [:update, :destroy]
+      before_action :ensure_iup_is_draft, only: [ :create, :update, :destroy ]
+      before_action :set_student_goal, only: [ :update, :destroy ]
 
       def create
         result = Iups::AssignGoalService.call(

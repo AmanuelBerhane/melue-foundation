@@ -12,7 +12,7 @@ class AddIupAssociations < ActiveRecord::Migration[8.1]
     add_index :iups, :created_by_user_id
     add_index :iups, :finalized_by_user_id
     add_index :iups, :finalized_on
-    add_index :iups, [:student_id, :status], where: "status = 'active'", name: "index_iups_on_student_active"
-    add_index :iups, [:student_id, :status], where: "status = 'draft'", name: "index_iups_on_student_draft", unique: true
+    add_index :iups, [ :student_id, :status ], where: "status = 'active'", name: "index_iups_on_student_active"
+    add_index :iups, [ :student_id, :status ], where: "status = 'draft'", name: "index_iups_on_student_draft", unique: true
   end
 end
