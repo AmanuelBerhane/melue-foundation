@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class PromptLevel < ApplicationRecord
+  include Discard::Model
   include Auditable
 
   has_many :trials, dependent: :restrict_with_error

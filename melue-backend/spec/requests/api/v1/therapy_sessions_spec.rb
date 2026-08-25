@@ -157,4 +157,30 @@ RSpec.describe "Api::V1::TherapySessions", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
     end
   end
+
+  # ── POST /api/v1/therapy_sessions/:id/swap ────────────────────────────────
+  describe "POST /api/v1/therapy_sessions/:id/swap" do
+    let(:session) do
+      TherapySessions::StartService.call(
+        assignment: assignment1,
+        staff_member: teacher
+      ).data
+    end
+
+    it "returns 200 and swaps the active and secondary card positions" do
+      active    = session.active_participant
+      secondary = session.secondary_participant
+
+      post "/api/v1/therapy_sessions/#{session.id}/swap", headers: headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(active.reload.card_position_secondary?).to be(true)
+      expect(secondary.reload.card_position_active?).to be(true)
+    end
+
+    it "returns 404 for an unknown session" do
+      post "/api/v1/therapy_sessions/#{SecureRandom.uuid}/swap", headers: headers, as: :json
+      expect(response).to have_http_status(:not_found)
+    end
+  end
 end

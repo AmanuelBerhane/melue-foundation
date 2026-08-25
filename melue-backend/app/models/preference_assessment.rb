@@ -5,6 +5,8 @@
 # Held as a draft while the teacher works through the three contexts, then
 # submitted once (FR-036). Observations carry the actual measurements.
 class PreferenceAssessment < ApplicationRecord
+  include Discard::Model
+
   # The three observation contexts defined by FR-047.
   CONTEXTS = %w[sensory_time circle_time play_time].freeze
 

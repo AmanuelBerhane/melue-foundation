@@ -1,4 +1,4 @@
-class User < ApplicationRecord
+﻿class User < ApplicationRecord
   include Rodauth::Rails.model
 
   has_many :role_assignments, dependent: :destroy
@@ -19,6 +19,8 @@ class User < ApplicationRecord
     therapist: 2,
     clinical_staff: 3
   }
+
+  has_one :staff_member, dependent: :restrict_with_error
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
 

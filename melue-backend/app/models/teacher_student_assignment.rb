@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class TeacherStudentAssignment < ApplicationRecord
+  include Discard::Model
+
   belongs_to :teacher, class_name: "StaffMember"
   belongs_to :student
   belongs_to :session_block_definition

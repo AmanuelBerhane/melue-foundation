@@ -6,6 +6,8 @@
 # flipping is_active rather than deleted, because inventory changes must never
 # erase the observations that reference them.
 class PreferenceInventoryItem < ApplicationRecord
+  include Discard::Model
+
   has_many :preference_observations, dependent: :restrict_with_error
 
   validates :name, presence: true,

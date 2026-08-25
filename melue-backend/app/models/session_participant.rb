@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class SessionParticipant < ApplicationRecord
+  include Discard::Model
+
   belongs_to :therapy_session
   belongs_to :student
   belongs_to :teacher_student_assignment

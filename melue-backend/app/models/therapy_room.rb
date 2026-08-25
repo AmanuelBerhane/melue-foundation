@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class TherapyRoom < ApplicationRecord
+  include Discard::Model
+
   belongs_to :therapy_station
 
   has_many :teacher_student_assignments, dependent: :restrict_with_error

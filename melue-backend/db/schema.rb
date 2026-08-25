@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -27,6 +27,66 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.index ["category", "display_order"], name: "index_abc_dropdown_options_on_category_and_display_order"
     t.index ["category", "is_active"], name: "index_abc_dropdown_options_on_category_and_is_active"
     t.index ["category", "is_other"], name: "index_abc_dropdown_options_on_category_and_is_other", unique: true, where: "(is_other = true)"
+  end
+
+  create_table "ablls_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.uuid "staff_member_id", null: false
+    t.datetime "started_at"
+    t.string "status", default: "draft", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_ablls_assessments_on_assessment_cycle_id"
+    t.index ["assessment_cycle_id"], name: "index_ablls_assessments_on_assessment_cycle_id_unique", unique: true
+    t.index ["discarded_at"], name: "index_ablls_assessments_on_discarded_at"
+    t.index ["staff_member_id"], name: "index_ablls_assessments_on_staff_member_id"
+    t.index ["status"], name: "index_ablls_assessments_on_status"
+  end
+
+  create_table "ablls_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "code", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.datetime "discarded_at"
+    t.boolean "is_active", default: true, null: false
+    t.string "name", null: false
+    t.integer "position", null: false
+    t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_ablls_domains_on_code", unique: true
+    t.index ["discarded_at"], name: "index_ablls_domains_on_discarded_at"
+    t.index ["is_active"], name: "index_ablls_domains_on_is_active"
+    t.index ["position"], name: "index_ablls_domains_on_position"
+  end
+
+  create_table "ablls_responses", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "ablls_assessment_id", null: false
+    t.uuid "ablls_skill_item_id", null: false
+    t.datetime "created_at", null: false
+    t.text "note"
+    t.string "score"
+    t.datetime "updated_at", null: false
+    t.index ["ablls_assessment_id", "ablls_skill_item_id"], name: "idx_ablls_responses_unique_assessment_item", unique: true
+    t.index ["ablls_assessment_id"], name: "index_ablls_responses_on_ablls_assessment_id"
+    t.index ["ablls_skill_item_id"], name: "index_ablls_responses_on_ablls_skill_item_id"
+    t.check_constraint "score IS NULL OR (score::text = ANY (ARRAY['0'::character varying, '1'::character varying, '2'::character varying, 'not_applicable'::character varying]::text[]))", name: "chk_ablls_response_score_valid"
+  end
+
+  create_table "ablls_skill_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "ablls_domain_id", null: false
+    t.datetime "created_at", null: false
+    t.text "description", null: false
+    t.datetime "discarded_at"
+    t.string "identifier", null: false
+    t.boolean "is_active", default: true, null: false
+    t.integer "position", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ablls_domain_id"], name: "index_ablls_skill_items_on_ablls_domain_id"
+    t.index ["discarded_at"], name: "index_ablls_skill_items_on_discarded_at"
+    t.index ["identifier"], name: "index_ablls_skill_items_on_identifier", unique: true
+    t.index ["is_active"], name: "index_ablls_skill_items_on_is_active"
+    t.index ["position"], name: "index_ablls_skill_items_on_position"
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -60,10 +120,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   create_table "assessment_cycles", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.date "completed_on"
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.date "started_on", null: false
     t.string "status", default: "in_progress", null: false
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_assessment_cycles_on_discarded_at"
     t.index ["student_id", "status"], name: "index_assessment_cycles_on_student_id_and_status"
     t.index ["student_id"], name: "index_assessment_cycles_on_student_id"
   end
@@ -100,10 +162,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
+    t.datetime "discarded_at"
     t.integer "display_order", default: 0, null: false
     t.boolean "is_active", default: true, null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_goal_domains_on_discarded_at"
     t.index ["display_order"], name: "index_goal_domains_on_display_order"
     t.index ["is_active"], name: "index_goal_domains_on_is_active"
     t.index ["name"], name: "index_goal_domains_on_name", unique: true
@@ -134,11 +198,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   create_table "goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
+    t.datetime "discarded_at"
     t.uuid "goal_domain_id", null: false
     t.string "goal_type", null: false
     t.boolean "is_active", default: true, null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_goals_on_discarded_at"
     t.index ["goal_domain_id"], name: "index_goals_on_goal_domain_id"
   end
 
@@ -153,10 +219,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
 
   create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.date "finalized_on"
     t.string "status", default: "draft", null: false
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_iups_on_discarded_at"
     t.index ["student_id"], name: "index_iups_on_student_id"
   end
 
@@ -180,19 +248,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   create_table "preference_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "assessment_cycle_id", null: false
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.string "status", default: "draft", null: false
     t.datetime "submitted_at"
     t.datetime "updated_at", null: false
     t.index ["assessment_cycle_id"], name: "index_preference_assessments_on_assessment_cycle_id", unique: true
+    t.index ["discarded_at"], name: "index_preference_assessments_on_discarded_at"
   end
 
   create_table "preference_inventory_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "category", null: false
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.boolean "is_active", default: true, null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.index ["category", "name"], name: "index_preference_inventory_items_on_category_and_name", unique: true
+    t.index ["discarded_at"], name: "index_preference_inventory_items_on_discarded_at"
     t.index ["is_active"], name: "index_preference_inventory_items_on_is_active"
   end
 
@@ -203,6 +275,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.datetime "created_at", null: false
     t.string "custom_item_category"
     t.string "custom_item_name"
+    t.datetime "discarded_at"
     t.integer "duration_seconds", default: 0, null: false
     t.integer "frequency_count", default: 0, null: false
     t.text "notes"
@@ -211,6 +284,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.integer "rank"
     t.string "tier"
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_preference_observations_on_discarded_at"
     t.index ["preference_assessment_id", "context", "custom_item_name"], name: "idx_pref_obs_unique_custom_per_context", unique: true, where: "(preference_inventory_item_id IS NULL)"
     t.index ["preference_assessment_id", "context", "preference_inventory_item_id"], name: "idx_pref_obs_unique_item_per_context", unique: true, where: "(preference_inventory_item_id IS NOT NULL)"
     t.index ["preference_assessment_id", "context", "rank"], name: "idx_pref_obs_rankings"
@@ -224,10 +298,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   create_table "prompt_levels", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "color", null: false
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.integer "display_order", null: false
     t.boolean "is_active", default: true, null: false
     t.string "label", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_prompt_levels_on_discarded_at"
     t.index ["display_order"], name: "index_prompt_levels_on_display_order"
     t.index ["is_active"], name: "index_prompt_levels_on_is_active"
     t.index ["label"], name: "index_prompt_levels_on_label", unique: true
@@ -298,12 +374,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
 
   create_table "session_block_definitions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.time "end_time", null: false
     t.boolean "is_active", default: true, null: false
     t.string "name", null: false
     t.string "round", null: false
     t.time "start_time", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_session_block_definitions_on_discarded_at"
     t.index ["is_active"], name: "index_session_block_definitions_on_is_active"
   end
 
@@ -311,11 +389,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.integer "card_position", null: false
     t.datetime "created_at", null: false
     t.uuid "current_focus_student_goal_id"
+    t.datetime "discarded_at"
     t.uuid "student_id", null: false
     t.uuid "teacher_student_assignment_id", null: false
     t.uuid "therapy_session_id", null: false
     t.datetime "updated_at", null: false
     t.index ["current_focus_student_goal_id"], name: "index_session_participants_on_current_focus_student_goal_id"
+    t.index ["discarded_at"], name: "index_session_participants_on_discarded_at"
     t.index ["student_id"], name: "index_session_participants_on_student_id"
     t.index ["teacher_student_assignment_id"], name: "index_session_participants_on_teacher_student_assignment_id"
     t.index ["therapy_session_id", "card_position"], name: "idx_sp_unique_card_position_per_session", unique: true
@@ -337,21 +417,67 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "session_summaries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "qualitative_notes"
+    t.datetime "reviewed_at"
+    t.bigint "reviewed_by_user_id"
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.uuid "therapy_session_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["reviewed_by_user_id"], name: "index_session_summaries_on_reviewed_by_user_id"
+    t.index ["status", "submitted_at"], name: "index_session_summaries_on_status_and_submitted_at"
+    t.index ["status"], name: "index_session_summaries_on_status"
+    t.index ["submitted_at"], name: "index_session_summaries_on_submitted_at"
+    t.index ["therapy_session_id"], name: "index_session_summaries_on_therapy_session_id", unique: true
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'submitted'::character varying, 'reviewed'::character varying]::text[])", name: "session_summaries_status_check"
+  end
+
   create_table "staff_members", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.string "full_name", null: false
     t.string "role", default: "teacher", null: false
     t.string "staff_number", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["discarded_at"], name: "index_staff_members_on_discarded_at"
     t.index ["role"], name: "index_staff_members_on_role"
     t.index ["staff_number"], name: "index_staff_members_on_staff_number", unique: true
     t.index ["user_id"], name: "index_staff_members_on_user_id"
   end
 
+  create_table "student_documents", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "document_type", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["document_type"], name: "index_student_documents_on_document_type"
+    t.index ["student_id"], name: "index_student_documents_on_student_id"
+  end
+
+  create_table "student_goal_steps", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.decimal "independence_percent", precision: 5, scale: 2, default: "0.0", null: false
+    t.string "name", null: false
+    t.string "status", default: "not_started", null: false
+    t.integer "step_number", null: false
+    t.uuid "student_goal_id", null: false
+    t.uuid "task_analysis_step_template_id"
+    t.datetime "updated_at", null: false
+    t.index ["student_goal_id", "status"], name: "idx_student_goal_steps_on_student_goal_and_status"
+    t.index ["student_goal_id", "step_number"], name: "idx_student_goal_steps_on_student_goal_and_number", unique: true
+    t.index ["student_goal_id"], name: "index_student_goal_steps_on_student_goal_id"
+    t.index ["task_analysis_step_template_id"], name: "index_student_goal_steps_on_task_analysis_step_template_id"
+  end
+
   create_table "student_goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.text "clinical_note"
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.uuid "goal_id", null: false
     t.uuid "iup_id", null: false
     t.decimal "progress_percent", precision: 5, scale: 2, default: "0.0"
@@ -359,6 +485,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.uuid "student_id", null: false
     t.uuid "therapy_station_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_student_goals_on_discarded_at"
     t.index ["goal_id"], name: "index_student_goals_on_goal_id"
     t.index ["iup_id", "therapy_station_id"], name: "index_student_goals_on_iup_id_and_therapy_station_id"
     t.index ["iup_id"], name: "index_student_goals_on_iup_id"
@@ -380,10 +507,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   end
 
   create_table "students", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "assessment_started_at"
     t.datetime "created_at", null: false
     t.date "date_of_birth", null: false
     t.string "diagnosis"
+    t.datetime "discarded_at"
+    t.datetime "enrolled_at"
     t.string "first_name", null: false
+    t.string "guardian_email"
     t.string "guardian_name"
     t.string "guardian_phone"
     t.string "last_name", null: false
@@ -392,10 +523,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.string "status", default: "in_assessment", null: false
     t.string "therapy_group", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_students_on_discarded_at"
   end
 
   create_table "teacher_student_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.date "scheduled_date", null: false
     t.uuid "session_block_definition_id", null: false
     t.string "status", default: "scheduled", null: false
@@ -404,6 +537,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.uuid "therapy_room_id", null: false
     t.uuid "therapy_station_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_teacher_student_assignments_on_discarded_at"
     t.index ["scheduled_date", "status"], name: "index_teacher_student_assignments_on_scheduled_date_and_status"
     t.index ["session_block_definition_id"], name: "idx_on_session_block_definition_id_c7f906d3e7"
     t.index ["student_id", "session_block_definition_id", "scheduled_date"], name: "idx_tsa_unique_student_block_date", unique: true
@@ -416,14 +550,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
 
   create_table "therapy_rooms", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.string "name", null: false
     t.uuid "therapy_station_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_therapy_rooms_on_discarded_at"
     t.index ["therapy_station_id"], name: "index_therapy_rooms_on_therapy_station_id"
   end
 
   create_table "therapy_sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.datetime "ended_at"
     t.uuid "session_block_definition_id", null: false
     t.datetime "started_at"
@@ -432,6 +569,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.uuid "therapy_room_id", null: false
     t.uuid "therapy_station_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_therapy_sessions_on_discarded_at"
     t.index ["session_block_definition_id"], name: "index_therapy_sessions_on_session_block_definition_id"
     t.index ["status"], name: "index_therapy_sessions_on_status"
     t.index ["teacher_id", "status"], name: "index_therapy_sessions_on_teacher_id_and_status"
@@ -442,14 +580,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
 
   create_table "therapy_stations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.string "name", null: false
     t.datetime "updated_at", null: false
+    t.index ["discarded_at"], name: "index_therapy_stations_on_discarded_at"
     t.index ["name"], name: "index_therapy_stations_on_name", unique: true
   end
 
   create_table "trials", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "client_event_id", null: false
     t.datetime "created_at", null: false
+    t.datetime "discarded_at"
     t.datetime "logged_at", null: false
     t.string "outcome", null: false
     t.string "prompt_label_snapshot", null: false
@@ -460,6 +601,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.uuid "therapy_session_id", null: false
     t.datetime "updated_at", null: false
     t.index ["client_event_id"], name: "index_trials_on_client_event_id", unique: true
+    t.index ["discarded_at"], name: "index_trials_on_discarded_at"
     t.index ["prompt_level_id"], name: "index_trials_on_prompt_level_id"
     t.index ["session_participant_id", "student_goal_id", "logged_at", "id"], name: "idx_trials_stream"
     t.index ["session_participant_id"], name: "index_trials_on_session_participant_id"
@@ -522,6 +664,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
     t.check_constraint "email ~ '^[^,;@ \r\n]+@[^,@; \r\n]+.[^,@; \r\n]+$'::citext", name: "valid_email"
   end
 
+  add_foreign_key "ablls_assessments", "assessment_cycles"
+  add_foreign_key "ablls_assessments", "staff_members"
+  add_foreign_key "ablls_responses", "ablls_assessments"
+  add_foreign_key "ablls_responses", "ablls_skill_items"
+  add_foreign_key "ablls_skill_items", "ablls_domains"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "assessment_cycles", "students"
@@ -545,7 +692,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_13_120000) do
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
   add_foreign_key "session_participants", "therapy_sessions"
+  add_foreign_key "session_summaries", "therapy_sessions"
+  add_foreign_key "session_summaries", "users", column: "reviewed_by_user_id"
   add_foreign_key "staff_members", "users"
+  add_foreign_key "student_documents", "students"
+  add_foreign_key "student_goal_steps", "student_goals", on_delete: :cascade
+  add_foreign_key "student_goal_steps", "task_analysis_step_templates", on_delete: :nullify
   add_foreign_key "student_goals", "goals"
   add_foreign_key "student_goals", "iups"
   add_foreign_key "student_goals", "students"

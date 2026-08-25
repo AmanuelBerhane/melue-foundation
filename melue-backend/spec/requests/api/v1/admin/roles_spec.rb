@@ -33,8 +33,9 @@ RSpec.describe "Admin::Roles", type: :request do
   describe "POST /api/v1/admin/roles" do
     it "creates a role when authorized" do
       post "/api/v1/admin/roles",
-           params: { name: "New Coordinator", description: "Test Role" }.to_json,
-           headers: authenticated_headers(admin_user)
+           params: { name: "New Coordinator", description: "Test Role" },
+           headers: authenticated_headers(admin_user),
+           as: :json
 
       expect(response).to have_http_status(:created)
       expect(Role.exists?(name: "New Coordinator")).to be true
