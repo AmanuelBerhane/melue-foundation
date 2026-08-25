@@ -20,4 +20,12 @@ class Goal < ApplicationRecord
   scope :active, -> { where(is_active: true) }
   scope :standard, -> { where(goal_type: "standard") }
   scope :task_analysis, -> { where(goal_type: "task_analysis") }
+
+  def applicable_to_therapy_group?(therapy_group)
+    applicable_therapy_groups.empty? || applicable_therapy_groups.include?(therapy_group)
+  end
+
+  def self.for_therapy_group(therapy_group)
+    where("? = ANY(applicable_therapy_groups) OR applicable_therapy_groups = '{}'", therapy_group)
+  end
 end

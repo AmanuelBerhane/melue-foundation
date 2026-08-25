@@ -84,6 +84,22 @@ Rails.application.routes.draw do
           resources :trials, only: %i[create] do
             get :stream, on: :collection
           end
+
+          resource :summary, only: %i[show], controller: :session_summaries do
+            patch :draft
+            post :submit
+            post :preview_pdf
+          end
+
+          get "participants/:participant_id/goals/:student_goal_id/trial_log",
+              to: "trial_logs#show",
+              as: :participant_goal_trial_log
+        end
+      end
+
+      namespace :therapy_coordinator do
+        resources :session_summaries, only: %i[index] do
+          patch :review, on: :member
         end
       end
 
@@ -111,12 +127,40 @@ Rails.application.routes.draw do
             resources :observations, only: %i[create update destroy]
           end
         end
+
+        # Exactly one ABLLS assessment per cycle (FR-037, FR-038, FR-039, FR-040)
+        resource :ablls_assessment, only: %i[show create]
       end
+
+      # ABLLS assessment response management & completion
+      resources :ablls_assessments, only: [], param: :id do
+        member do
+          post :complete
+          patch "responses/bulk", action: "bulk_update_responses"
+          patch "responses/:response_id", action: "update_response", as: :response
+        end
+      end
+
+      # ABLLS score metadata endpoint
+      get "ablls_assessments/score_options", to: "ablls_assessments#score_options"
 
       # Offline Sync Endpoints
       scope :sync do
         get :pull, to: "syncs#pull"
         post :push, to: "syncs#push"
+      end
+
+      resources :iups do
+        member do
+          get :validate
+          post :finalize
+        end
+        resources :goals, only: [ :create, :update, :destroy ], controller: "iup_goals"
+        resources :signatures, only: [ :create ], controller: "iup_signatures"
+      end
+
+      resources :goals, only: [] do
+        get :search, on: :collection
       end
     end
   end
@@ -144,6 +188,13 @@ Rails.application.routes.draw do
       end
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
+
+      namespace :reports do
+        get :foundation_overview
+        get :session_summaries
+        get :weekly_summaries
+        get :student_progress
+      end
     end
   end
 
