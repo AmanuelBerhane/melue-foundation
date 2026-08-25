@@ -9,6 +9,7 @@ class Notification < ApplicationRecord
     mastery_approval
     session_submission
     parent_communication
+    IupSignatureRequest
   ].freeze
 
   validates :type, inclusion: { in: TYPES }

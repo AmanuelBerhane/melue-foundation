@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_23_115450) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -159,6 +159,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["form_type"], name: "index_form_configurations_on_form_type"
   end
 
+  create_table "form_submissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.bigint "form_configuration_id", null: false
+    t.string "status", default: "draft", null: false
+    t.uuid "submittable_id", null: false
+    t.string "submittable_type", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.jsonb "values", default: {}, null: false
+    t.index ["discarded_at"], name: "index_form_submissions_on_discarded_at"
+    t.index ["form_configuration_id"], name: "index_form_submissions_on_form_configuration_id"
+    t.index ["status"], name: "index_form_submissions_on_status"
+    t.index ["submittable_type", "submittable_id"], name: "index_form_submissions_on_submittable"
+    t.index ["submittable_type", "submittable_id"], name: "index_form_submissions_on_submittable_type_and_submittable_id", unique: true
+    t.index ["values"], name: "index_form_submissions_on_values", using: :gin
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'submitted'::character varying, 'finalized'::character varying]::text[])", name: "form_submissions_status_check"
+  end
+
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -196,14 +215,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   end
 
   create_table "goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "applicable_therapy_groups", default: [], array: true
     t.datetime "created_at", null: false
     t.text "description"
     t.datetime "discarded_at"
     t.uuid "goal_domain_id", null: false
     t.string "goal_type", null: false
     t.boolean "is_active", default: true, null: false
+    t.jsonb "mastery_criteria", default: {}
     t.string "name", null: false
+    t.string "suggested_age_range"
     t.datetime "updated_at", null: false
+    t.index ["applicable_therapy_groups"], name: "index_goals_on_applicable_therapy_groups", using: :gin
     t.index ["discarded_at"], name: "index_goals_on_discarded_at"
     t.index ["goal_domain_id"], name: "index_goals_on_goal_domain_id"
   end
@@ -217,14 +240,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["user_id"], name: "index_guardians_on_user_id"
   end
 
-  create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+  create_table "iup_signatures", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.uuid "iup_id", null: false
+    t.text "signature_evidence"
+    t.datetime "signed_at", null: false
+    t.string "signer_role", null: false
+    t.bigint "signer_user_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["iup_id", "signer_role"], name: "index_iup_signatures_on_iup_id_and_signer_role", unique: true
+    t.index ["iup_id"], name: "index_iup_signatures_on_iup_id"
+    t.index ["signed_at"], name: "index_iup_signatures_on_signed_at"
+    t.index ["signer_user_id"], name: "index_iup_signatures_on_signer_user_id"
+    t.check_constraint "signer_role::text = ANY (ARRAY['program_director'::character varying, 'guardian'::character varying]::text[])", name: "iup_signatures_signer_role_check"
+  end
+
+  create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id"
+    t.datetime "created_at", null: false
+    t.bigint "created_by_user_id"
     t.datetime "discarded_at"
+    t.bigint "finalized_by_user_id"
     t.date "finalized_on"
     t.string "status", default: "draft", null: false
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_iups_on_assessment_cycle_id"
+    t.index ["created_by_user_id"], name: "index_iups_on_created_by_user_id"
     t.index ["discarded_at"], name: "index_iups_on_discarded_at"
+    t.index ["finalized_by_user_id"], name: "index_iups_on_finalized_by_user_id"
+    t.index ["finalized_on"], name: "index_iups_on_finalized_on"
+    t.index ["student_id", "status"], name: "index_iups_on_student_active", where: "((status)::text = 'active'::text)"
+    t.index ["student_id", "status"], name: "index_iups_on_student_draft", unique: true, where: "((status)::text = 'draft'::text)"
     t.index ["student_id"], name: "index_iups_on_student_id"
   end
 
@@ -686,11 +733,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "assessment_cycles", "students"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "form_submissions", "form_configurations"
   add_foreign_key "goal_mastery_checks", "student_goals"
   add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
+  add_foreign_key "iup_signatures", "iups"
+  add_foreign_key "iup_signatures", "users", column: "signer_user_id"
+  add_foreign_key "iups", "assessment_cycles"
   add_foreign_key "iups", "students"
+  add_foreign_key "iups", "users", column: "created_by_user_id"
+  add_foreign_key "iups", "users", column: "finalized_by_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"

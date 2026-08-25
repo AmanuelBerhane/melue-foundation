@@ -785,3 +785,69 @@ puts ""
 puts "Login with:"
 puts "  Admin  : admin@melue.foundation / Password123!"
 puts "  Teacher: teacher1@melue.foundation / Password123!"
+
+FormConfiguration.find_or_create_by!(form_type: "iup", is_default: true) do |fc|
+  fc.form_name = "Individual Utility Plan"
+  fc.revision_number = 1
+  fc.revision_date = Date.current
+  fc.organization_name = "MELUE Foundation"
+  fc.field_schema = [
+    {
+      "key" => "assessment_summary",
+      "label" => "Assessment Summary",
+      "type" => "rich_text",
+      "required" => false,
+      "section" => "Student Summary"
+    },
+    {
+      "key" => "reinforcement_strategy",
+      "label" => "Reinforcement Strategy",
+      "type" => "long_text",
+      "required" => true,
+      "max_length" => 5000,
+      "section" => "Behavior Management"
+    },
+    {
+      "key" => "consequence_plan",
+      "label" => "Consequence Plan",
+      "type" => "long_text",
+      "required" => true,
+      "max_length" => 5000,
+      "section" => "Behavior Management"
+    },
+    {
+      "key" => "family_coordination_plan",
+      "label" => "Family Coordination Plan",
+      "type" => "long_text",
+      "required" => true,
+      "max_length" => 5000,
+      "section" => "Family Support"
+    },
+    {
+      "key" => "behavior_reduction_plan",
+      "label" => "Behavior Reduction Plan",
+      "type" => "long_text",
+      "required" => false,
+      "max_length" => 5000,
+      "section" => "Behavior Management"
+    },
+    {
+      "key" => "crisis_plan",
+      "label" => "Crisis Management Plan",
+      "type" => "long_text",
+      "required" => true,
+      "max_length" => 5000,
+      "section" => "Crisis Response"
+    },
+    {
+      "key" => "discharge_plan",
+      "label" => "Discharge Planning",
+      "type" => "long_text",
+      "required" => false,
+      "max_length" => 5000,
+      "section" => "Transition Planning"
+    }
+  ]
+end
+
+puts "  ✓ IUP form configuration seeded"
