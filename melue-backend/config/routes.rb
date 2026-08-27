@@ -99,6 +99,12 @@ Rails.application.routes.draw do
         end
       end
 
+      namespace :program_director do
+        get :dashboard, to: "dashboard#show"
+        get :assessment_pipeline, to: "assessment_pipeline#index"
+        resources :assessments, only: %i[index show]
+      end
+
       resources :sensory_activities, only: [ :index ]
       resources :sensory_assessments, only: [ :create, :update, :show ] do
         member do
