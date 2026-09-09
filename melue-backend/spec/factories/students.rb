@@ -28,7 +28,7 @@ FactoryBot.define do
     end
 
     trait :in_assessment do
-      status { 'In Assessment' }
+      status { "in_assessment" }
       enrolled_at { Time.current }
       assessment_started_at { Time.current }
     end
