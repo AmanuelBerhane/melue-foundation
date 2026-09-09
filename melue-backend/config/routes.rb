@@ -187,7 +187,7 @@ Rails.application.routes.draw do
         # Children list and individual child profile
         resources :students, only: %i[index show] do
           # Submitted/reviewed session history for this child
-          resources :sessions, only: [:index], controller: "sessions"
+          resources :sessions, only: [ :index ], controller: "sessions"
 
           # Guardian-submitted home updates
           resources :home_observations, only: %i[index create], controller: "home_observations"

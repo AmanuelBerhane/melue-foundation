@@ -229,12 +229,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   end
 
   create_table "notifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.text "payload_reference"
+    t.datetime "created_at", precision: nil, null: false
+    t.text "payload_reference", null: false
     t.datetime "read_at", precision: nil
-    t.uuid "recipient_user_id"
-    t.string "type"
-    t.datetime "updated_at", null: false
+    t.bigint "recipient_user_id", null: false
+    t.string "type", null: false
+    t.index ["read_at"], name: "index_notifications_on_read_at"
+    t.index ["recipient_user_id"], name: "index_notifications_on_recipient_user_id"
   end
 
   create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -526,6 +527,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
   end
 
+  create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.uuid "goal_id", null: false
+    t.jsonb "mastery_criteria", default: {}, null: false
+    t.string "name", null: false
+    t.integer "step_number", null: false
+    t.datetime "updated_at", null: false
+    t.index ["goal_id", "step_number"], name: "idx_task_analysis_step_templates_on_goal_and_number", unique: true
+    t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
+  end
+
   create_table "teacher_student_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
@@ -606,6 +619,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["session_participant_id", "student_goal_id", "logged_at", "id"], name: "idx_trials_stream"
     t.index ["session_participant_id"], name: "index_trials_on_session_participant_id"
     t.index ["student_goal_id"], name: "index_trials_on_student_goal_id"
+    t.index ["student_goal_step_id", "outcome", "prompt_level_id"], name: "idx_trials_step_outcome"
     t.index ["student_goal_step_id"], name: "index_trials_on_student_goal_step_id"
     t.index ["therapy_session_id"], name: "index_trials_on_therapy_session_id"
   end
@@ -678,6 +692,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
   add_foreign_key "iups", "students"
+  add_foreign_key "notifications", "users", column: "recipient_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
@@ -704,6 +719,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "student_goals", "therapy_stations"
   add_foreign_key "student_guardians", "guardians"
   add_foreign_key "student_guardians", "students"
+  add_foreign_key "task_analysis_step_templates", "goals", on_delete: :cascade
   add_foreign_key "teacher_student_assignments", "session_block_definitions"
   add_foreign_key "teacher_student_assignments", "staff_members", column: "teacher_id"
   add_foreign_key "teacher_student_assignments", "students"
@@ -716,6 +732,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "therapy_sessions", "therapy_stations"
   add_foreign_key "trials", "prompt_levels"
   add_foreign_key "trials", "session_participants"
+  add_foreign_key "trials", "student_goal_steps", validate: false
   add_foreign_key "trials", "student_goals"
   add_foreign_key "trials", "therapy_sessions"
   add_foreign_key "user_jwt_refresh_keys", "users"
