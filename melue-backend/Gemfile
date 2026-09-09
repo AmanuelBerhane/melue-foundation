@@ -74,6 +74,7 @@ end
 gem "prawn"
 gem "prawn-table"
 gem "matrix"
+gem "csv"
 
 group :test do
   # Clean one-liner assertions for models and controllers
