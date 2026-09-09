@@ -12,6 +12,10 @@ on:
       - 'melue-backend/**'
       - '.github/workflows/backend-ci.yml'
 
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     working-directory: melue-backend
