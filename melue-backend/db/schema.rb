@@ -606,6 +606,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_115450) do
   end
 
   create_table "student_goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "archived_at"
     t.text "clinical_note"
     t.datetime "created_at", null: false
     t.datetime "discarded_at"

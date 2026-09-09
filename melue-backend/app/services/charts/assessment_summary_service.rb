@@ -10,17 +10,13 @@ module Charts
     def call
       return failure("Student not found") unless student
 
-      # Get preference assessment data
-      preference_data = get_preference_assessment
-
-      # TODO: Add ABLLS and MASS/FAST data when implemented
       data = {
         student_id: student.id,
         student_name: student.full_name,
         assessments: {
-          preference: preference_data,
-          skills: { available: false, message: "ABLLS assessment data will be available when implemented" },
-          behavior: { available: false, message: "MASS/FAST assessment data will be available when implemented" }
+          preference: get_preference_assessment,
+          skills: get_ablls_assessment,
+          behavior: get_behavior_assessment
         }
       }
 
@@ -30,7 +26,6 @@ module Charts
     private
 
     def get_preference_assessment
-      # Find the latest assessment cycle with preference assessment
       assessment_cycle = student.assessment_cycles
         .includes(:preference_assessment)
         .where(preference_assessments: { status: "submitted" })
@@ -39,8 +34,6 @@ module Charts
       return { available: false, message: "No submitted preference assessment found" } unless assessment_cycle
 
       preference = assessment_cycle.preference_assessment
-
-      # Get ranked observations
       ranked = preference.ranked_observations(limit: 10)
 
       {
@@ -55,6 +48,52 @@ module Charts
             frequency_count: obs.frequency_count
           }
         end
+      }
+    end
+
+    def get_ablls_assessment
+      # Check if SkillsAssessment model exists
+      if defined?(SkillsAssessment)
+        ablls = SkillsAssessment
+          .joins(:assessment_cycle)
+          .where(assessment_cycles: { student_id: student.id })
+          .where(status: "submitted")
+          .last
+
+        if ablls
+          return {
+            available: true,
+            completed_at: ablls.completed_at,
+            scores: ablls.scores
+          }
+        end
+      end
+
+      { available: false, message: "ABLLS assessment data not found" }
+    end
+
+    def get_behavior_assessment
+      # Get MASS and FAST assessments
+      mass = MassAssessment
+        .where(student_id: student.id)
+        .where(status: "completed")
+        .last
+
+      fast = FastAssessment
+        .where(student_id: student.id)
+        .where(status: "completed")
+        .last
+
+      {
+        available: mass.present? || fast.present?,
+        mass: mass ? {
+          scores: mass.function_scores,
+          completed_at: mass.completed_at
+        } : nil,
+        fast: fast ? {
+          risk_indicators: fast.risk_indicators,
+          completed_at: fast.completed_at
+        } : nil
       }
     end
   end

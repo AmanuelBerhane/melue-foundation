@@ -3,33 +3,44 @@ module Goals
   class RemovalService < ApplicationService
     attr_reader :student_goal, :reason, :current_user
 
-    def initialize(student_goal, reason = nil, current_user = nil)
+    def initialize(student_goal, reason: nil, current_user: nil)
       @student_goal = student_goal
       @reason = reason
       @current_user = current_user
     end
 
     def call
-      return failure("Student goal not found") unless student_goal
-
-      # Prevent removal of mastered goals without confirmation
-      if student_goal.mastered? && reason.blank?
-        return failure("Please provide a reason for removing a mastered goal")
+      # Check if goal is already archived
+      if student_goal.status == "archived"
+        return failure("Goal is already archived")
       end
 
-      # Archive the goal instead of deleting
-      student_goal.status = "archived"
-      student_goal.clinical_note = "#{student_goal.clinical_note}\nRemoved at #{Time.current}"
+      # Check if goal is mastered
+      if student_goal.status == "mastered" && reason.blank?
+        return failure("Cannot remove a mastered goal without providing a reason")
+      end
 
+      # Archive the goal
+      update_params = {
+        status: "archived",
+        archived_at: Time.current
+      }
+
+      # Add clinical note if provided
       if reason.present?
-        student_goal.clinical_note += " | Reason: #{reason}"
+        update_params[:clinical_note] = [ student_goal.clinical_note, "Removed: #{reason}" ].compact.join("\n")
       end
 
-      if student_goal.save
-        success({ student_goal: student_goal, message: "Goal removed successfully" })
-      else
-        failure(student_goal.errors.full_messages.join(", "))
+      # Track who removed it if available
+      if current_user.present?
+        update_params[:removed_by] = current_user.id if student_goal.respond_to?(:removed_by=)
       end
+
+      student_goal.update!(update_params)
+
+      success(student_goal)
+    rescue => e
+      failure(e.message)
     end
   end
 end

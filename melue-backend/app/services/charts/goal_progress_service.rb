@@ -31,7 +31,6 @@ module Charts
     private
 
     def build_data_points(trials)
-      # Group by date and calculate success rate
       grouped = trials.group_by { |t| t.logged_at.to_date }
 
       grouped.map do |date, day_trials|

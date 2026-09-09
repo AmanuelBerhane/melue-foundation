@@ -1,14 +1,13 @@
 # spec/requests/api/v1/goals/assignments_spec.rb
 require 'rails_helper'
 
-RSpec.describe 'Goal Assignments API', type: :request do
+RSpec.describe 'Goal Assignments API - Create', type: :request do
   let(:user) { create(:user, role: :institutional_admin) }
   let(:staff_member) { create(:staff_member, user: user, role: 'program_director') }
   let(:headers) { auth_headers(user) }
 
-  # Make sure the staff_member is created before each test
   before do
-    staff_member # This creates the staff_member
+    staff_member
   end
 
   describe 'POST /api/v1/goal_assignments' do
@@ -30,10 +29,25 @@ RSpec.describe 'Goal Assignments API', type: :request do
       expect(response).to have_http_status(:created)
       expect(json['student_id']).to eq(student.id)
       expect(json['goal_id']).to eq(goal.id)
+      expect(json['status']).to eq('active')
     end
 
-    it 'returns 422 when capacity exceeded' do
-      # Create 2 existing goals
+    it 'creates a new IUP if none provided' do
+      params = {
+        student_id: student.id,
+        goal_id: goal.id,
+        station_id: station.id
+      }
+
+      expect {
+        post '/api/v1/goal_assignments', params: params, headers: headers
+      }.to change(Iup, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      expect(json['iup_id']).to be_present
+    end
+
+    it 'returns 422 when capacity exceeded (2 goals per station)' do
       2.times do
         create(:student_goal,
           student: student,
@@ -52,23 +66,78 @@ RSpec.describe 'Goal Assignments API', type: :request do
 
       post '/api/v1/goal_assignments', params: params, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json['error']).to include('already has 2 goals')
     end
-  end
 
-  describe 'PUT /api/v1/goal_assignments/:id/replace' do
-    let(:student_goal) { create(:student_goal, status: 'active') }
-    let(:new_goal) { create(:goal, is_active: true) }
+    it 'allows assigning goals to different stations up to 2 each' do
+      station2 = create(:therapy_station)
 
-    it 'replaces a goal' do
-      params = { new_goal_id: new_goal.id }
+      2.times do
+        create(:student_goal,
+          student: student,
+          iup: iup,
+          therapy_station: station,
+          status: 'active'
+        )
+      end
 
-      put "/api/v1/goal_assignments/#{student_goal.id}/replace", params: params, headers: headers
+      params = {
+        student_id: student.id,
+        goal_id: goal.id,
+        station_id: station2.id,
+        iup_id: iup.id
+      }
 
-      expect(response).to have_http_status(:ok)
-      expect(json['archived_goal']['id']).to eq(student_goal.id)
-      expect(json['new_goal']['goal_id']).to eq(new_goal.id)
+      post '/api/v1/goal_assignments', params: params, headers: headers
+
+      expect(response).to have_http_status(:created)
+      # The model uses therapy_station_id
+      expect(json['therapy_station_id']).to eq(station2.id)
+    end
+
+    it 'returns 422 if goal is not active' do
+      inactive_goal = create(:goal, is_active: false)
+
+      params = {
+        student_id: student.id,
+        goal_id: inactive_goal.id,
+        station_id: station.id,
+        iup_id: iup.id
+      }
+
+      post '/api/v1/goal_assignments', params: params, headers: headers
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json['error']).to eq('Goal is not active')
+    end
+
+    it 'returns 404 if station not found' do
+      params = {
+        student_id: student.id,
+        goal_id: goal.id,
+        station_id: 'invalid-id',
+        iup_id: iup.id
+      }
+
+      post '/api/v1/goal_assignments', params: params, headers: headers
+
+      expect(response).to have_http_status(:not_found)
+      expect(json['error']).to include('Station not found')
+    end
+
+    it 'returns 404 if student not found' do
+      params = {
+        student_id: 'invalid-id',
+        goal_id: goal.id,
+        station_id: station.id,
+        iup_id: iup.id
+      }
+
+      post '/api/v1/goal_assignments', params: params, headers: headers
+
+      expect(response).to have_http_status(:not_found)
+      expect(json['error']).to include('Student not found')
     end
   end
 end
