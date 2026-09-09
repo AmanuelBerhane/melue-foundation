@@ -14,6 +14,7 @@ class AssessmentCycle < ApplicationRecord
   has_one :preference_assessment, dependent: :destroy
   has_one :skills_assessment,   dependent: :destroy
   has_one :behavior_assessment, dependent: :destroy
+  has_one :ablls_assessment, dependent: :destroy
 
   enum :status, {
     in_progress: "in_progress",
@@ -25,6 +26,9 @@ class AssessmentCycle < ApplicationRecord
   validates :started_on, presence: true
 
   scope :in_progress, -> { where(status: "in_progress") }
+  scope :complete,    -> { where(status: "complete") }
+  scope :reviewed,    -> { where(status: "reviewed") }
+  scope :latest,      -> { order(started_on: :desc) }
 
   # Returns the cycle's preference assessment, creating the draft on first use.
   # Idempotent: repeat calls return the same record (FR-036 draft/resume).
