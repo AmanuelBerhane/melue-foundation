@@ -341,7 +341,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_115450) do
     t.index ["assessment_cycle_id"], name: "index_mass_assessments_on_assessment_cycle_id"
     t.index ["student_id", "status"], name: "index_mass_assessments_on_student_id_and_status"
     t.index ["student_id"], name: "index_mass_assessments_on_student_id"
-    t.index ["teacher_id"], name: "index_mass_assessments_on_teacher_id"
   end
 
   create_table "notifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -835,12 +834,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_23_115450) do
   add_foreign_key "iup_signatures", "users", column: "signer_user_id"
   add_foreign_key "iups", "assessment_cycles"
   add_foreign_key "iups", "students"
+  add_foreign_key "iups", "users", column: "created_by_user_id"
+  add_foreign_key "iups", "users", column: "finalized_by_user_id"
   add_foreign_key "mass_assessments", "assessment_cycles"
   add_foreign_key "mass_assessments", "staff_members", column: "teacher_id"
   add_foreign_key "mass_assessments", "students"
   add_foreign_key "notifications", "users", column: "recipient_user_id"
-  add_foreign_key "iups", "users", column: "created_by_user_id"
-  add_foreign_key "iups", "users", column: "finalized_by_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
