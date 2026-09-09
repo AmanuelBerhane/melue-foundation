@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_23_115450) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -145,6 +145,59 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
+  create_table "behavior_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.datetime "started_at"
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_behavior_assessments_on_assessment_cycle_id", unique: true
+    t.index ["discarded_at"], name: "index_behavior_assessments_on_discarded_at"
+    t.index ["status"], name: "index_behavior_assessments_on_status"
+  end
+
+  create_table "behavior_incidents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "additional_notes"
+    t.text "antecedent", null: false
+    t.text "behavior_definition", null: false
+    t.string "behavior_name", null: false
+    t.integer "category", default: 0, null: false
+    t.text "consequence", null: false
+    t.datetime "created_at", null: false
+    t.integer "frequency", default: 0, null: false
+    t.integer "intensity", default: 0, null: false
+    t.string "location", null: false
+    t.datetime "occurred_at", null: false
+    t.uuid "staff_member_id"
+    t.uuid "student_goal_id"
+    t.uuid "student_id", null: false
+    t.uuid "therapy_session_id"
+    t.datetime "updated_at", null: false
+    t.index ["staff_member_id"], name: "index_behavior_incidents_on_staff_member_id"
+    t.index ["student_goal_id"], name: "index_behavior_incidents_on_student_goal_id"
+    t.index ["student_id", "occurred_at"], name: "index_behavior_incidents_on_student_id_and_occurred_at"
+    t.index ["student_id"], name: "index_behavior_incidents_on_student_id"
+    t.index ["therapy_session_id"], name: "index_behavior_incidents_on_therapy_session_id"
+  end
+
+  create_table "fast_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.jsonb "responses", default: {}
+    t.jsonb "risk_indicators", default: {}
+    t.string "status", default: "draft"
+    t.uuid "student_id", null: false
+    t.uuid "teacher_id"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_fast_assessments_on_assessment_cycle_id"
+    t.index ["student_id", "status"], name: "index_fast_assessments_on_student_id_and_status"
+    t.index ["student_id"], name: "index_fast_assessments_on_student_id"
+    t.index ["teacher_id"], name: "index_fast_assessments_on_teacher_id"
+  end
+
   create_table "form_configurations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.jsonb "field_schema", default: {}, null: false
@@ -157,6 +210,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.datetime "updated_at", null: false
     t.index ["field_schema"], name: "index_form_configurations_on_field_schema", using: :gin
     t.index ["form_type"], name: "index_form_configurations_on_form_type"
+  end
+
+  create_table "form_submissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.bigint "form_configuration_id", null: false
+    t.string "status", default: "draft", null: false
+    t.uuid "submittable_id", null: false
+    t.string "submittable_type", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.jsonb "values", default: {}, null: false
+    t.index ["discarded_at"], name: "index_form_submissions_on_discarded_at"
+    t.index ["form_configuration_id"], name: "index_form_submissions_on_form_configuration_id"
+    t.index ["status"], name: "index_form_submissions_on_status"
+    t.index ["submittable_type", "submittable_id"], name: "index_form_submissions_on_submittable"
+    t.index ["submittable_type", "submittable_id"], name: "index_form_submissions_on_submittable_type_and_submittable_id", unique: true
+    t.index ["values"], name: "index_form_submissions_on_values", using: :gin
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'submitted'::character varying, 'finalized'::character varying]::text[])", name: "form_submissions_status_check"
   end
 
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -196,14 +268,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   end
 
   create_table "goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "applicable_therapy_groups", default: [], array: true
     t.datetime "created_at", null: false
     t.text "description"
     t.datetime "discarded_at"
     t.uuid "goal_domain_id", null: false
     t.string "goal_type", null: false
     t.boolean "is_active", default: true, null: false
+    t.jsonb "mastery_criteria", default: {}
     t.string "name", null: false
+    t.string "suggested_age_range"
     t.datetime "updated_at", null: false
+    t.index ["applicable_therapy_groups"], name: "index_goals_on_applicable_therapy_groups", using: :gin
     t.index ["discarded_at"], name: "index_goals_on_discarded_at"
     t.index ["goal_domain_id"], name: "index_goals_on_goal_domain_id"
   end
@@ -217,18 +293,44 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["user_id"], name: "index_guardians_on_user_id"
   end
 
-  create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+  create_table "iup_signatures", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.uuid "iup_id", null: false
+    t.text "signature_evidence"
+    t.datetime "signed_at", null: false
+    t.string "signer_role", null: false
+    t.bigint "signer_user_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["iup_id", "signer_role"], name: "index_iup_signatures_on_iup_id_and_signer_role", unique: true
+    t.index ["iup_id"], name: "index_iup_signatures_on_iup_id"
+    t.index ["signed_at"], name: "index_iup_signatures_on_signed_at"
+    t.index ["signer_user_id"], name: "index_iup_signatures_on_signer_user_id"
+    t.check_constraint "signer_role::text = ANY (ARRAY['program_director'::character varying, 'guardian'::character varying]::text[])", name: "iup_signatures_signer_role_check"
+  end
+
+  create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id"
+    t.datetime "created_at", null: false
+    t.bigint "created_by_user_id"
     t.datetime "discarded_at"
+    t.bigint "finalized_by_user_id"
     t.date "finalized_on"
     t.string "status", default: "draft", null: false
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_iups_on_assessment_cycle_id"
+    t.index ["created_by_user_id"], name: "index_iups_on_created_by_user_id"
     t.index ["discarded_at"], name: "index_iups_on_discarded_at"
+    t.index ["finalized_by_user_id"], name: "index_iups_on_finalized_by_user_id"
+    t.index ["finalized_on"], name: "index_iups_on_finalized_on"
+    t.index ["student_id", "status"], name: "index_iups_on_student_active", where: "((status)::text = 'active'::text)"
+    t.index ["student_id", "status"], name: "index_iups_on_student_draft", unique: true, where: "((status)::text = 'draft'::text)"
     t.index ["student_id"], name: "index_iups_on_student_id"
   end
 
-  create_table "notifications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+  create_table "mass_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id"
+    t.datetime "completed_at"
     t.datetime "created_at", precision: nil, null: false
     t.text "payload_reference", null: false
     t.datetime "read_at", precision: nil
@@ -418,6 +520,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "skills_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "assessment_cycle_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.integer "progress_percent", default: 0, null: false
+    t.datetime "started_at"
+    t.string "status", default: "draft", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["assessment_cycle_id"], name: "index_skills_assessments_on_assessment_cycle_id", unique: true
+    t.index ["discarded_at"], name: "index_skills_assessments_on_discarded_at"
+    t.index ["status"], name: "index_skills_assessments_on_status"
+  end
+  
   create_table "session_summaries", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "qualitative_notes"
@@ -476,6 +592,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   end
 
   create_table "student_goals", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "archived_at"
     t.text "clinical_note"
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
@@ -516,8 +633,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.datetime "enrolled_at"
     t.string "first_name", null: false
     t.string "guardian_email"
-    t.string "guardian_name"
-    t.string "guardian_phone"
+    t.string "guardian_name", default: "", null: false
+    t.string "guardian_phone", default: "", null: false
     t.string "last_name", null: false
     t.string "middle_name"
     t.string "program_type", null: false
@@ -687,12 +804,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "assessment_cycles", "students"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "behavior_assessments", "assessment_cycles"
+  add_foreign_key "behavior_incidents", "staff_members"
+  add_foreign_key "behavior_incidents", "student_goals"
+  add_foreign_key "behavior_incidents", "students"
+  add_foreign_key "behavior_incidents", "therapy_sessions"
+  add_foreign_key "fast_assessments", "assessment_cycles"
+  add_foreign_key "fast_assessments", "staff_members", column: "teacher_id"
+  add_foreign_key "fast_assessments", "students"
+  add_foreign_key "form_submissions", "form_configurations"
   add_foreign_key "goal_mastery_checks", "student_goals"
   add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
+  add_foreign_key "iup_signatures", "iups"
+  add_foreign_key "iup_signatures", "users", column: "signer_user_id"
+  add_foreign_key "iups", "assessment_cycles"
   add_foreign_key "iups", "students"
   add_foreign_key "notifications", "users", column: "recipient_user_id"
+  add_foreign_key "mass_assessments", "assessment_cycles"
+  add_foreign_key "mass_assessments", "staff_members", column: "teacher_id"
+  add_foreign_key "mass_assessments", "students"
+  add_foreign_key "notifications", "users", column: "recipient_user_id"
+  add_foreign_key "iups", "users", column: "created_by_user_id"
+  add_foreign_key "iups", "users", column: "finalized_by_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
@@ -707,6 +842,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "session_participants", "students"
   add_foreign_key "session_participants", "teacher_student_assignments"
   add_foreign_key "session_participants", "therapy_sessions"
+  add_foreign_key "skills_assessments", "assessment_cycles"
   add_foreign_key "session_summaries", "therapy_sessions"
   add_foreign_key "session_summaries", "users", column: "reviewed_by_user_id"
   add_foreign_key "staff_members", "users"
