@@ -157,6 +157,8 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :api do
+    namespace :v1 do
       # Enrollments
       resources :enrollments, only: [ :create, :show, :update ] do
         member do
@@ -229,13 +231,6 @@ Rails.application.routes.draw do
         member do
           put :replace
         end
-      end
-
-      namespace :reports do
-        get :foundation_overview
-        get :session_summaries
-        get :weekly_summaries
-        get :student_progress
       end
 
       # Reports
