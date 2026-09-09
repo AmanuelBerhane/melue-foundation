@@ -24,6 +24,14 @@ FactoryBot.define do
       form_type  { :iup }
       is_default { true }
       sequence(:form_name) { |n| "IUP Form #{n}" }
+      field_schema do
+        {
+          "fields" => [
+            { "key" => "existing_field", "type" => "text", "label" => "Existing Field" },
+            { "key" => "reinforcement", "type" => "text", "label" => "Reinforcement" }
+          ]
+        }
+      end
     end
 
     trait :ablls do

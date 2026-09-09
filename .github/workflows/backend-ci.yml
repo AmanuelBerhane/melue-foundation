@@ -11,6 +11,11 @@ on:
     paths:
       - 'melue-backend/**'
       - '.github/workflows/backend-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 defaults:
   run:

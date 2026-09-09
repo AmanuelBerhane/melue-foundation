@@ -30,11 +30,16 @@ class StudentGoal < ApplicationRecord
     less_than_or_equal_to: 100
   }, allow_nil: true
   validate :student_matches_iup
+  validate :max_two_goals_per_station, on: :create
 
   scope :active_or_in_progress, -> { where(status: %w[active in_progress]) }
 
   delegate :name, to: :goal, prefix: true
   delegate :goal_type, to: :goal
+
+  def mastered?
+    status == "mastered"
+  end
 
   private
 
@@ -42,5 +47,17 @@ class StudentGoal < ApplicationRecord
     return unless iup && student
 
     errors.add(:student_id, "must match IUP's student") if iup.student_id != student_id
+  end
+
+  def max_two_goals_per_station
+    return unless iup && therapy_station
+
+    existing_count = StudentGoal.where(
+      iup: iup,
+      therapy_station: therapy_station,
+      status: "active"
+    ).count
+
+    errors.add(:base, "Maximum 2 active goals per station") if existing_count >= 2
   end
 end
