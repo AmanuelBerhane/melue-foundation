@@ -1,3 +1,4 @@
+# config/routes.rb
 Rails.application.routes.draw do
   # Health check — used by load balancers and uptime monitors.
   get "up" => "rails/health#show", as: :rails_health_check
@@ -7,7 +8,7 @@ Rails.application.routes.draw do
       resources :notifications, only: [ :index ] do
         member { post :mark_as_read }
       end
-      # --- Feature Branch: Mastery Checks ---
+
       resources :student_goals, only: [] do
         resources :mastery_checks, only: [ :create ], controller: "goal_mastery_checks"
       end
@@ -20,7 +21,7 @@ Rails.application.routes.draw do
         resources :verifications, only: [ :create ], controller: "goal_mastery_verifications"
       end
 
-      # --- Main Branch: Admin Routes ---
+      # --- Admin Routes ---
       namespace :admin do
         resources :roles
         resources :staff_members, only: %i[index show update] do
@@ -65,21 +66,13 @@ Rails.application.routes.draw do
       get "today/session", to: "therapy_sessions#today_session"
 
       resources :therapy_sessions, only: %i[show] do
-        # Swap the active student in a session (FR-096)
         post :swap, on: :member
-
-        # Start a session from an assignment
         post :start, on: :collection
-
-        # Full dashboard payload (station, room, timer, cards, goals, streams)
         get :dashboard, on: :member
-
-        # Update the focused goal for a participant (FR-092)
         patch "participants/:participant_id/active_goal",
               to: "therapy_sessions#update_active_goal",
               as: :participant_active_goal
 
-        # Trial logging and stream (FR-093, FR-094)
         scope module: :therapy_sessions do
           resources :trials, only: %i[create] do
             get :stream, on: :collection
@@ -103,6 +96,12 @@ Rails.application.routes.draw do
         end
       end
 
+      namespace :program_director do
+        get :dashboard, to: "dashboard#show"
+        get :assessment_pipeline, to: "assessment_pipeline#index"
+        resources :assessments, only: %i[index show]
+      end
+
       resources :sensory_activities, only: [ :index ]
       resources :sensory_assessments, only: [ :create, :update, :show ] do
         member do
@@ -110,19 +109,12 @@ Rails.application.routes.draw do
         end
       end
 
-      # Preference item catalogue for SCR-012 (FR-047a)
       resources :preference_inventory_items, only: %i[index]
 
       resources :assessment_cycles, only: [] do
-        # Exactly one preference assessment per cycle (FR-047, FR-049)
         resource :preference_assessment, only: %i[show create] do
-          # Finalise the assessment (FR-036)
           post :submit
-
-          # Ranked top-preferences list (FR-047d, FR-048)
           get :rankings
-
-          # Timer, counter, notes and custom items (FR-047b, FR-047e, FR-047f)
           scope module: :preference_assessments do
             resources :observations, only: %i[create update destroy]
           end
@@ -167,6 +159,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      # Enrollments
       resources :enrollments, only: [ :create, :show, :update ] do
         member do
           patch :update_step
@@ -180,6 +173,45 @@ Rails.application.routes.draw do
         end
       end
 
+      # Behavior Assessment (MR-23)
+      namespace :assessments do
+        resources :mass, only: [ :create, :update ] do
+          member { post :submit }
+        end
+
+        resources :fast, only: [ :create, :update ] do
+          member { post :submit }
+        end
+      end
+
+      # Student Goals - GET /api/v1/students/:student_id/goals
+      # This shows the goal summary for a student (not a specific goal)
+      get "students/:student_id/goals", to: "students/goals#show"
+
+      # ========================================
+      # FIXED: Behavior Incidents (FR-045, FR-046)
+      # ========================================
+      # GET /api/v1/students/:student_id/behavior_incidents
+      resources :students, only: [] do
+        resources :behavior_incidents, only: [ :index, :create, :update, :destroy ],
+                                        controller: "students/behavior_incidents"
+      end
+
+      # Student Charts - All chart endpoints under student
+      # GET /api/v1/students/:student_id/charts/goal_progress
+      # GET /api/v1/students/:student_id/charts/trial_distribution
+      # GET /api/v1/students/:student_id/charts/behavior_trends
+      # GET /api/v1/students/:student_id/charts/assessment_summary
+      # POST /api/v1/students/:student_id/charts/export
+      # POST /api/v1/students/:student_id/charts/share
+      get "students/:student_id/charts/goal_progress", to: "students/charts#goal_progress"
+      get "students/:student_id/charts/trial_distribution", to: "students/charts#trial_distribution"
+      get "students/:student_id/charts/behavior_trends", to: "students/charts#behavior_trends"
+      get "students/:student_id/charts/assessment_summary", to: "students/charts#assessment_summary"
+      post "students/:student_id/charts/export", to: "students/charts#export"
+      post "students/:student_id/charts/share", to: "students/charts#share"
+
+      # Staff Scheduling
       resources :staff_scheduling, only: [ :index ] do
         collection do
           get :teacher_schedule
@@ -189,11 +221,47 @@ Rails.application.routes.draw do
 
       resources :assignments, only: [ :create, :update, :destroy ], controller: "staff_scheduling"
 
+      # Program Director Caseload
+      namespace :program_directors do
+        resources :caseload, only: [ :index ]
+      end
+
+      # Goal Assignments (top-level - doesn't need student_id)
+      resources :goal_assignments, only: [ :create, :destroy ] do
+        member do
+          put :replace
+        end
+      end
+
+      # Reports
       namespace :reports do
         get :foundation_overview
         get :session_summaries
         get :weekly_summaries
         get :student_progress
+      end
+
+      # ── Parent (Guardian) Portal ─────────────────────────────────────────────
+      namespace :parent do
+        # High-level overview: guardian profile, all children, unread counts
+        get "dashboard", to: "dashboard#index"
+
+        # Children list and individual child profile
+        resources :students, only: %i[index show] do
+          # Submitted/reviewed session history for this child
+          resources :sessions, only: [ :index ], controller: "sessions"
+
+          # Guardian-submitted home updates
+          resources :home_observations, only: %i[index create], controller: "home_observations"
+
+          # Staff ↔ guardian message thread for this child
+          resources :communications, only: %i[index create], controller: "communications"
+        end
+
+        # Mark a specific message as read (no student_id nesting needed)
+        resources :communications, only: [] do
+          member { patch :mark_read }
+        end
       end
     end
   end
