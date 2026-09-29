@@ -8,10 +8,10 @@ module Api
       before_action :require_staff_member!
 
       def dashboard
-        result = Assessments::DashboardService.call(teacher: current_staff_member)
+        result = ::Assessments::DashboardService.call(teacher: current_staff_member)
 
         if result.success?
-          render json: Assessments::DashboardSerializer.new(result.data).as_json
+          render json: ::Assessments::DashboardSerializer.new(result.data).as_json
         else
           render json: { errors: result.errors }, status: :unprocessable_entity
         end
