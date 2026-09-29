@@ -16,6 +16,7 @@ module SessionSummaries
         :session_block_definition,
         :teacher,
         :trials,
+        :behavior_incidents,
         session_participants: :student
       ).find(@session_id)
 
@@ -115,7 +116,7 @@ module SessionSummaries
           total_duration_minutes: duration
         },
         participants: participants_payload,
-        behavior_incidents: []
+        behavior_incidents: BehaviorIncidentSerializer.new(session.behavior_incidents.order(occurred_at: :asc)).as_json
       }
 
       success(payload)

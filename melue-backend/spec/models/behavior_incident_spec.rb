@@ -4,8 +4,10 @@ RSpec.describe BehaviorIncident, type: :model do
   describe 'associations' do
     it { should belong_to(:student) }
     it { should belong_to(:staff_member).optional }
+    it { should belong_to(:teacher).class_name('StaffMember').optional }
     it { should belong_to(:therapy_session).optional }
     it { should belong_to(:student_goal).optional }
+    it { should have_one(:goal).through(:student_goal) }
   end
 
   describe 'validations' do
@@ -107,6 +109,36 @@ RSpec.describe BehaviorIncident, type: :model do
       definitions = BehaviorIncident.default_behavior_definitions
       expect(definitions['Elopement']).to be_present
       expect(definitions['Flopping']).to be_present
+    end
+  end
+
+  describe 'default_behavior_categories' do
+    it 'returns default category mapping' do
+      categories = BehaviorIncident.default_behavior_categories
+      expect(categories['Elopement']).to eq(:safety_concerns)
+      expect(categories['Unable to remain seated']).to eq(:hyperactivity)
+    end
+
+    it 'auto-populates default category if category is blank on initialize' do
+      incident = BehaviorIncident.new(behavior_name: 'Elopement')
+      expect(incident.category).to eq('safety_concerns')
+    end
+  end
+
+  describe '.modal_options' do
+    it 'returns comprehensive modal options structure' do
+      options = BehaviorIncident.modal_options
+      expect(options[:behaviors]).to be_an(Array)
+      expect(options[:frequencies]).to be_an(Array)
+      expect(options[:intensities]).to be_an(Array)
+      expect(options[:categories]).to be_an(Array)
+      expect(options[:antecedents]).to be_an(Array)
+      expect(options[:consequences]).to be_an(Array)
+      expect(options[:locations]).to be_an(Array)
+
+      elopement = options[:behaviors].find { |b| b[:name] == 'Elopement' }
+      expect(elopement[:definition]).to be_present
+      expect(elopement[:default_category]).to eq('safety_concerns')
     end
   end
 end

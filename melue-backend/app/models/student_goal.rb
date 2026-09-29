@@ -15,6 +15,7 @@ class StudentGoal < ApplicationRecord
          dependent: :destroy,
          inverse_of: :student_goal
   has_many :goal_mastery_checks, dependent: :destroy
+  has_many :behavior_incidents, dependent: :nullify
 
   enum :status, {
     active: "active",
