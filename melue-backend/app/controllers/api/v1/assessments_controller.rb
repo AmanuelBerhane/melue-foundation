@@ -2,19 +2,23 @@
 
 module Api
   module V1
+    # Inherit from Api::V1::BaseController to reuse staff lookup logic
     class AssessmentsController < Api::V1::BaseController
+      # require_staff_member! automatically calls authenticate_user! and builds current_staff_member
       before_action :require_staff_member!
 
       def dashboard
         result = ::Assessments::DashboardService.call(teacher: current_staff_member)
 
         if result.success?
-          render json: result.data
+          render json: ::Assessments::DashboardSerializer.new(result.data).as_json
         else
           render json: { errors: result.errors }, status: :unprocessable_entity
         end
       end
 
+      # POST /api/v1/assessments/launch
+      # body: { student_id: "...", assessment_type: "skills" | "behavior" | "preference" }
       def launch
         student = Student.find(params.require(:student_id))
         type    = params.require(:assessment_type).to_s
