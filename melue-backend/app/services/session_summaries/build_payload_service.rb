@@ -16,7 +16,6 @@ module SessionSummaries
         :session_block_definition,
         :teacher,
         :trials,
-        :behavior_incidents,
         session_participants: :student
       ).find(@session_id)
 
