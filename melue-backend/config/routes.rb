@@ -55,7 +55,13 @@ Rails.application.routes.draw do
       end
 
       # Student registration and management
-      resources :students, only: %i[index show create update]
+      resources :students, only: %i[index show create update] do
+        member do
+          get :progress_monitoring, to: "student_progress#show"
+          get :progress_report, to: "student_progress#progress_report"
+        end
+        resources :internal_notes, controller: "internal_student_notes", only: %i[index create update destroy]
+      end
 
       # Today's session dashboard context
       get "today/session", to: "therapy_sessions#today_session"

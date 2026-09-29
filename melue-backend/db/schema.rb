@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_24_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -217,6 +217,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["user_id"], name: "index_guardians_on_user_id"
   end
 
+  create_table "home_observations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.uuid "guardian_id", null: false
+    t.date "observed_on", null: false
+    t.uuid "student_id", null: false
+    t.datetime "submitted_at"
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id"], name: "index_home_observations_on_guardian_id"
+    t.index ["student_id", "observed_on"], name: "index_home_observations_on_student_id_and_observed_on"
+    t.index ["student_id"], name: "index_home_observations_on_student_id"
+  end
+
+  create_table "internal_student_notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.bigint "author_id", null: false
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.datetime "recorded_at", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["author_id"], name: "index_internal_student_notes_on_author_id"
+    t.index ["student_id", "recorded_at"], name: "index_internal_student_notes_on_student_id_and_recorded_at"
+    t.index ["student_id"], name: "index_internal_student_notes_on_student_id"
+  end
+
   create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
@@ -235,6 +260,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.uuid "recipient_user_id"
     t.string "type"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "parent_communications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.string "direction", null: false
+    t.uuid "guardian_id", null: false
+    t.string "kind", default: "general", null: false
+    t.datetime "read_at"
+    t.bigint "sender_user_id", null: false
+    t.datetime "sent_at"
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id", "read_at"], name: "index_parent_communications_on_guardian_id_and_read_at"
+    t.index ["guardian_id"], name: "index_parent_communications_on_guardian_id"
+    t.index ["sender_user_id"], name: "index_parent_communications_on_sender_user_id"
+    t.index ["student_id", "sent_at"], name: "index_parent_communications_on_student_id_and_sent_at"
+    t.index ["student_id"], name: "index_parent_communications_on_student_id"
   end
 
   create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -526,6 +569,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
   end
 
+  create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.uuid "goal_id", null: false
+    t.jsonb "mastery_criteria", default: {}, null: false
+    t.string "name", null: false
+    t.integer "step_number", null: false
+    t.datetime "updated_at", null: false
+    t.index ["goal_id", "step_number"], name: "idx_task_analysis_step_templates_on_goal_and_number", unique: true
+    t.index ["goal_id"], name: "index_task_analysis_step_templates_on_goal_id"
+  end
+
   create_table "teacher_student_assignments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
@@ -606,6 +661,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
     t.index ["session_participant_id", "student_goal_id", "logged_at", "id"], name: "idx_trials_stream"
     t.index ["session_participant_id"], name: "index_trials_on_session_participant_id"
     t.index ["student_goal_id"], name: "index_trials_on_student_goal_id"
+    t.index ["student_goal_step_id", "outcome", "prompt_level_id"], name: "idx_trials_step_outcome"
     t.index ["student_goal_step_id"], name: "index_trials_on_student_goal_step_id"
     t.index ["therapy_session_id"], name: "index_trials_on_therapy_session_id"
   end
@@ -677,7 +733,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
+  add_foreign_key "home_observations", "guardians"
+  add_foreign_key "home_observations", "students"
+  add_foreign_key "internal_student_notes", "students"
+  add_foreign_key "internal_student_notes", "users", column: "author_id"
   add_foreign_key "iups", "students"
+  add_foreign_key "parent_communications", "guardians"
+  add_foreign_key "parent_communications", "students"
+  add_foreign_key "parent_communications", "users", column: "sender_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
@@ -704,6 +767,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "student_goals", "therapy_stations"
   add_foreign_key "student_guardians", "guardians"
   add_foreign_key "student_guardians", "students"
+  add_foreign_key "task_analysis_step_templates", "goals", on_delete: :cascade
   add_foreign_key "teacher_student_assignments", "session_block_definitions"
   add_foreign_key "teacher_student_assignments", "staff_members", column: "teacher_id"
   add_foreign_key "teacher_student_assignments", "students"
@@ -716,6 +780,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_18_140004) do
   add_foreign_key "therapy_sessions", "therapy_stations"
   add_foreign_key "trials", "prompt_levels"
   add_foreign_key "trials", "session_participants"
+  add_foreign_key "trials", "student_goal_steps", validate: false
   add_foreign_key "trials", "student_goals"
   add_foreign_key "trials", "therapy_sessions"
   add_foreign_key "user_jwt_refresh_keys", "users"
