@@ -115,7 +115,7 @@ module SessionSummaries
           total_duration_minutes: duration
         },
         participants: participants_payload,
-        behavior_incidents: []
+        behavior_incidents: BehaviorIncidentSerializer.new(session.behavior_incidents.order(occurred_at: :asc)).as_json
       }
 
       success(payload)
