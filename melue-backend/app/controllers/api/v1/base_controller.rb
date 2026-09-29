@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Api::V1::BaseController < Api::BaseController
+  include Authorization
+
   private
 
   # Most v1 endpoints act on behalf of a staff member rather than a bare user

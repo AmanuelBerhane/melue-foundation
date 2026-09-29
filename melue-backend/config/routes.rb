@@ -56,7 +56,13 @@ Rails.application.routes.draw do
       end
 
       # Student registration and management
-      resources :students, only: %i[index show create update]
+      resources :students, only: %i[index show create update] do
+        member do
+          get :progress_monitoring, to: "student_progress#show"
+          get :progress_report, to: "student_progress#progress_report"
+        end
+        resources :internal_notes, controller: "internal_student_notes", only: %i[index create update destroy]
+      end
 
       # Assessment workflow endpoints (FR-034, FR-035, FR-036)
       get  "assessments/dashboard", to: "assessments#dashboard"
