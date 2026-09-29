@@ -11,8 +11,8 @@ module Students
     def initialize(student_id:, current_user: nil, page: 1, per_page: DEFAULT_PER_PAGE)
       @student_id   = student_id
       @current_user = current_user
-      @page         = [page.to_i, 1].max
-      @per_page     = [[per_page.to_i, 1].max, 200].min
+      @page         = [ page.to_i, 1 ].max
+      @per_page     = [ [ per_page.to_i, 1 ].max, 200 ].min
     end
 
     def call
@@ -102,7 +102,7 @@ module Students
                        emerging_count:        ablls.ablls_responses.where(score: 1).count,
                        not_demonstrated_count: ablls.ablls_responses.where(score: 0).count
                      }
-                   end
+      end
 
       pref      = latest_cycle.preference_assessment
       pref_data = if pref
@@ -122,7 +122,7 @@ module Students
                       end
 
                     { id: pref.id, status: pref.status, top_preferences: ranked_items }
-                  end
+      end
 
       sensory_record = SensoryAssessment.where(student_id: student.id).order(created_at: :desc).first rescue nil
       sensory_data   = if sensory_record
@@ -132,7 +132,7 @@ module Students
                            status:             sensory_record.status,
                            activities_assessed: records.count
                          }
-                       end
+      end
 
       {
         cycles_count: cycles.count,
@@ -347,7 +347,7 @@ module Students
                          .order(created_at: :asc)
                          .map { |c| { date: c.created_at.to_date, progress_percent: c.primary_independence_percent.to_f } }
 
-        points = [{ date: sg.created_at.to_date, progress_percent: 0.0 }]
+        points = [ { date: sg.created_at.to_date, progress_percent: 0.0 } ]
         points += check_points
         points << { date: sg.updated_at.to_date, progress_percent: current_pct } if check_points.empty? || check_points.last[:progress_percent] != current_pct
 
@@ -367,7 +367,7 @@ module Students
 
     def build_internal_notes(student)
       notes_scope = student.internal_student_notes
-                           .includes(author: [:staff_member, :roles])
+                           .includes(author: [ :staff_member, :roles ])
                            .order(recorded_at: :desc)
 
       notes_count      = notes_scope.count

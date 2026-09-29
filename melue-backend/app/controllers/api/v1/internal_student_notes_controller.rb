@@ -122,10 +122,10 @@ module Api
 
       def render_error_response(result)
         status = case result.error
-                 when /forbidden/i then :forbidden
-                 when /not found/i then :not_found
-                 else :unprocessable_entity
-                 end
+        when /forbidden/i then :forbidden
+        when /not found/i then :not_found
+        else :unprocessable_entity
+        end
         render json: { error: result.error }, status: status
       end
     end

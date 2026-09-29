@@ -14,6 +14,6 @@ class CreateInternalStudentNotes < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :internal_student_notes, [:student_id, :recorded_at]
+    add_index :internal_student_notes, [ :student_id, :recorded_at ]
   end
 end

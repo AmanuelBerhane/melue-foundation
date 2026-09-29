@@ -32,7 +32,7 @@ module Students
       return failure("Student not found", :not_found) unless student
 
       notes = student.internal_student_notes
-                     .includes(author: [:staff_member, :roles])
+                     .includes(author: [ :staff_member, :roles ])
                      .order(recorded_at: :desc)
       success(notes)
     rescue StandardError => e

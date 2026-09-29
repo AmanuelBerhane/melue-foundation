@@ -557,7 +557,7 @@ module Reports
 
       # Build raw PDF bytes with xref table
       pdf = +"%PDF-1.4\n%\xE2\xE3\xCF\xD3\n"
-      xref_offsets = [0]
+      xref_offsets = [ 0 ]
 
       objects.each do |obj|
         xref_offsets << pdf.bytesize
