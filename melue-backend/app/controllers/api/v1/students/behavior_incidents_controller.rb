@@ -10,10 +10,32 @@ class Api::V1::Students::BehaviorIncidentsController < Api::V1::BaseController
     render json: incidents.order(occurred_at: :desc)
   end
 
+  def options
+    context = {
+      student_id: @student.id,
+      student_name: @student.full_name,
+      teacher: current_staff_member ? { id: current_staff_member.id, name: current_staff_member.full_name } : nil,
+      current_date: Date.current.to_s,
+      current_time: Time.current.strftime("%H:%M")
+    }
+    render json: BehaviorIncident.modal_options.merge(context: context), status: :ok
+  end
+
   def create
     incident = @student.behavior_incidents.build(incident_params)
-    incident.staff_member = current_staff_member
-    incident.set_behavior_definition
+    incident.staff_member = current_staff_member if current_staff_member.present?
+
+    # FR-098c: Auto-link active goal if session is provided without goal
+    if incident.student_goal_id.blank? && incident.therapy_session.present?
+      participant = incident.therapy_session.session_participants.find_by(student_id: @student.id)
+      incident.student_goal_id = participant&.current_focus_student_goal_id ||
+                                 @student.student_goals.where(
+                                   therapy_station_id: incident.therapy_session.therapy_station_id,
+                                   status: %w[active in_progress]
+                                 ).order(updated_at: :desc).first&.id
+    end
+
+    incident.set_defaults
 
     if incident.save
       render json: incident, status: :created

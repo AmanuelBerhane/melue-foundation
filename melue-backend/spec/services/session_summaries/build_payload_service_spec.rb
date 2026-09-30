@@ -95,5 +95,13 @@ RSpec.describe SessionSummaries::BuildPayloadService, type: :service do
       result = call
       expect(result.data[:behavior_incidents]).to eq([])
     end
+
+    it "returns serialized behavior incidents when present for the session" do
+      incident = create(:behavior_incident, therapy_session: session, student: active_participant.student, staff_member: teacher)
+      result = call
+      expect(result.data[:behavior_incidents].size).to eq(1)
+      expect(result.data[:behavior_incidents].first[:id]).to eq(incident.id)
+      expect(result.data[:behavior_incidents].first[:behavior_name]).to eq(incident.behavior_name)
+    end
   end
 end

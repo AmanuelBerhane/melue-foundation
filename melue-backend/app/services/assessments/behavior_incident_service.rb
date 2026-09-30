@@ -13,10 +13,21 @@ module Assessments
     def create
       return failure("Student not found") unless student
 
+      session = TherapySession.find_by(id: params[:therapy_session_id]) if params[:therapy_session_id].present?
+      resolved_goal_id = params[:student_goal_id]
+      if resolved_goal_id.blank? && session.present?
+        participant = session.session_participants.find_by(student_id: student.id)
+        resolved_goal_id = participant&.current_focus_student_goal_id ||
+                           student.student_goals.where(therapy_station_id: session.therapy_station_id, status: %w[active in_progress]).order(updated_at: :desc).first&.id
+      end
+
+      staff_member = current_user&.staff_member || session&.teacher
+      location = params[:location].presence || session&.therapy_room&.name || "Therapy room"
+
       incident.assign_attributes(
-        staff_member: current_user&.staff_member,
-        student_goal_id: params[:student_goal_id],
-        therapy_session_id: params[:therapy_session_id],
+        staff_member: staff_member,
+        student_goal_id: resolved_goal_id,
+        therapy_session_id: session&.id || params[:therapy_session_id],
         behavior_name: params[:behavior_name],
         behavior_definition: params[:behavior_definition],
         frequency: params[:frequency],
@@ -24,13 +35,13 @@ module Assessments
         category: params[:category],
         antecedent: params[:antecedent],
         consequence: params[:consequence],
-        location: params[:location],
+        location: location,
         occurred_at: params[:occurred_at] || Time.current,
         additional_notes: params[:additional_notes]
       )
 
-      # Auto-populate definition if not provided
-      incident.set_behavior_definition
+      # Auto-populate defaults if not provided
+      incident.set_defaults
 
       if incident.save
         success(incident)

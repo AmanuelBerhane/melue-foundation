@@ -93,6 +93,10 @@ Rails.application.routes.draw do
           get "participants/:participant_id/goals/:student_goal_id/trial_log",
               to: "trial_logs#show",
               as: :participant_goal_trial_log
+
+          resources :behavior_incidents, only: %i[index create] do
+            get :options, on: :collection
+          end
         end
       end
 
@@ -217,13 +221,18 @@ Rails.application.routes.draw do
       get "students/:student_id/goals", to: "students/goals#show"
 
       # ========================================
-      # FIXED: Behavior Incidents (FR-045, FR-046)
+      # FIXED: Behavior Incidents (FR-045, FR-046, FR-097, FR-098, FR-099)
       # ========================================
       # GET /api/v1/students/:student_id/behavior_incidents
       resources :students, only: [] do
         resources :behavior_incidents, only: [ :index, :create, :update, :destroy ],
-                                        controller: "students/behavior_incidents"
+                                        controller: "students/behavior_incidents" do
+          get :options, on: :collection
+        end
       end
+
+      # Behavior incident modal options (SCR-003, FR-098, FR-098a, FR-098b)
+      get "behavior_incidents/options", to: "behavior_incidents#options"
 
       # Student Charts - All chart endpoints under student
       # GET /api/v1/students/:student_id/charts/goal_progress
