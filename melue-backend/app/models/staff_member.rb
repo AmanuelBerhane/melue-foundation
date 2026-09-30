@@ -9,6 +9,7 @@ class StaffMember < ApplicationRecord
   has_many :therapy_sessions, foreign_key: :teacher_id, dependent: :restrict_with_error
   has_many :goal_mastery_checks, foreign_key: :primary_teacher_id, dependent: :restrict_with_error
   has_many :ablls_assessments, dependent: :restrict_with_error
+  has_many :staff_availabilities, dependent: :destroy
   has_many :behavior_incidents, dependent: :restrict_with_error
 
   enum :role, {
@@ -53,7 +54,18 @@ class StaffMember < ApplicationRecord
     scope.count
   end
 
+  def unavailable_for_date?(date, block_id = nil)
+    unavail_scope = staff_availabilities.where(unavailable_date: date)
+    if block_id.present?
+      unavail_scope.where(session_block_definition_id: [ nil, block_id ]).exists?
+    else
+      unavail_scope.exists?
+    end
+  end
+
   def available_for_date?(date, block_id = nil)
+    return false if unavailable_for_date?(date, block_id)
+
     capacity_config = SessionScheduleConfig.instance
     max_capacity = capacity_config.staff_to_student_capacity
     current_count = current_assignment_count_for_date(date, block_id)

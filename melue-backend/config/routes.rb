@@ -104,7 +104,19 @@ Rails.application.routes.draw do
         resources :session_summaries, only: %i[index] do
           patch :review, on: :member
         end
+
+        # Operational Management (SCR-TC-005: FR-121, FR-122, FR-123, FR-124, FR-125)
+        get  "operational_management",                     to: "operational_management#index"
+        post "operational_management/reassign",            to: "operational_management#reassign"
+        get  "operational_management/performance_metrics", to: "operational_management#performance_metrics"
+        get  "operational_management/unassigned_alerts",   to: "operational_management#unassigned_alerts"
+
+        resources :staff_availabilities, only: %i[index create destroy]
       end
+
+      # Staff Unavailability shortcuts (Domain Model)
+      get  "staff/:staff_id/unavailability", to: "therapy_coordinator/staff_availabilities#index"
+      post "staff/:staff_id/unavailability", to: "therapy_coordinator/staff_availabilities#create"
 
       namespace :program_director do
         get :dashboard, to: "dashboard#show"
@@ -161,8 +173,18 @@ Rails.application.routes.draw do
         resources :signatures, only: [ :create ], controller: "iup_signatures"
       end
 
-      resources :goals, only: [] do
-        get :search, on: :collection
+      resources :goal_domains, only: %i[index show]
+
+      resources :goals do
+        collection do
+          get :search
+          post :upload_template
+          post :import_template
+        end
+        member do
+          patch :deactivate
+          patch :activate
+        end
       end
     end
   end

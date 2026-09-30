@@ -11,6 +11,8 @@ class DeletionCheckService < ApplicationService
       check_trials
     when SessionBlockDefinition
       check_sessions
+    when Goal
+      check_goal_assignments
     else
       success
     end
@@ -34,5 +36,11 @@ class DeletionCheckService < ApplicationService
     count = @resource.therapy_sessions.count
     return success if count.zero?
     failure("Cannot delete session block with #{count} existing sessions")
+  end
+
+  def check_goal_assignments
+    count = @resource.active_student_assignments.count
+    return success if count.zero?
+    failure("Cannot delete goal currently assigned to active students")
   end
 end
