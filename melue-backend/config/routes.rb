@@ -157,8 +157,18 @@ Rails.application.routes.draw do
         resources :signatures, only: [ :create ], controller: "iup_signatures"
       end
 
-      resources :goals, only: [] do
-        get :search, on: :collection
+      resources :goal_domains, only: %i[index show]
+
+      resources :goals do
+        collection do
+          get :search
+          post :upload_template
+          post :import_template
+        end
+        member do
+          patch :deactivate
+          patch :activate
+        end
       end
     end
   end
