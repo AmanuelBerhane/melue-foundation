@@ -5,6 +5,51 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      get "auth/me", to: "auth#me"
+
+      # Options lists for dropdowns
+      get "options/students", to: "options#students"
+      get "options/staff", to: "options#staff"
+      get "options/rooms", to: "options#rooms"
+
+      # Coordinator student management
+      namespace :coordinator do
+        resources :students, only: %i[index create] do
+          member do
+            get :profile
+            patch :profile, to: "students#update_profile"
+          end
+        end
+        get "students/:id/profile", to: "students#profile"
+        patch "students/:id/profile", to: "students#update_profile"
+      end
+
+      # Sessions & active trial data collection
+      resources :sessions, only: [:show] do
+        member do
+          post :start
+          get :roster
+        end
+        post "students/:student_id/goals/:goal_id/trials", to: "sessions#log_trial"
+        delete "students/:student_id/goals/:goal_id/trials/last", to: "sessions#undo_last_trial"
+        post "students/:student_id/incidents", to: "sessions#record_incident"
+        get :summary, to: "sessions#summary"
+        post :summary, to: "sessions#submit_summary"
+        post "summary/draft", to: "sessions#draft_summary"
+      end
+
+      namespace :teacher do
+        get "dashboard", to: "dashboard#show"
+        get "assessments/dashboard", to: "dashboard#assessments"
+        get "abc-log", to: "abc_logs#index"
+        post "abc-log", to: "abc_logs#create"
+        delete "abc-log/:id", to: "abc_logs#destroy"
+        get "abc-log/export", to: "abc_logs#export"
+        resources :notifications, only: [ :index ] do
+          member { post :read, to: "notifications#mark_as_read" }
+        end
+      end
+
       resources :notifications, only: [ :index ] do
         member { post :mark_as_read }
       end
@@ -53,6 +98,20 @@ Rails.application.routes.draw do
         end
 
         resource :session_schedule_config, only: %i[show update]
+
+        # Forms builder compatibility
+        get "forms/:form_name", to: "forms#show"
+        post "forms/:form_name", to: "forms#update_config"
+        post "forms/:form_name/reset", to: "forms#reset"
+
+        # ABC dropdown lists compatibility
+        get "abc-lists", to: "abc_lists#index"
+        post "abc-lists/reset", to: "abc_lists#reset"
+        post "abc-lists/:list_type", to: "abc_lists#update_list"
+
+        # Schedule capacity config compatibility
+        get "schedule-capacity-config", to: "session_schedule_configs#show"
+        post "schedule-capacity-config", to: "session_schedule_configs#update"
       end
 
       # Student registration and management

@@ -12,11 +12,21 @@ module Authorization
   end
 
   def require_institutional_admin
-    require_role(:institutional_admin)
+    return if current_user&.has_role?(:institutional_admin) ||
+              current_user&.has_role?("institutional_admin") ||
+              current_user&.has_role?(Role::Names::INSTITUTIONAL_ADMIN) ||
+              current_user&.has_role?(:system_admin) ||
+              current_user&.has_role?(Role::Names::SYSTEM_ADMIN)
+
+    render json: { error: "Forbidden: Institutional Admin access required" }, status: :forbidden
   end
 
   def require_system_admin
-    require_role(:system_admin)
+    return if current_user&.has_role?(:system_admin) ||
+              current_user&.has_role?("system_admin") ||
+              current_user&.has_role?(Role::Names::SYSTEM_ADMIN)
+
+    render json: { error: "Forbidden: System Admin access required" }, status: :forbidden
   end
 
   def require_coordinator

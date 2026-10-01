@@ -1,0 +1,35 @@
+# Environment files
+.env
+.env.*
+.env.local
+!.env.example
+
+# Node dependencies
+node_modules/
+.npm/
+
+# Ruby bundler & vendor
+.bundle/
+vendor/bundle/
+
+# Rails temporary and log files
+log/*.log
+tmp/pids/*
+tmp/cache/*
+tmp/sockets/*
+
+# Credentials and keys
+/melue-backend/config/master.key
+config/master.key
+*.key
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*~
