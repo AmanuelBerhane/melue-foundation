@@ -59,31 +59,31 @@ module Api
           # Normalize frequency
           raw_freq = params[:frequency].to_s.downcase
           freq = case raw_freq
-                 when /rare/ then :rarely
-                 when /freq/ then :frequently
-                 when /const/ then :constantly
-                 else :occasionally
+          when /rare/ then :rarely
+          when /freq/ then :frequently
+          when /const/ then :constantly
+          else :occasionally
           end
 
           # Normalize intensity
           raw_int = params[:intensity].to_s.downcase
           intensity = case raw_int
-                      when /sev/ then :severe
-                      when /mod/ then :moderate
-                      else :mild
+          when /sev/ then :severe
+          when /mod/ then :moderate
+          else :mild
           end
 
           # Normalize category
           raw_cat = params[:category].to_s.downcase
           category = case raw_cat
-                     when /safe/ then :safety_concerns
-                     when /elop/ then :elopement
-                     when /flop/ then :flopping
-                     when /trans/ then :difficulty_with_transitions
-                     when /noise/ then :making_noises
-                     when /hyper/ then :hyperactivity
-                     when /obsess/ then :obsessive
-                     else :attention_seeking
+          when /safe/ then :safety_concerns
+          when /elop/ then :elopement
+          when /flop/ then :flopping
+          when /trans/ then :difficulty_with_transitions
+          when /noise/ then :making_noises
+          when /hyper/ then :hyperactivity
+          when /obsess/ then :obsessive
+          else :attention_seeking
           end
 
           incident = BehaviorIncident.new(

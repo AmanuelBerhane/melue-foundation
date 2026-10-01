@@ -99,9 +99,9 @@ class Api::V1::SessionsController < Api::V1::BaseController
 
     raw_outcome = params[:outcome].to_s.downcase
     outcome = case raw_outcome
-              when /incorr/ then :incorrect
-              when /no_resp/ then :no_response
-              else :correct
+    when /incorr/ then :incorrect
+    when /no_resp/ then :no_response
+    else :correct
     end
 
     step = if student_goal.goal&.goal_type == "task_analysis"
@@ -110,9 +110,9 @@ class Api::V1::SessionsController < Api::V1::BaseController
                step_number: 1,
                status: "not_started"
              )
-           else
+    else
              nil
-           end
+    end
 
     trial = Trial.create!(
       therapy_session: @session,
@@ -219,9 +219,9 @@ class Api::V1::SessionsController < Api::V1::BaseController
     sid = params[:id] || params[:session_id]
     @session = if sid.present? && sid != "today"
                  TherapySession.find_by(id: sid)
-               else
+    else
                  TherapySession.where(status: :in_progress).last
-               end
+    end
 
     return if @session
 

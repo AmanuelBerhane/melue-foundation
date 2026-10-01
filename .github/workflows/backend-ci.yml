@@ -102,6 +102,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_HOST: localhost
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/melue_backend_test
+          SECRET_KEY_BASE: test_secret_key_base_32_bytes_long_random_string_for_ci
         run: |
           bin/rails db:test:prepare
           bundle exec rspec
