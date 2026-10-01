@@ -44,21 +44,49 @@ Copy the example environment file:
 ```bash
 cp .env.example .env
 ```
-Update `.env` with your local PostgreSQL user/password if needed.
-
-### 4. Database Setup
-Create, migrate, and seed the database (if not using `bin/setup`):
-```bash
-bin/rails db:prepare
+Update `.env` with your local PostgreSQL credentials and configuration:
+```env
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081
 ```
 
-### 5. Start Development Server
+### 4. Database Setup & Migrations
+Create, migrate, and seed the development and test databases:
 ```bash
-bin/rails server
+# Standard setup
+bin/rails db:prepare
+
+# Or clean wipe & fresh re-seed:
+bin/rails db:drop db:create db:migrate db:seed
+
+# Ensure all role-based demo accounts exist:
+bin/rails runner script/seed_demo_accounts.rb
+```
+
+### 5. Pre-Configured Demo Accounts
+The database seed script generates standard test accounts (password for all: `demo1234`):
+
+| Role | Email | Password | Allowed Permissions |
+|---|---|---|---|
+| **Teacher** | `teacher@melue.org` | `demo1234` | Data collection, trials, ABC logs, assessments |
+| **Coordinator** | `coordinator@melue.org` | `demo1234` | Student registration, IEP coordinator, rosters |
+| **Admin** | `admin@melue.org` | `demo1234` | Dynamic form builders, ABC lists, capacity config |
+| **Sysadmin** | `sysadmin@melue.org` | `demo1234` | Full system administration & audit logs |
+| **Program Director** | `pd@melue.org` | `demo1234` | Scheduling, high-level metrics, staff allocation |
+| **Parent** | `parent@melue.org` | `demo1234` | Student progress notes, view-only IEP summaries |
+
+### 6. Start Development Server
+```bash
+bin/rails server -p 3000
+# On Windows PowerShell:
+ruby bin/rails server -p 3000
 ```
 The API server will run at `http://localhost:3000`.
 
-### 6. Access API Documentation
+### 7. Access API Documentation
 Once the server is running, access the interactive API documentation at:
 ```
 http://localhost:3000/docs

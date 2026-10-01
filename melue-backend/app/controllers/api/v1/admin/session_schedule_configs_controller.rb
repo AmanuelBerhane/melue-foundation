@@ -20,7 +20,8 @@ module Api
         private
 
         def config_params
-          params.require(:session_schedule_config).permit(
+          cfg = params[:session_schedule_config] || params
+          cfg.permit(
             :morning_start_time,
             :morning_end_time,
             :afternoon_start_time,
