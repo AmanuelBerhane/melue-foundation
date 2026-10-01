@@ -25,7 +25,7 @@ Rails.application.routes.draw do
       end
 
       # Sessions & active trial data collection
-      resources :sessions, only: [:show] do
+      resources :sessions, only: [ :show ] do
         member do
           post :start
           get :roster

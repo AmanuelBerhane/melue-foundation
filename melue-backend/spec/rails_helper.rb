@@ -42,7 +42,8 @@ module AuthenticationHelpers
       account_id: user.id,
       exp: 24.hours.from_now.to_i
     }
-    JWT.encode(payload, Rails.application.credentials.secret_key_base, 'HS256')
+    secret = Rails.application.secret_key_base || Rails.application.credentials.secret_key_base || "test_secret_key_base_32_bytes_long_random_string_for_ci"
+    JWT.encode(payload, secret, "HS256")
   end
 
   def authenticated_headers(user)

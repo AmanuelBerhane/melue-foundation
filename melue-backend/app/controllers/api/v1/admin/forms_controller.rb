@@ -32,7 +32,10 @@ module Api
 
         # POST /api/v1/admin/forms/:form_name
         def update_config
-          payload = params.permit!.to_h.except(:controller, :action, :form_name)
+          payload = begin
+            parsed = JSON.parse(request.raw_post) rescue nil
+            parsed.is_a?(Hash) ? parsed : request.request_parameters.except("controller", "action", "form_name")
+          end
 
           fields = payload["fields"] || []
           custom_sections = payload["customSections"] || payload["sections"] || []
@@ -84,10 +87,10 @@ module Api
 
           # Map user-friendly form names to form_type enum
           type = case name.downcase
-                 when /enrollment/ then :enrollment
-                 when /iup/ then :iup
-                 when /ablls|skills/ then :ablls
-                 else :enrollment
+          when /enrollment/ then :enrollment
+          when /iup/ then :iup
+          when /ablls|skills/ then :ablls
+          else :enrollment
           end
 
           @form_config = FormConfiguration.find_or_create_by!(form_type: type) do |fc|
@@ -120,7 +123,7 @@ module Api
             {
               "fields" => [
                 { "id" => "i1", "type" => "text", "label" => "Student Name", "required" => true, "visible" => true },
-                { "id" => "i2", "type" => "dropdown", "label" => "Target Skill Domain", "required" => true, "visible" => true, "options" => ["Language & Communication", "Social Interaction", "Adaptive & Self-Care", "Motor Skills", "Cognitive"] },
+                { "id" => "i2", "type" => "dropdown", "label" => "Target Skill Domain", "required" => true, "visible" => true, "options" => [ "Language & Communication", "Social Interaction", "Adaptive & Self-Care", "Motor Skills", "Cognitive" ] },
                 { "id" => "i3", "type" => "number", "label" => "Baseline Mastery (%)", "required" => true, "visible" => true },
                 { "id" => "i4", "type" => "textarea", "label" => "Target Objective", "required" => true, "visible" => true }
               ],
@@ -131,10 +134,10 @@ module Api
           else # ablls
             {
               "fields" => [
-                { "id" => "A1", "type" => "radio", "label" => "A1: Matches identical objects", "required" => true, "visible" => true, "section" => "Visual Performance", "options" => ["0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A"] },
-                { "id" => "A2", "type" => "radio", "label" => "A2: Matches identical pictures to objects", "required" => true, "visible" => true, "section" => "Visual Performance", "options" => ["0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A"] },
-                { "id" => "B1", "type" => "radio", "label" => "B1: Gross motor imitation", "required" => true, "visible" => true, "section" => "Motor Imitation", "options" => ["0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A"] },
-                { "id" => "C1", "type" => "radio", "label" => "C1: Imitation of vowel sounds", "required" => true, "visible" => true, "section" => "Vocal Imitation", "options" => ["0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A"] }
+                { "id" => "A1", "type" => "radio", "label" => "A1: Matches identical objects", "required" => true, "visible" => true, "section" => "Visual Performance", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] },
+                { "id" => "A2", "type" => "radio", "label" => "A2: Matches identical pictures to objects", "required" => true, "visible" => true, "section" => "Visual Performance", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] },
+                { "id" => "B1", "type" => "radio", "label" => "B1: Gross motor imitation", "required" => true, "visible" => true, "section" => "Motor Imitation", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] },
+                { "id" => "C1", "type" => "radio", "label" => "C1: Imitation of vowel sounds", "required" => true, "visible" => true, "section" => "Vocal Imitation", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] }
               ],
               "customSections" => [],
               "deletedSections" => [],

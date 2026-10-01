@@ -41,10 +41,10 @@ module Api
         def update_list
           list_type = params[:list_type].to_s.downcase
           category = case list_type
-                     when /behavior/ then :behavior
-                     when /antecedent/ then :antecedent
-                     when /consequence/ then :consequence
-                     else nil
+          when /behavior/ then :behavior
+          when /antecedent/ then :antecedent
+          when /consequence/ then :consequence
+          else nil
           end
 
           items = params[:items] || []
@@ -87,9 +87,9 @@ module Api
           AbcDropdownOption.destroy_all if force
 
           defaults = {
-            behavior: ["Self-Injurious Behavior", "Aggression", "Elopement", "Flopping", "Vocal Outburst", "Property Destruction", "Non-Compliance", "Other"],
-            antecedent: ["Transition Demand", "Task Demand", "Denied Access to Item", "Peer Interaction", "Loud Noise / Sensory", "Change in Routine", "Attention Shift", "Other"],
-            consequence: ["Verbal Redirection", "Visual Prompt Given", "Short Break Allowed", "Item Delivered", "Demand Repeated", "Ignored / Extinction", "Differential Reinforcement", "Other"]
+            behavior: [ "Self-Injurious Behavior", "Aggression", "Elopement", "Flopping", "Vocal Outburst", "Property Destruction", "Non-Compliance", "Other" ],
+            antecedent: [ "Transition Demand", "Task Demand", "Denied Access to Item", "Peer Interaction", "Loud Noise / Sensory", "Change in Routine", "Attention Shift", "Other" ],
+            consequence: [ "Verbal Redirection", "Visual Prompt Given", "Short Break Allowed", "Item Delivered", "Demand Repeated", "Ignored / Extinction", "Differential Reinforcement", "Other" ]
           }
 
           defaults.each do |cat, list|

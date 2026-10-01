@@ -12,7 +12,8 @@ Rails.application.configure do
 
   # Settings specified here will take precedence over those in config/application.rb.
 
-  # While tests run files are not watched, reloading is not necessary.
+  # Ensure secret_key_base is available in test environment even when credentials key is not present
+  config.secret_key_base = ENV.fetch("SECRET_KEY_BASE") { "test_secret_key_base_32_bytes_long_random_string_for_ci" }
   config.enable_reloading = false
 
   # Eager loading loads your entire application. When running a single test locally,
