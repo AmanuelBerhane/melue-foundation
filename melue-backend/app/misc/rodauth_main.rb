@@ -171,7 +171,7 @@ class RodauthMain < Rodauth::Rails::Auth
         set_session_value("home_route", user.home_route)
         # Expose the role-based home route directly in the JSON login response.
         json_response[:home_route] = user.home_route
-        json_response[:role] = user.primary_role&.name
+        json_response[:role] = user.primary_role&.name || (user.role == "therapist" ? "Teacher" : user.role&.titleize)
       end
     end
 

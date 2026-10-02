@@ -27,7 +27,8 @@ class Api::V1::OptionsController < Api::V1::BaseController
       {
         id: sm.id.to_s,
         name: sm.full_name,
-        role: role_name,
+        role: (sm.role.presence || "teacher").to_s.downcase,
+        roleName: role_name,
         assignedStudents: []
       }
     end

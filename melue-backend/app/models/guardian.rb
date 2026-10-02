@@ -6,8 +6,8 @@ class Guardian < ApplicationRecord
   has_many :student_guardians, dependent: :restrict_with_error
   has_many :students, through: :student_guardians
 
-  has_many :home_observations,     dependent: :destroy
-  has_many :parent_communications, dependent: :destroy
+  # has_many :home_observations,     dependent: :destroy
+  # has_many :parent_communications, dependent: :destroy
 
   validates :full_name, presence: true
 
