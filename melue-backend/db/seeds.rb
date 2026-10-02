@@ -323,12 +323,16 @@ RolePermission.find_or_create_by!(role: admin_role, permission: create_roles)
 admin_user = User.find_or_create_by!(email: "admin@melue.foundation") do |u|
   u.password_hash = BCrypt::Password.create("Password123!")
   u.status        = 2 # verified
+  u.role          = :system_admin
 end
+admin_user.update!(role: :system_admin) unless admin_user.system_admin?
 
 admin_staff = StaffMember.find_or_create_by!(user: admin_user) do |s|
   s.full_name    = "System Admin"
   s.staff_number = "ADM-001"
+  s.role         = "admin"
 end
+admin_staff.update!(role: "admin") if admin_staff.role != "admin"
 
 UserRole.find_or_create_by!(user: admin_user, role: admin_role)
 UserRole.find_or_create_by!(user: teacher1_user, role: teacher_role)
@@ -362,6 +366,7 @@ puts "  ✓ #{Role.count} roles"
 [ teacher1_user, teacher2_user ].each do |u|
   u.assign_role(Role::Names::TEACHER)
 end
+admin_user.assign_role(Role::Names::SYSTEM_ADMIN)
 
 puts "  ✓ role assignments for #{RoleAssignment.count} assignments"
 # 9. Preference Assessment Item Inventory (SRS 3.3.4, FR-047a)

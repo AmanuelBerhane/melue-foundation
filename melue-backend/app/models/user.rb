@@ -1,4 +1,4 @@
-﻿class User < ApplicationRecord
+class User < ApplicationRecord
   include Rodauth::Rails.model
 
   has_many :role_assignments, dependent: :destroy
@@ -52,12 +52,27 @@
 
   # Returns the primary role used for post-login routing (FR-006).
   def primary_role
-    active_roles.first
+    active_roles.first || permission_roles.first || derived_role
+  end
+
+  def derived_role
+    case role&.to_sym
+    when :system_admin then Role.find_by(name: Role::Names::SYSTEM_ADMIN)
+    when :institutional_admin then Role.find_by(name: Role::Names::INSTITUTIONAL_ADMIN)
+    when :therapist then Role.find_by(name: Role::Names::TEACHER)
+    else nil
+    end
   end
 
   # Returns the home route for post-login redirect based on the user's role.
   def home_route
-    primary_role&.home_route || "/"
+    return primary_role.home_route if primary_role.present?
+
+    case role&.to_sym
+    when :system_admin, :institutional_admin then "/admin"
+    when :therapist, :clinical_staff then "/teacher/dashboard"
+    else "/"
+    end
   end
 
   # Returns true if the user holds any staff role (non-Parent).

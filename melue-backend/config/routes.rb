@@ -114,6 +114,36 @@ Rails.application.routes.draw do
         post "schedule-capacity-config", to: "session_schedule_configs#update"
       end
 
+      # Sysadmin Staff, Roles & Audit Logs
+      namespace :sysadmin do
+        resources :staff, controller: "staff" do
+          member do
+            post :status, to: "staff#update_status"
+            post "reset-password", to: "staff#reset_password"
+          end
+          collection do
+            post :bulk, to: "staff#bulk"
+          end
+        end
+
+        resources :roles, controller: "roles" do
+          member do
+            get :permissions, to: "roles#permissions"
+            post :permissions, to: "roles#update_permissions"
+            get "permissions/audit", to: "roles#permissions_audit"
+          end
+        end
+
+        get "audit-logs", to: "audit_logs#index"
+      end
+
+      # Director Schedule & Assignments
+      namespace :director do
+        get "schedule", to: "schedule#show"
+        post "schedule/assignments", to: "schedule#save_assignment"
+        post "schedule/blocks/:block_id/clear", to: "schedule#clear_block"
+      end
+
       # Student registration and management
       resources :students, only: %i[index show create update] do
         member do
