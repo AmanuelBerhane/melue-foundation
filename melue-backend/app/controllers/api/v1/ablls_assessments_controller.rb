@@ -94,9 +94,30 @@ class Api::V1::AbllsAssessmentsController < Api::V1::BaseController
     authorize_assessment_modification!
     return if performed?
 
-    raw_responses = params[:responses] || []
-    responses_list = raw_responses.map do |entry|
-      entry.respond_to?(:to_unsafe_h) ? entry.to_unsafe_h.symbolize_keys : entry.to_h.symbolize_keys
+    raw_responses = params[:responses] || params[:scores] || []
+    responses_list = if raw_responses.is_a?(ActionController::Parameters) || raw_responses.is_a?(Hash)
+      hash_data = raw_responses.respond_to?(:to_unsafe_h) ? raw_responses.to_unsafe_h : raw_responses.to_h
+      hash_data.map do |k, v|
+        if v.is_a?(Hash)
+          entry = v.symbolize_keys
+          entry[:skill_item_id] ||= k unless k.to_s =~ /^\d+$/
+          entry
+        else
+          { skill_item_id: k, score: v }
+        end
+      end
+    elsif raw_responses.respond_to?(:map)
+      raw_responses.map do |entry|
+        if entry.respond_to?(:to_unsafe_h)
+          entry.to_unsafe_h.symbolize_keys
+        elsif entry.respond_to?(:to_h)
+          entry.to_h.symbolize_keys
+        else
+          entry
+        end
+      end
+    else
+      []
     end
 
     result = AbllsAssessments::AssessmentService.bulk_save(

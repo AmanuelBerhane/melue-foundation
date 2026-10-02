@@ -48,6 +48,10 @@ Rails.application.routes.draw do
         resources :notifications, only: [ :index ] do
           member { post :read, to: "notifications#mark_as_read" }
         end
+        # SCR-TEA-003: Behavior Assessment (MASS + FAST + ABC)
+        get  "students/:student_id/assessments/behavior", to: "behavior_assessments#show"
+        post "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
+        patch "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
       end
 
       resources :notifications, only: [ :index ] do
@@ -239,7 +243,7 @@ Rails.application.routes.draw do
       resources :ablls_assessments, only: [], param: :id do
         member do
           post :complete
-          patch "responses/bulk", action: "bulk_update_responses"
+          match "responses/bulk", action: "bulk_update_responses", via: %i[patch put]
           patch "responses/:response_id", action: "update_response", as: :response
         end
       end
@@ -296,11 +300,11 @@ Rails.application.routes.draw do
 
       # Behavior Assessment (MR-23)
       namespace :assessments do
-        resources :mass, only: [ :create, :update ] do
+        resources :mass, only: [ :create, :update, :show ] do
           member { post :submit }
         end
 
-        resources :fast, only: [ :create, :update ] do
+        resources :fast, only: [ :create, :update, :show ] do
           member { post :submit }
         end
       end
