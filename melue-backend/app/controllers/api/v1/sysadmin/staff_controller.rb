@@ -11,7 +11,7 @@ module Api
         # GET /api/v1/sysadmin/staff
         def index
           staff_scope = StaffMember.includes(user: :roles).where(discarded_at: nil)
-          
+
           # Also gather any users who might not have a staff_member record yet (e.g. system admins)
           users_with_staff = staff_scope.map(&:user_id).compact
           orphan_users = User.where.not(id: users_with_staff).includes(:roles)
@@ -82,7 +82,7 @@ module Api
             return render json: { error: "Full name is required" }, status: :unprocessable_entity
           end
 
-          roles = Array(params[:roles]).presence || ["Teacher"]
+          roles = Array(params[:roles]).presence || [ "Teacher" ]
           primary_ui_role = roles.first
 
           is_active = params[:active] != false
@@ -237,7 +237,7 @@ module Api
         end
 
         def serialize_staff(sm, user)
-          roles = user ? map_user_roles(user) : ["Teacher"]
+          roles = user ? map_user_roles(user) : [ "Teacher" ]
           is_active = user ? (user.status == "verified" || user.status_before_type_cast == 2) : true
 
           {
