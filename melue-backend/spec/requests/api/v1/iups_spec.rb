@@ -196,5 +196,21 @@ RSpec.describe "Api::V1::Iups", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["error"]).to include("signatures")
     end
+
+    it "finalizes IUP and transitions student status to active_therapy (FR-066)" do
+      create(:iup_signature, iup: iup, signer_role: "program_director")
+      create(:iup_signature, iup: iup, signer_role: "guardian")
+
+      allow(Iups::ValidateService).to receive(:call).with(iup: iup).and_return(
+        double(success?: true, error: nil)
+      )
+
+      post "/api/v1/iups/#{iup.id}/finalize", headers: headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("iup", "status")).to eq("active")
+      expect(response.parsed_body.dig("iup", "student", "status")).to eq("active_therapy")
+      expect(student.reload.status).to eq("active_therapy")
+    end
   end
 end

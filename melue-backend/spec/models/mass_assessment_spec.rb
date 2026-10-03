@@ -69,11 +69,53 @@ RSpec.describe MassAssessment, type: :model do
     let(:mass_assessment) { create(:mass_assessment, scores: { sensory: 15, escape: 10, attention: 12, tangible: 8 }) }
 
     it 'returns the highest scoring function' do
-      mass_assessment = create(:mass_assessment, scores: { sensory: 15, escape: 10, attention: 12, tangible: 8 })
-
       result = mass_assessment.highest_function
       expect(result.first.to_sym).to eq(:sensory)
       expect(result.last).to eq(15)
+    end
+  end
+
+  describe '#calculate_scores! with SCR-TEA-003 Likert responses' do
+    let(:mass_assessment) { create(:mass_assessment) }
+
+    it 'correctly parses Likert strings (0-6) and maps M1-M12 to the 4 motivation functions' do
+      mass_assessment.responses = {
+        "M1" => "Always",         # Sensory: 6
+        "M5" => "Almost Always",  # Sensory: 5
+        "M10" => "Usually",       # Sensory: 4 -> total = 15
+        "M2" => "Half the Time",  # Escape: 3
+        "M6" => "Seldom",         # Escape: 2
+        "M9" => "Almost Never",   # Escape: 1 -> total = 6
+        "M3" => "Never",          # Attention: 0
+        "M7" => "Seldom",         # Attention: 2
+        "M11" => "Seldom",        # Attention: 2 -> total = 4
+        "M4" => "Half the Time",  # Tangible: 3
+        "M8" => "Half the Time",  # Tangible: 3
+        "M12" => "Seldom"         # Tangible: 2 -> total = 8
+      }
+      mass_assessment.save!
+
+      scores = mass_assessment.calculate_scores!
+
+      expect(scores[:sensory]).to eq(15)
+      expect(scores[:escape]).to eq(6)
+      expect(scores[:attention]).to eq(4)
+      expect(scores[:tangible]).to eq(8)
+
+      expect(mass_assessment.dominant_function).to eq("Sensory")
+      expect(mass_assessment.risk_indicators[:risk_level]).to eq("high")
+      expect(mass_assessment.risk_indicators[:dominant_function]).to eq("Sensory")
+    end
+  end
+
+  describe '#risk_indicators' do
+    let(:mass_assessment) { create(:mass_assessment, scores: { sensory: 14, escape: 4, attention: 2, tangible: 5 }) }
+
+    it 'returns risk indicators including total, level, and dominant function' do
+      indicators = mass_assessment.risk_indicators
+      expect(indicators[:total]).to eq(25)
+      expect(indicators[:risk_level]).to eq("high")
+      expect(indicators[:dominant_function]).to eq("Sensory")
     end
   end
 end

@@ -55,9 +55,12 @@ class AssessmentCycle < ApplicationRecord
     all_done = [
       skills_assessment&.submitted?,
       behavior_assessment&.submitted?,
-      preference_assessment&.status == "submitted"
+      preference_assessment&.status == "submitted" || preference_assessment&.submitted?
     ].all?
 
-    update!(status: "complete", completed_on: Date.current) if all_done
+    if all_done
+      update!(status: "complete", completed_on: Date.current)
+      student.update!(status: "assessment_complete")
+    end
   end
 end
