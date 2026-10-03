@@ -6,7 +6,8 @@ class Api::V1::SessionsController < Api::V1::BaseController
 
   # GET /api/v1/sessions/:id/roster
   def roster
-    students = @session.students.presence || Student.all.limit(2)
+    participants = @session.session_participants.order(:card_position).includes(student: [ student_goals: :goal ])
+    students = participants.present? ? participants.map(&:student) : (@session.students.includes(student_goals: :goal).presence || Student.includes(student_goals: :goal).limit(2))
 
     data = students.map do |s|
       goals = s.student_goals.presence || default_goals_for(s)
@@ -28,6 +29,32 @@ class Api::V1::SessionsController < Api::V1::BaseController
     render json: { students: data }
   end
 
+  # POST /api/v1/sessions/:id/swap_students
+  # POST /api/v1/sessions/:id/swap-students
+  def swap_students
+    if @session.session_participants.count < 2
+      return render json: { error: "Need exactly two participants to swap" }, status: :unprocessable_entity
+    end
+
+    result = ::Sessions::SwapActiveStudent.call(therapy_session: @session)
+
+    if result.success?
+      @session.reload
+      active_p = @session.active_participant
+      secondary_p = @session.secondary_participant
+
+      render json: {
+        success: true,
+        session_id: @session.id.to_s,
+        active_participant: active_p ? format_participant(active_p) : nil,
+        secondary_participant: secondary_p ? format_participant(secondary_p) : nil,
+        participants: @session.session_participants.order(:card_position).map { |p| format_participant(p) }
+      }, status: :ok
+    else
+      render json: { error: result.error }, status: :unprocessable_entity
+    end
+  end
+
   # POST /api/v1/sessions/:id/start
   def start
     @session.update(status: :in_progress)
@@ -39,18 +66,18 @@ class Api::V1::SessionsController < Api::V1::BaseController
     student = Student.find_by(id: params[:student_id]) || Student.first
     return render_error("Student not found", :not_found) unless student
 
-    tsa = student.teacher_student_assignments.first || TeacherStudentAssignment.create!(
-      student: student,
-      teacher: current_staff_member || StaffMember.first,
-      therapy_station: @session.therapy_station,
-      therapy_room: @session.therapy_room,
-      session_block_definition: @session.session_block_definition,
-      scheduled_date: Date.current,
-      status: "scheduled"
-    )
-
     participant = @session.session_participants.find_by(student: student)
     unless participant
+      tsa = student.teacher_student_assignments.first || TeacherStudentAssignment.create!(
+        student: student,
+        teacher: current_staff_member || @session.teacher || StaffMember.first,
+        therapy_station: @session.therapy_station,
+        therapy_room: @session.therapy_room,
+        session_block_definition: @session.session_block_definition,
+        scheduled_date: Date.current,
+        status: "scheduled"
+      )
+
       used = @session.session_participants.pluck(:card_position)
       if !used.include?("active")
         participant = @session.session_participants.create!(
@@ -70,9 +97,14 @@ class Api::V1::SessionsController < Api::V1::BaseController
       end
     end
 
-    # Find or create prompt level
+    # Find or create prompt level efficiently
     raw_prompt = params[:promptLevel].to_s.strip
-    prompt_level = PromptLevel.find_by("label ILIKE ?", "%#{raw_prompt}%") || PromptLevel.first
+    prompt_level = if params[:prompt_level_id].present?
+                     PromptLevel.find_by(id: params[:prompt_level_id])
+    elsif raw_prompt.present?
+                     PromptLevel.find_by(label: raw_prompt) || PromptLevel.where("label ILIKE ?", "%#{raw_prompt}%").first
+    end
+    prompt_level ||= PromptLevel.where(is_active: true).first || PromptLevel.first
     unless prompt_level
       prompt_level = PromptLevel.create!(
         label: raw_prompt.presence || "Independent",
@@ -122,9 +154,11 @@ class Api::V1::SessionsController < Api::V1::BaseController
       prompt_level: prompt_level,
       prompt_label_snapshot: prompt_level.label,
       outcome: outcome,
-      client_event_id: SecureRandom.uuid,
-      logged_at: Time.current
+      client_event_id: params[:client_event_id].presence || SecureRandom.uuid,
+      logged_at: params[:logged_at].presence || Time.current
     )
+
+    Trials::CalculateProgress.call(student_goal: student_goal) if student_goal
 
     render json: {
       success: true,
@@ -139,38 +173,69 @@ class Api::V1::SessionsController < Api::V1::BaseController
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  # DELETE /api/v1/sessions/:id/trials/last
   # DELETE /api/v1/sessions/:session_id/students/:student_id/goals/:goal_id/trials/last
   def undo_last_trial
-    trial = @session.trials.order(created_at: :desc).first
+    trials_scope = @session.trials.order(created_at: :desc)
+
+    if params[:student_id].present?
+      student = Student.find_by(id: params[:student_id])
+      if student
+        participant = @session.session_participants.find_by(student: student)
+        trials_scope = trials_scope.where(session_participant: participant) if participant
+      end
+    end
+
+    if params[:goal_id].present? || params[:student_goal_id].present?
+      gid = params[:goal_id] || params[:student_goal_id]
+      trials_scope = trials_scope.where(student_goal_id: gid)
+    end
+
+    trial = trials_scope.first
     if trial
+      student_goal = trial.student_goal
       trial.destroy
-      render json: { success: true }
+      Trials::CalculateProgress.call(student_goal: student_goal) if student_goal
+      render json: { success: true, message: "Trial undone successfully", trial_id: trial.id.to_s }
     else
       render json: { success: false, message: "No trial to undo" }
     end
+  rescue StandardError => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  # POST /api/v1/sessions/:id/incidents
   # POST /api/v1/sessions/:session_id/students/:student_id/incidents
   def record_incident
-    student = Student.find_by(id: params[:student_id]) || Student.first
-    staff = current_staff_member || @session.teacher || StaffMember.first
+    student_id = params[:student_id]
+    student_goal_id = params[:student_goal_id] || params[:goal_id]
 
-    incident = BehaviorIncident.create!(
-      student: student,
-      staff_member: staff,
-      therapy_session: @session,
-      behavior_name: params[:behavior] || "Session Incident",
-      behavior_definition: params[:definition] || "Behavior incident during session",
-      frequency: :occasionally,
-      intensity: :mild,
-      category: :attention_seeking,
-      antecedent: params[:antecedent] || "Task Transition",
-      consequence: params[:consequence] || "Visual Prompt",
-      location: @session.therapy_room&.name || "Room 1A",
-      occurred_at: Time.current
+    incident_params = {
+      behavior_name: params[:behavior_name].presence || params[:behavior].presence || "Session Incident",
+      behavior_definition: params[:behavior_definition].presence || params[:definition].presence || "Behavior incident during session",
+      frequency: params[:frequency].presence || :occasionally,
+      intensity: params[:intensity].presence || :mild,
+      category: params[:category].presence || :attention_seeking,
+      antecedent: params[:antecedent].presence || "Task Transition",
+      consequence: params[:consequence].presence || "Visual Prompt",
+      location: params[:location].presence || @session.therapy_room&.name || "Therapy room",
+      occurred_at: params[:occurred_at].presence || Time.current,
+      additional_notes: params[:additional_notes].presence || params[:notes].presence
+    }
+
+    result = ::TherapySessions::RecordBehaviorIncidentService.call(
+      session: @session,
+      student_id: student_id,
+      student_goal_id: student_goal_id,
+      staff_member: current_staff_member || @session.teacher,
+      incident_params: incident_params
     )
 
-    render json: { success: true, incident: incident }
+    if result.success?
+      render json: { success: true, incident: result.data }, status: :created
+    else
+      render json: { error: result.error }, status: :unprocessable_entity
+    end
   rescue StandardError => e
     render json: { error: e.message }, status: :unprocessable_entity
   end
@@ -199,8 +264,12 @@ class Api::V1::SessionsController < Api::V1::BaseController
     sum.qualitative_notes = params[:notes] || "Session finished."
     sum.save!
 
-    @session.update(status: :completed)
-    render json: { success: true, summary: sum }
+    @session.ended_at ||= Time.current
+    if @session.update(status: :completed)
+      render json: { success: true, summary: sum }
+    else
+      render json: { error: @session.errors.full_messages.join(", ") }, status: :unprocessable_entity
+    end
   end
 
   # POST /api/v1/sessions/:session_id/summary/draft
@@ -264,5 +333,15 @@ class Api::V1::SessionsController < Api::V1::BaseController
       { id: "goal-1", name: "Receptive Identification of Objects" },
       { id: "goal-2", name: "Gross Motor Imitation" }
     ]
+  end
+
+  def format_participant(participant)
+    student = participant.student
+    {
+      id: participant.id.to_s,
+      student_id: student.id.to_s,
+      card_position: participant.card_position,
+      fullName: "#{student.first_name} #{student.last_name}".strip
+    }
   end
 end

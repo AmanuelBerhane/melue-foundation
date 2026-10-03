@@ -34,14 +34,15 @@ class TherapySession < ApplicationRecord
 
   private
 
-  # Enforces the 2-participant invariant when completing a session.
-  # Creation-time enforcement is handled by TherapySessions::StartService,
-  # which atomically creates the session and both participants in one transaction.
+  # Enforces the participant invariant when completing a session.
+  # Creation-time enforcement is handled by TherapySessions::StartService.
+  # A session represents one teacher/block/room occurrence with one or two SessionParticipant records (melue_domain_model.md §2).
   def exactly_two_participants_on_completion
     return unless status_completed?
 
-    unless session_participants.count == 2
-      errors.add(:base, "a session must have exactly two participants")
+    count = session_participants.loaded? ? session_participants.reject(&:marked_for_destruction?).size : session_participants.count
+    unless count.between?(1, 2)
+      errors.add(:base, "a session must have one or two participants")
     end
   end
 end
