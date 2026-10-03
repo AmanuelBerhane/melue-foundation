@@ -228,7 +228,10 @@ module Api
       private
 
       def authorize_finalization
-        unless current_user_has_role?([ "Program Director" ])
+        unless current_user_has_role?([ "Program Director", "Director" ]) ||
+               current_user&.has_role?(Role::Names::PROGRAM_DIRECTOR) ||
+               current_user&.staff_member&.role_program_director? ||
+               current_user&.staff_member&.role_admin?
           render_error("Only Program Directors can finalize IUPs", :forbidden)
         end
       end

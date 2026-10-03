@@ -14,7 +14,7 @@ class PreferenceAssessment < ApplicationRecord
 
   has_many :preference_observations, dependent: :destroy
 
-  enum :status, { draft: "draft", submitted: "submitted" }, prefix: true
+  enum :status, { draft: "draft", in_progress: "in_progress", submitted: "submitted" }, prefix: true
 
   validates :status, presence: true
   validates :assessment_cycle_id, uniqueness: true
@@ -22,6 +22,10 @@ class PreferenceAssessment < ApplicationRecord
   delegate :student, :student_id, to: :assessment_cycle
 
   after_save :maybe_complete_cycle, if: :saved_change_to_status?
+
+  def draft?        = status_draft?
+  def in_progress?  = status_in_progress?
+  def submitted?    = status_submitted?
 
   # Ranked observations, best first. Unranked rows sort last so a freshly
   # created observation never displaces a scored one.
