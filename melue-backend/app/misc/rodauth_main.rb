@@ -169,9 +169,25 @@ class RodauthMain < Rodauth::Rails::Auth
       user = User.find_by(id: account_id)
       if user
         set_session_value("home_route", user.home_route)
+
+        # Normalize canonical role names to front-end snake_case keys.
+        role_display_map = {
+          Role::Names::TEACHER              => "teacher",
+          Role::Names::THERAPY_COORDINATOR  => "coordinator",
+          Role::Names::PROGRAM_DIRECTOR     => "program_director",
+          Role::Names::DIRECTOR             => "director",
+          Role::Names::INSTITUTIONAL_ADMIN  => "institutional_admin",
+          Role::Names::SYSTEM_ADMIN         => "system_admin",
+          Role::Names::PARENT               => "parent"
+        }
+
+        roles = user.role_names.map { |n| role_display_map[n] || n.downcase.tr(" ", "_") }.uniq
+        roles = [ "teacher" ] if roles.empty?
+
         # Expose the role-based home route directly in the JSON login response.
         json_response[:home_route] = user.home_route
-        json_response[:role] = user.primary_role&.name || (user.role == "therapist" ? "Teacher" : user.role&.titleize)
+        json_response[:role]  = roles.first
+        json_response[:roles] = roles
       end
     end
 

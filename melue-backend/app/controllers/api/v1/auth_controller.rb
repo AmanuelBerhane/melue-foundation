@@ -3,19 +3,22 @@
 class Api::V1::AuthController < Api::V1::BaseController
   before_action :authenticate_user!, only: [ :me ]
 
+  # Normalize a canonical Role::Names value to the snake_case key the front-end expects.
+  ROLE_DISPLAY_MAP = {
+    Role::Names::TEACHER              => "teacher",
+    Role::Names::THERAPY_COORDINATOR  => "coordinator",
+    Role::Names::PROGRAM_DIRECTOR     => "program_director",
+    Role::Names::DIRECTOR             => "director",
+    Role::Names::INSTITUTIONAL_ADMIN  => "institutional_admin",
+    Role::Names::SYSTEM_ADMIN         => "system_admin",
+    Role::Names::PARENT               => "parent"
+  }.freeze
+
   def me
-    role_name = current_user.primary_role&.name || current_user.role&.to_s || "Teacher"
-    normalized_role = case role_name
-    when Role::Names::TEACHER, "teacher" then "teacher"
-    when Role::Names::THERAPY_COORDINATOR, "coordinator", "therapy_coordinator" then "coordinator"
-    when Role::Names::PROGRAM_DIRECTOR, "program_director" then "program_director"
-    when Role::Names::DIRECTOR, "director" then "director"
-    when Role::Names::INSTITUTIONAL_ADMIN, "institutional_admin", "admin" then "institutional_admin"
-    when Role::Names::SYSTEM_ADMIN, "system_admin", "sysadmin" then "system_admin"
-    when Role::Names::PARENT, "parent" then "parent"
-    when "therapist", "clinical_staff" then "teacher"
-    else role_name.downcase.tr(" ", "_")
-    end
+    roles = current_user.role_names.map { |n| ROLE_DISPLAY_MAP[n] || n.downcase.tr(" ", "_") }.uniq
+
+    # Ensure at least one role is present for backwards compat
+    roles = [ "teacher" ] if roles.empty?
 
     name = current_staff_member&.full_name ||
            current_user.guardian&.full_name ||
@@ -25,7 +28,8 @@ class Api::V1::AuthController < Api::V1::BaseController
       id: current_user.id.to_s,
       name: name,
       email: current_user.email,
-      role: normalized_role
+      role: roles.first,
+      roles: roles
     }
   end
 end
