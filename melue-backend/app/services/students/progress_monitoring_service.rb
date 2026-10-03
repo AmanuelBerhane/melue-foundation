@@ -212,7 +212,7 @@ module Students
           :therapy_station,
           :therapy_room,
           :session_summary,
-          { staff_member: :user }
+          :teacher
         ])
         .joins(:therapy_session)
         .order("therapy_sessions.started_at DESC")
@@ -221,14 +221,12 @@ module Students
       completed_sessions = base.where(therapy_sessions: { status: "completed" }).count
 
       offset  = (@page - 1) * @per_page
-      paged   = base.limit(@per_page).offset(offset)
+      paged   = base.limit(@per_page).offset(offset).to_a
+      trial_counts = Trial.where(session_participant_id: paged.map(&:id)).group(:session_participant_id).count
 
       sessions = paged.map do |part|
         session = part.therapy_session
         summary = session.session_summary
-
-        # Per-session trial count
-        trial_count = Trial.where(session_participant_id: part.id).count
 
         {
           session_id:   session.id,
@@ -238,8 +236,8 @@ module Students
           block_name:   session.session_block_definition&.name,
           station_name: session.therapy_station&.name,
           room_name:    session.therapy_room&.name,
-          teacher_name: session.staff_member&.full_name || "Assigned Teacher",
-          trial_count:  trial_count,
+          teacher_name: session.teacher&.full_name || "Assigned Teacher",
+          trial_count:  trial_counts[part.id] || 0,
           summary:      summary ? {
             id:                 summary.id,
             status:             summary.status,

@@ -36,6 +36,22 @@ RSpec.describe "Oversight role guard", type: :request do
       expect(response.parsed_body.dig("data", "internal_notes")).to include("access_granted" => false, "notes" => nil)
     end
 
+    it "includes session history with the teacher and trial counts" do
+      teacher = create(:staff_member, role: "teacher", full_name: "Selam Tesfaye")
+      session = create(:therapy_session, teacher: teacher)
+      participant = create(:session_participant, therapy_session: session, student: student,
+                                                 teacher_student_assignment: create(:teacher_student_assignment, student: student))
+      goal = create(:student_goal, student: student)
+      create_list(:trial, 2, therapy_session: session, session_participant: participant, student_goal: goal)
+
+      get path, headers: director_headers
+
+      expect(response).to have_http_status(:ok)
+      history = response.parsed_body.dig("data", "session_history")
+      expect(history["total_sessions"]).to eq(1)
+      expect(history["recent_sessions"].first).to include("teacher_name" => "Selam Tesfaye", "trial_count" => 2)
+    end
+
     it "returns 404 for an unknown student" do
       get "/api/v1/students/#{SecureRandom.uuid}/progress_monitoring", headers: director_headers
       expect(response).to have_http_status(:not_found)
