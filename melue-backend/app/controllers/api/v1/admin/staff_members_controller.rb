@@ -79,7 +79,7 @@ class Api::V1::Admin::StaffMembersController < Api::V1::BaseController
   end
 
   def staff_params
-    params.permit(:full_name, :staff_number)
+    params.permit(:full_name, :staff_number, :phone)
   end
 
   def update_staff_roles

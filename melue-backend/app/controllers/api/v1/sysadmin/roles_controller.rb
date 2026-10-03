@@ -64,12 +64,50 @@ module Api
 
         # POST /api/v1/sysadmin/roles/:id/permissions
         def update_permissions
-          render json: { status: "ok" }
+          permission_ids = Array(params[:permission_ids]).map(&:to_s)
+          new_permissions = Permission.where(id: permission_ids)
+
+          old_ids = @role.permission_ids.map(&:to_s).sort
+          new_ids = new_permissions.pluck(:id).map(&:to_s).sort
+
+          ActiveRecord::Base.transaction do
+            @role.permissions = new_permissions
+
+            AuditLog.create!(
+              user: current_user,
+              action: "update_permissions",
+              resource_type: "Role",
+              resource_id: @role.id.to_s,
+              change_data: { added: (new_ids - old_ids), removed: (old_ids - new_ids) },
+              metadata: { role_name: @role.name, updated_by: current_user.email }
+            )
+          end
+
+          render json: {
+            status: "ok",
+            roleId: @role.id,
+            permissions: @role.permissions.reload.map { |p|
+              { id: p.id, resource: p.resource, action: p.action, name: "#{p.resource}:#{p.action}" }
+            }
+          }
         end
 
         # GET /api/v1/sysadmin/roles/:id/permissions/audit
         def permissions_audit
-          render json: []
+          logs = AuditLog.where(resource_type: "Role", resource_id: @role.id.to_s, action: "update_permissions")
+                         .order(created_at: :desc)
+                         .limit(50)
+
+          render json: logs.map { |log|
+            {
+              id: log.id,
+              action: log.action,
+              changed_by: log.user&.email,
+              change_data: log.change_data,
+              metadata: log.metadata,
+              created_at: log.created_at
+            }
+          }
         end
 
         private
@@ -93,11 +131,10 @@ module Api
         end
 
         def require_system_admin
-          return if current_user&.has_role?(:system_admin) ||
-                    current_user&.has_role?("system_admin") ||
-                    current_user&.has_role?(Role::Names::SYSTEM_ADMIN) ||
-                    current_user&.has_role?(:institutional_admin) ||
-                    current_user&.has_role?(Role::Names::INSTITUTIONAL_ADMIN)
+          return if current_user&.has_any_role?(
+            Role::Names::SYSTEM_ADMIN,
+            Role::Names::INSTITUTIONAL_ADMIN
+          )
 
           render json: { error: "Forbidden: Administrator access required" }, status: :forbidden
         end

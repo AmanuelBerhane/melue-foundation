@@ -5,7 +5,7 @@ module Api
     module Sysadmin
       class StaffController < Api::V1::BaseController
         before_action :authenticate_user!
-        before_action :require_system_admin, except: %i[index show]
+        before_action :require_system_admin
         before_action :set_staff_and_user, only: %i[show update update_status reset_password destroy]
 
         # GET /api/v1/sysadmin/staff
@@ -244,7 +244,7 @@ module Api
             id: sm ? sm.id.to_s : user.id.to_s,
             name: sm&.full_name.presence || user&.email&.split("@")&.first&.titleize || "Staff Member",
             email: user&.email || "",
-            phone: "",
+            phone: sm&.phone || "",
             roles: roles,
             active: is_active
           }
@@ -258,7 +258,7 @@ module Api
             id: user.id.to_s,
             name: user.email.split("@").first.titleize,
             email: user.email,
-            phone: "",
+            phone: user.staff_member&.phone || "",
             roles: roles,
             active: is_active
           }
@@ -296,11 +296,10 @@ module Api
         end
 
         def require_system_admin
-          return if current_user&.has_role?(:system_admin) ||
-                    current_user&.has_role?("system_admin") ||
-                    current_user&.has_role?(Role::Names::SYSTEM_ADMIN) ||
-                    current_user&.has_role?(:institutional_admin) ||
-                    current_user&.has_role?(Role::Names::INSTITUTIONAL_ADMIN)
+          return if current_user&.has_any_role?(
+            Role::Names::SYSTEM_ADMIN,
+            Role::Names::INSTITUTIONAL_ADMIN
+          )
 
           render json: { error: "Forbidden: Administrator access required" }, status: :forbidden
         end

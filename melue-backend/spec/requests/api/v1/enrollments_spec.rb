@@ -3,13 +3,11 @@ require 'rails_helper'
 
 RSpec.describe 'Enrollments API', type: :request do
   let(:user) { create(:user) } # Use the factory without roles
+  let!(:staff_member) { create(:staff_member, user: user) }
   let(:headers) { authenticated_headers(user) }
 
   describe 'POST /api/v1/enrollments' do
     it 'creates a new enrollment draft' do
-      # Skip this test for now if authentication is complex
-      pending "Authentication needs to be properly configured"
-
       post '/api/v1/enrollments', headers: headers
 
       expect(response).to have_http_status(:created)

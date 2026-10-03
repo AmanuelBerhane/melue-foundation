@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_03_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -594,6 +594,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
     t.string "full_name", null: false
+    t.string "phone"
     t.string "role", default: "teacher", null: false
     t.string "staff_number", null: false
     t.datetime "updated_at", null: false
@@ -666,19 +667,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
   create_table "students", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "assessment_started_at"
     t.datetime "created_at", null: false
-    t.date "date_of_birth", null: false
+    t.date "date_of_birth"
     t.string "diagnosis"
     t.datetime "discarded_at"
     t.datetime "enrolled_at"
-    t.string "first_name", null: false
+    t.string "first_name"
     t.string "guardian_email"
     t.string "guardian_name"
     t.string "guardian_phone"
-    t.string "last_name", null: false
+    t.string "last_name"
     t.string "middle_name"
-    t.string "program_type", null: false
+    t.string "program_type"
     t.string "status", default: "in_assessment", null: false
-    t.string "therapy_group", null: false
+    t.string "therapy_group"
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
   end
