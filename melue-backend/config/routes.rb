@@ -22,6 +22,9 @@ Rails.application.routes.draw do
         end
         get "students/:id/profile", to: "students#profile"
         patch "students/:id/profile", to: "students#update_profile"
+
+        # SCR-TC-002: Live Session Monitoring
+        get "sessions/active", to: "sessions#active"
       end
 
       # Sessions & active trial data collection
