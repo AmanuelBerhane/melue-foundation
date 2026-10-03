@@ -133,6 +133,17 @@ teacher2 = StaffMember.find_or_create_by!(user: teacher2_user) do |s|
   s.staff_number = "STF-002"
 end
 
+teacher3_user = User.find_or_create_by!(email: "teacher3@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2
+end
+
+teacher3 = StaffMember.find_or_create_by!(user: teacher3_user) do |s|
+  s.full_name    = "Selam Tesfaye"
+  s.staff_number = "STF-003"
+  s.role         = "teacher"
+end
+
 puts "  ✓ #{StaffMember.count} staff members"
 
 # ==============================================================================
@@ -337,6 +348,23 @@ admin_staff.update!(role: "admin") if admin_staff.role != "admin"
 UserRole.find_or_create_by!(user: admin_user, role: admin_role)
 UserRole.find_or_create_by!(user: teacher1_user, role: teacher_role)
 
+# Second admin user (additional seed)
+admin2_user = User.find_or_create_by!(email: "admin2@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2 # verified
+  u.role          = :system_admin
+end
+admin2_user.update!(role: :system_admin) unless admin2_user.system_admin?
+
+admin2_staff = StaffMember.find_or_create_by!(user: admin2_user) do |s|
+  s.full_name    = "Tigist Alemu"
+  s.staff_number = "ADM-002"
+  s.role         = "admin"
+end
+admin2_staff.update!(role: "admin") if admin2_staff.role != "admin"
+
+UserRole.find_or_create_by!(user: admin2_user, role: admin_role)
+
 puts "  ✓ RBAC Admin seeded"
 
 # ==============================================================================
@@ -362,11 +390,111 @@ end
 
 puts "  ✓ #{Role.count} roles"
 
-# Assign the seeded teacher users their Teacher role (idempotent).
-[ teacher1_user, teacher2_user ].each do |u|
+# ==============================================================================
+# 9.1 Additional Seed Users — one per remaining role type
+# ==============================================================================
+
+# --- Therapy Coordinator ---
+coordinator_user = User.find_or_create_by!(email: "coordinator@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2
+end
+
+coordinator_staff = StaffMember.find_or_create_by!(user: coordinator_user) do |s|
+  s.full_name    = "Hana Kebede"
+  s.staff_number = "STF-004"
+  s.role         = "therapy_coordinator"
+end
+coordinator_staff.update!(role: "therapy_coordinator") unless coordinator_staff.role_therapy_coordinator?
+
+# --- Program Director ---
+program_director_user = User.find_or_create_by!(email: "program.director@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2
+end
+
+program_director_staff = StaffMember.find_or_create_by!(user: program_director_user) do |s|
+  s.full_name    = "Bereket Mengistu"
+  s.staff_number = "STF-005"
+  s.role         = "program_director"
+end
+program_director_staff.update!(role: "program_director") unless program_director_staff.role_program_director?
+
+# --- Director ---
+# StaffMember has no 'director' enum value; uses 'admin' as the closest
+# staff role while the RBAC role assignment drives routing.
+director_user = User.find_or_create_by!(email: "director@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2
+  u.role          = :institutional_admin
+end
+
+director_staff = StaffMember.find_or_create_by!(user: director_user) do |s|
+  s.full_name    = "Lidiya Hailu"
+  s.staff_number = "STF-006"
+  s.role         = "admin"
+end
+director_staff.update!(role: "admin") unless director_staff.role_admin?
+
+# --- Institutional Administrator ---
+institutional_admin_user = User.find_or_create_by!(email: "institutional.admin@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2
+  u.role          = :institutional_admin
+end
+
+institutional_admin_staff = StaffMember.find_or_create_by!(user: institutional_admin_user) do |s|
+  s.full_name    = "Robel Ayana"
+  s.staff_number = "ADM-003"
+  s.role         = "admin"
+end
+institutional_admin_staff.update!(role: "admin") unless institutional_admin_staff.role_admin?
+
+# --- Parent (Guardian) ---
+# Parents are linked to a Guardian record and a student via StudentGuardian,
+# not a StaffMember. The user.role enum defaults to clinical_staff (3) since
+# there is no 'parent' enum value; RBAC routing is driven by the role assignment.
+parent_user = User.find_or_create_by!(email: "parent@melue.foundation") do |u|
+  u.password_hash = BCrypt::Password.create("Password123!")
+  u.status        = 2
+end
+
+parent_guardian = Guardian.find_or_create_by!(full_name: "Almaz Girma") do |g|
+  g.user  = parent_user
+  g.phone = "555-9900"
+end
+parent_guardian.update!(user: parent_user) if parent_guardian.user.nil?
+
+# Link the guardian to student1 (Yonas Girma) as primary contact
+StudentGuardian.find_or_create_by!(guardian: parent_guardian, student: student1) do |sg|
+  sg.relationship        = "Mother"
+  sg.is_primary_contact  = true
+end
+
+puts "  ✓ #{User.count} users seeded (all role types covered)"
+
+# ==============================================================================
+# 9.2 Role assignments for all seeded users (idempotent)
+# ==============================================================================
+
+# Teachers
+[ teacher1_user, teacher2_user, teacher3_user ].each do |u|
   u.assign_role(Role::Names::TEACHER)
 end
-admin_user.assign_role(Role::Names::SYSTEM_ADMIN)
+
+# System Admins
+[ admin_user, admin2_user ].each do |u|
+  u.assign_role(Role::Names::SYSTEM_ADMIN)
+end
+
+# Remaining staff roles
+coordinator_user.assign_role(Role::Names::THERAPY_COORDINATOR)
+program_director_user.assign_role(Role::Names::PROGRAM_DIRECTOR)
+director_user.assign_role(Role::Names::DIRECTOR)
+institutional_admin_user.assign_role(Role::Names::INSTITUTIONAL_ADMIN)
+
+# Parent
+parent_user.assign_role(Role::Names::PARENT)
 
 puts "  ✓ role assignments for #{RoleAssignment.count} assignments"
 # 9. Preference Assessment Item Inventory (SRS 3.3.4, FR-047a)
@@ -788,8 +916,16 @@ puts "  ABLLS Domains  : #{AbllsDomain.count}"
 puts "  ABLLS Items    : #{AbllsSkillItem.count}"
 puts ""
 puts "Login with:"
-puts "  Admin  : admin@melue.foundation / Password123!"
-puts "  Teacher: teacher1@melue.foundation / Password123!"
+puts "  System Admin         : admin@melue.foundation / Password123!"
+puts "  System Admin 2       : admin2@melue.foundation / Password123!"
+puts "  Institutional Admin  : institutional.admin@melue.foundation / Password123!"
+puts "  Director             : director@melue.foundation / Password123!"
+puts "  Program Director     : program.director@melue.foundation / Password123!"
+puts "  Therapy Coordinator  : coordinator@melue.foundation / Password123!"
+puts "  Teacher 1            : teacher1@melue.foundation / Password123!"
+puts "  Teacher 2            : teacher2@melue.foundation / Password123!"
+puts "  Teacher 3            : teacher3@melue.foundation / Password123!"
+puts "  Parent               : parent@melue.foundation / Password123!"
 
 FormConfiguration.find_or_create_by!(form_type: "iup", is_default: true) do |fc|
   fc.form_name = "Individual Utility Plan"
