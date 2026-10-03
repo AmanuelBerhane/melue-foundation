@@ -267,56 +267,126 @@ parent_guardian.update!(user: parent_user) if parent_guardian.user.nil?
 # ==============================================================================
 # 6. RBAC: Roles & Permissions
 # ==============================================================================
-admin_role   = Role.find_or_create_by!(name: "System Administrator") do |r|
-  r.is_system_critical = true
-  r.description        = "Full system access"
-end
+role_definitions = {
+  Role::Names::SYSTEM_ADMIN        => { critical: true,  desc: "Full system access and security administration" },
+  Role::Names::INSTITUTIONAL_ADMIN => { critical: true,  desc: "Institutional administration and facility configuration" },
+  Role::Names::DIRECTOR            => { critical: false, desc: "Executive oversight, compliance and reporting" },
+  Role::Names::PROGRAM_DIRECTOR    => { critical: false, desc: "Clinical management, assessment and IUP approval" },
+  Role::Names::THERAPY_COORDINATOR => { critical: false, desc: "Operational therapy coordination, scheduling and review" },
+  Role::Names::TEACHER             => { critical: false, desc: "Standard clinical therapy provider" },
+  Role::Names::PARENT              => { critical: false, desc: "Parent portal student progress and communication access" }
+}
 
-teacher_role = Role.find_or_create_by!(name: "Teacher") do |r|
-  r.is_system_critical = false
-  r.description        = "Standard therapy provider"
-end
-
-[ Permission.find_or_create_by!(resource: "roles",         action: "manage"),
-  Permission.find_or_create_by!(resource: "staff_members",  action: "manage"),
-  Permission.find_or_create_by!(resource: "roles",         action: "index"),
-  Permission.find_or_create_by!(resource: "staff_members",  action: "index"),
-  Permission.find_or_create_by!(resource: "roles",         action: "create") ].each do |perm|
-  RolePermission.find_or_create_by!(role: admin_role, permission: perm)
-end
-
-UserRole.find_or_create_by!(user: admin_user,    role: admin_role)
-UserRole.find_or_create_by!(user: teacher1_user, role: teacher_role)
-
-# Full role catalogue (FR-006)
-[
-  Role::Names::TEACHER,
-  Role::Names::THERAPY_COORDINATOR,
-  Role::Names::PROGRAM_DIRECTOR,
-  Role::Names::DIRECTOR,
-  Role::Names::INSTITUTIONAL_ADMIN,
-  Role::Names::SYSTEM_ADMIN,
-  Role::Names::PARENT
-].each do |name|
-  is_critical = [ Role::Names::SYSTEM_ADMIN, Role::Names::INSTITUTIONAL_ADMIN ].include?(name)
-  Role.find_or_create_by!(name: name) do |r|
-    r.is_system_critical = is_critical
+roles_map = {}
+role_definitions.each do |name, meta|
+  roles_map[name] = Role.find_or_create_by!(name: name) do |r|
+    r.is_system_critical = meta[:critical]
     r.is_active          = true
+    r.description        = meta[:desc]
   end
 end
 
-puts "  ✓ #{Role.count} roles"
+admin_role            = roles_map[Role::Names::SYSTEM_ADMIN]
+inst_admin_role       = roles_map[Role::Names::INSTITUTIONAL_ADMIN]
+director_role         = roles_map[Role::Names::DIRECTOR]
+program_director_role = roles_map[Role::Names::PROGRAM_DIRECTOR]
+coordinator_role      = roles_map[Role::Names::THERAPY_COORDINATOR]
+teacher_role          = roles_map[Role::Names::TEACHER]
+parent_role           = roles_map[Role::Names::PARENT]
+
+# Comprehensive permissions catalogue
+resources = %w[roles staff_members students assessments iups sessions goals reports audit_logs forms behavior_incidents]
+actions   = %w[index show create update destroy manage]
+
+permission_catalog = {}
+resources.each do |res|
+  actions.each do |act|
+    permission_catalog["#{res}:#{act}"] = Permission.find_or_create_by!(resource: res, action: act)
+  end
+end
+
+grant_permissions = lambda do |role, res_actions_hash|
+  res_actions_hash.each do |res, acts|
+    acts.each do |act|
+      perm = permission_catalog["#{res}:#{act}"]
+      RolePermission.find_or_create_by!(role: role, permission: perm) if perm
+    end
+  end
+end
+
+# System Admin & Institutional Admin: Full access
+all_permissions = resources.each_with_object({}) { |r, h| h[r] = actions }
+grant_permissions.call(admin_role, all_permissions)
+grant_permissions.call(inst_admin_role, all_permissions)
+
+# Director & Program Director: Clinical & operational oversight
+director_perms = {
+  "staff_members"      => %w[index show create update manage],
+  "students"           => %w[index show create update manage],
+  "assessments"        => %w[index show create update manage],
+  "iups"               => %w[index show create update manage],
+  "sessions"           => %w[index show create update manage],
+  "goals"              => %w[index show create update manage],
+  "reports"            => %w[index show create update manage],
+  "behavior_incidents" => %w[index show create update manage],
+  "forms"              => %w[index show]
+}
+grant_permissions.call(director_role, director_perms)
+grant_permissions.call(program_director_role, director_perms)
+
+# Therapy Coordinator: Scheduling, review and student coordination
+coord_perms = {
+  "staff_members"      => %w[index show update],
+  "students"           => %w[index show create update],
+  "assessments"        => %w[index show create update],
+  "iups"               => %w[index show create update],
+  "sessions"           => %w[index show create update manage],
+  "goals"              => %w[index show create update],
+  "reports"            => %w[index show],
+  "behavior_incidents" => %w[index show create update]
+}
+grant_permissions.call(coordinator_role, coord_perms)
+
+# Teacher: Clinical therapy execution and logging
+teacher_perms = {
+  "students"           => %w[index show update],
+  "assessments"        => %w[index show create update],
+  "iups"               => %w[index show],
+  "sessions"           => %w[index show create update],
+  "goals"              => %w[index show create update],
+  "behavior_incidents" => %w[index show create update]
+}
+grant_permissions.call(teacher_role, teacher_perms)
+
+# Parent: Guardian portal visibility
+parent_perms = {
+  "students" => %w[index show],
+  "iups"     => %w[index show],
+  "reports"  => %w[index show]
+}
+grant_permissions.call(parent_role, parent_perms)
+
+# UserRole records (required for current_user.has_permission?)
+UserRole.find_or_create_by!(user: admin_user,            role: admin_role)
+UserRole.find_or_create_by!(user: inst_admin_user,       role: inst_admin_role)
+UserRole.find_or_create_by!(user: director_user,         role: director_role)
+UserRole.find_or_create_by!(user: program_director_user, role: program_director_role)
+UserRole.find_or_create_by!(user: coordinator_user,      role: coordinator_role)
+[ teacher1_user, teacher2_user, teacher3_user ].each do |u|
+  UserRole.find_or_create_by!(user: u, role: teacher_role)
+end
+UserRole.find_or_create_by!(user: parent_user, role: parent_role)
 
 # Role assignments (idempotent)
 [ teacher1_user, teacher2_user, teacher3_user ].each { |u| u.assign_role(Role::Names::TEACHER) }
-[ admin_user, inst_admin_user ].each               { |u| u.assign_role(Role::Names::SYSTEM_ADMIN) }
+admin_user.assign_role(Role::Names::SYSTEM_ADMIN)
+inst_admin_user.assign_role(Role::Names::INSTITUTIONAL_ADMIN)
 coordinator_user.assign_role(Role::Names::THERAPY_COORDINATOR)
 program_director_user.assign_role(Role::Names::PROGRAM_DIRECTOR)
 director_user.assign_role(Role::Names::DIRECTOR)
-inst_admin_user.assign_role(Role::Names::INSTITUTIONAL_ADMIN)
 parent_user.assign_role(Role::Names::PARENT)
 
-puts "  ✓ #{RoleAssignment.count} role assignments"
+puts "  ✓ #{Role.count} roles, #{Permission.count} permissions, #{RolePermission.count} role permissions, #{UserRole.count} user roles"
 
 # ==============================================================================
 # 7. Students — 10 across all pipeline states
@@ -705,11 +775,12 @@ task_analysis_steps = {
 }
 
 task_analysis_steps.each do |goal_name, steps|
-  domain_name = case goal_name
-                when /Washing|Toileting|Dressing|Pack/ then "Self-Help"
-                when /Requesting/                       then "Communication"
-                when /Writing/                          then "Motor"
-                end
+  domain_name =
+    case goal_name
+    when /Washing|Toileting|Dressing|Pack/ then "Self-Help"
+    when /Requesting/                       then "Communication"
+    when /Writing/                          then "Motor"
+    end
 
   goal = Goal.find_or_create_by!(name: goal_name, goal_domain: domain_records[domain_name]) do |g|
     g.goal_type = "task_analysis"
@@ -1006,94 +1077,653 @@ puts "  ✓ #{AbllsSkillItem.count} ABLLS skill items across #{AbllsDomain.count
 # ==============================================================================
 # 14. IUP Form Configuration (detailed field schema)
 # ==============================================================================
-FormConfiguration.find_or_create_by!(form_type: "iup", is_default: true) do |fc|
-  fc.form_name         = "Individual Utility Plan"
-  fc.revision_number   = 1
-  fc.revision_date     = Date.current
-  fc.organization_name = "MELUE Foundation"
-  fc.field_schema      = [
-    {
-      "key"      => "assessment_summary",
-      "label"    => "Assessment Summary",
-      "type"     => "rich_text",
-      "required" => false,
-      "section"  => "Student Summary"
-    },
-    {
-      "key"        => "reinforcement_strategy",
-      "label"      => "Reinforcement Strategy",
-      "type"       => "long_text",
-      "required"   => true,
-      "max_length" => 5000,
-      "section"    => "Behavior Management"
-    },
-    {
-      "key"        => "consequence_plan",
-      "label"      => "Consequence Plan",
-      "type"       => "long_text",
-      "required"   => true,
-      "max_length" => 5000,
-      "section"    => "Behavior Management"
-    },
-    {
-      "key"        => "family_coordination_plan",
-      "label"      => "Family Coordination Plan",
-      "type"       => "long_text",
-      "required"   => true,
-      "max_length" => 5000,
-      "section"    => "Family Support"
-    },
-    {
-      "key"        => "behavior_reduction_plan",
-      "label"      => "Behavior Reduction Plan",
-      "type"       => "long_text",
-      "required"   => false,
-      "max_length" => 5000,
-      "section"    => "Behavior Management"
-    },
-    {
-      "key"        => "crisis_plan",
-      "label"      => "Crisis Management Plan",
-      "type"       => "long_text",
-      "required"   => true,
-      "max_length" => 5000,
-      "section"    => "Crisis Response"
-    },
-    {
-      "key"        => "discharge_plan",
-      "label"      => "Discharge Planning",
-      "type"       => "long_text",
-      "required"   => false,
-      "max_length" => 5000,
-      "section"    => "Transition Planning"
-    }
-  ]
-end
+iup_form_config = FormConfiguration.find_or_initialize_by(form_type: :iup)
+iup_form_config.assign_attributes(
+  form_name:         "Individual Utility Plan",
+  revision_number:   1,
+  revision_date:     Date.current,
+  organization_name: "MELUE Foundation",
+  is_default:        true,
+  field_schema:      {
+    "fields" => [
+      {
+        "id"       => "assessment_summary",
+        "key"      => "assessment_summary",
+        "label"    => "Assessment Summary",
+        "type"     => "textarea",
+        "required" => false,
+        "section"  => "Student Summary"
+      },
+      {
+        "id"         => "reinforcement_strategy",
+        "key"        => "reinforcement_strategy",
+        "label"      => "Reinforcement Strategy",
+        "type"       => "textarea",
+        "required"   => true,
+        "max_length" => 5000,
+        "section"    => "Behavior Management"
+      },
+      {
+        "id"         => "consequence_plan",
+        "key"        => "consequence_plan",
+        "label"      => "Consequence Plan",
+        "type"       => "textarea",
+        "required"   => true,
+        "max_length" => 5000,
+        "section"    => "Behavior Management"
+      },
+      {
+        "id"         => "family_coordination_plan",
+        "key"        => "family_coordination_plan",
+        "label"      => "Family Coordination Plan",
+        "type"       => "textarea",
+        "required"   => true,
+        "max_length" => 5000,
+        "section"    => "Family Support"
+      },
+      {
+        "id"         => "behavior_reduction_plan",
+        "key"        => "behavior_reduction_plan",
+        "label"      => "Behavior Reduction Plan",
+        "type"       => "textarea",
+        "required"   => false,
+        "max_length" => 5000,
+        "section"    => "Behavior Management"
+      },
+      {
+        "id"         => "crisis_plan",
+        "key"        => "crisis_plan",
+        "label"      => "Crisis Management Plan",
+        "type"       => "textarea",
+        "required"   => true,
+        "max_length" => 5000,
+        "section"    => "Crisis Response"
+      },
+      {
+        "id"         => "discharge_plan",
+        "key"        => "discharge_plan",
+        "label"      => "Discharge Planning",
+        "type"       => "textarea",
+        "required"   => false,
+        "max_length" => 5000,
+        "section"    => "Transition Planning"
+      }
+    ]
+  }
+)
+iup_form_config.save!
 
 puts "  ✓ IUP form configuration seeded"
+
+# ==============================================================================
+# 15. FAST & MASS Assessment Questionnaires & Templates
+# ==============================================================================
+puts "Seeding FAST & MASS assessment questionnaires & templates..."
+
+fast_questionnaire_template = [
+  { id: 1,  code: "F1",  text: "Does the behavior occur when others are present, and does attention follow?", category: "Social - Positive", risk: :high },
+  { id: 2,  code: "F2",  text: "Does the behavior occur to avoid or escape a task, demand, or request?", category: "Social - Negative", risk: :high },
+  { id: 3,  code: "F3",  text: "Does the behavior produce a rewarding sensory effect without others?", category: "Automatic - Positive", risk: :high },
+  { id: 4,  code: "F4",  text: "Does the behavior remove an unpleasant sensation or reduce pain?", category: "Automatic - Negative", risk: :high },
+  { id: 5,  code: "F5",  text: "Does the behavior typically happen when the person is alone or unoccupied?", category: "Automatic - Positive", risk: :high },
+  { id: 6,  code: "F6",  text: "Does the behavior occur during transitions or when demands increase?", category: "Social - Negative", risk: :high },
+  { id: 7,  code: "F7",  text: "Does an adult typically react by giving attention or talking to the person?", category: "Social - Positive", risk: :high },
+  { id: 8,  code: "F8",  text: "Is the behavior reduced when a preferred item or activity is provided freely?", category: "Social - Positive", risk: :high },
+  { id: 9,  code: "F9",  text: "Does the behavior occur when access to preferred toys/food is denied?", category: "Social - Positive", risk: :moderate },
+  { id: 10, code: "F10", text: "Does the behavior persist when unprompted in structured settings?", category: "Social - Negative", risk: :moderate },
+  { id: 11, code: "F11", text: "Does the behavior intensify in sensory-rich or loud environments?", category: "Automatic - Negative", risk: :moderate },
+  { id: 12, code: "F12", text: "Does the behavior occur repeatedly in stereotyped or ritualistic sequences?", category: "Automatic - Positive", risk: :moderate },
+  { id: 13, code: "F13", text: "Does the behavior cease immediately upon teacher physical intervention?", category: "Social - Negative", risk: :moderate },
+  { id: 14, code: "F14", text: "Does the behavior occur more frequently prior to meal or break times?", category: "Social - Positive", risk: :moderate },
+  { id: 15, code: "F15", text: "Does the person appear distressed or agitated before the behavior starts?", category: "Automatic - Negative", risk: :moderate },
+  { id: 16, code: "F16", text: "Does the behavior occur when the person is asked to share or wait for items?", category: "Social - Positive", risk: :moderate }
+]
+
+mass_questionnaire_template = [
+  { id: 1,  code: "M1",  text: "Would the behavior occur continuously if left alone for long periods of time?", function: :sensory },
+  { id: 2,  code: "M2",  text: "Does the behavior occur when the person is asked to do a difficult task?", function: :escape },
+  { id: 3,  code: "M3",  text: "Does the behavior seem to occur when the person is ignored?", function: :attention },
+  { id: 4,  code: "M4",  text: "Does the behavior occur when a preferred item is taken away?", function: :tangible },
+  { id: 5,  code: "M5",  text: "Does the behavior occur when the person is left alone, with no one around?", function: :sensory },
+  { id: 6,  code: "M6",  text: "Does the behavior occur following a request to perform an undesirable task?", function: :escape },
+  { id: 7,  code: "M7",  text: "Does the behavior occur when attention is diverted from the person?", function: :attention },
+  { id: 8,  code: "M8",  text: "Does the behavior occur when the person is denied access to a desired item or activity?", function: :tangible },
+  { id: 9,  code: "M9",  text: "Does the behavior occur during a task that the person does not enjoy?", function: :escape },
+  { id: 10, code: "M10", text: "Does the behavior seem to be enjoyable to the person (self-stimulatory)?", function: :sensory },
+  { id: 11, code: "M11", text: "Does the behavior occur to get a reaction from others?", function: :attention },
+  { id: 12, code: "M12", text: "Does the behavior occur to obtain food, toys, or a specific activity?", function: :tangible },
+  { id: 13, code: "M13", text: "Does the behavior seem to calm or soothe the person when anxious?", function: :sensory },
+  { id: 14, code: "M14", text: "Does the behavior occur when demands are transitioned between stations?", function: :escape },
+  { id: 15, code: "M15", text: "Does the behavior stop when an adult sits next to and engages the student?", function: :attention },
+  { id: 16, code: "M16", text: "Does the behavior stop immediately upon receiving an edible or toy reward?", function: :tangible },
+  { id: 17, code: "M17", text: "Does the person reach for items while engaging in this behavior?", function: :tangible },
+  { id: 18, code: "M18", text: "Does the behavior occur if requested objects are withheld?", function: :tangible },
+  { id: 19, code: "M19", text: "Does the behavior escalate if a desired reinforcer is given to another peer?", function: :tangible },
+  { id: 20, code: "M20", text: "Will the student trade engaging in the behavior if handed a high-value reinforcer?", function: :tangible }
+]
+
+puts "  ✓ FAST questionnaire template: #{fast_questionnaire_template.size} items (high & moderate risk categories)"
+puts "  ✓ MASS questionnaire template: #{mass_questionnaire_template.size} items (sensory, escape, attention, tangible)"
+
+# ==============================================================================
+# 16. Historical Completed Therapy Sessions, Participants, Summaries & Trials
+#     for Natnael Worku (student_d1) & Hiwot Alemu (student_d2)
+# ==============================================================================
+puts "Seeding historical completed sessions, participants, summaries and trials..."
+
+# Prompt levels for trials
+pl_plus = PromptLevel.find_by!(label: "+")
+pl_g    = PromptLevel.find_by!(label: "G")
+pl_pp   = PromptLevel.find_by!(label: "PP")
+pl_fp   = PromptLevel.find_by!(label: "FP")
+
+# Goals for Natnael (student_d1)
+sg_request = student_d1.student_goals.find_by!(goal_id: request_goal.id)
+sg_washing = student_d1.student_goals.find_by!(goal_id: washing_goal.id)
+washing_steps = sg_washing.student_goal_steps.order(:step_number).to_a
+
+# Goals for Hiwot (student_d2)
+sg_eye      = student_d2.student_goals.find_by!(goal_id: eye_contact.id)
+sg_matching = student_d2.student_goals.find_by!(goal_id: matching_goal.id)
+
+(1..5).to_a.reverse.each do |days_ago|
+  sched_date = Date.current - days_ago.days
+  session_time = sched_date.to_time.change(hour: 14, min: 0)
+
+  assignment_d1 = TeacherStudentAssignment.find_by!(
+    teacher: teacher3, student: student_d1,
+    session_block_definition: block_c, scheduled_date: sched_date
+  )
+  assignment_d2 = TeacherStudentAssignment.find_by!(
+    teacher: teacher3, student: student_d2,
+    session_block_definition: block_c, scheduled_date: sched_date
+  )
+
+  session = TherapySession.find_or_initialize_by(
+    teacher: teacher3,
+    session_block_definition: block_c,
+    therapy_station: station2,
+    therapy_room: room_2a,
+    started_at: session_time
+  )
+
+  if session.new_record?
+    session.status = "in_progress"
+    session.ended_at = session_time + 45.minutes
+    session.save!
+
+    p1 = SessionParticipant.create!(
+      therapy_session: session,
+      student: student_d1,
+      card_position: :active,
+      teacher_student_assignment: assignment_d1,
+      current_focus_student_goal: (days_ago.odd? ? sg_request : sg_washing)
+    )
+
+    p2 = SessionParticipant.create!(
+      therapy_session: session,
+      student: student_d2,
+      card_position: :secondary,
+      teacher_student_assignment: assignment_d2,
+      current_focus_student_goal: (days_ago.odd? ? sg_eye : sg_matching)
+    )
+
+    # Exactly 2 participants exist now: transition to completed
+    session.update!(status: "completed")
+
+    SessionSummary.create!(
+      therapy_session: session,
+      status: "reviewed",
+      qualitative_notes: "Completed session on #{sched_date}. Natnael showed strong engagement on hand washing and requesting routines. Hiwot maintained sustained eye contact and successfully completed matching tasks with gestural prompts.",
+      submitted_at: session_time + 48.minutes,
+      reviewed_at: session_time + 2.hours,
+      reviewed_by_user: coordinator_user
+    )
+
+    # Trials for Participant 1 (Natnael)
+    # Standard goal trials (sg_request) - student_goal_step MUST be nil
+    [
+      { pl: pl_plus, out: "correct" },
+      { pl: pl_plus, out: "correct" },
+      { pl: pl_g,    out: "correct" },
+      { pl: pl_g,    out: "correct" },
+      { pl: pl_pp,   out: "correct" },
+      { pl: pl_fp,   out: "incorrect" }
+    ].each_with_index do |t_data, idx|
+      Trial.create!(
+        therapy_session: session,
+        session_participant: p1,
+        student_goal: sg_request,
+        student_goal_step: nil,
+        prompt_level: t_data[:pl],
+        prompt_label_snapshot: t_data[:pl].label,
+        outcome: t_data[:out],
+        client_event_id: SecureRandom.uuid,
+        logged_at: session_time + (idx * 3).minutes
+      )
+    end
+
+    # Task analysis trials (sg_washing) - student_goal_step MUST be present
+    washing_steps.first(5).each_with_index do |step, idx|
+      pl = idx < 2 ? pl_plus : (idx < 4 ? pl_g : pl_pp)
+      Trial.create!(
+        therapy_session: session,
+        session_participant: p1,
+        student_goal: sg_washing,
+        student_goal_step: step,
+        prompt_level: pl,
+        prompt_label_snapshot: pl.label,
+        outcome: "correct",
+        client_event_id: SecureRandom.uuid,
+        logged_at: session_time + 20.minutes + (idx * 2).minutes
+      )
+    end
+
+    # Trials for Participant 2 (Hiwot)
+    # Standard goal trials (sg_eye)
+    [
+      { pl: pl_plus, out: "correct" },
+      { pl: pl_g,    out: "correct" },
+      { pl: pl_g,    out: "correct" },
+      { pl: pl_pp,   out: "correct" },
+      { pl: pl_pp,   out: "incorrect" }
+    ].each_with_index do |t_data, idx|
+      Trial.create!(
+        therapy_session: session,
+        session_participant: p2,
+        student_goal: sg_eye,
+        student_goal_step: nil,
+        prompt_level: t_data[:pl],
+        prompt_label_snapshot: t_data[:pl].label,
+        outcome: t_data[:out],
+        client_event_id: SecureRandom.uuid,
+        logged_at: session_time + 5.minutes + (idx * 3).minutes
+      )
+    end
+
+    # Standard goal trials (sg_matching)
+    [
+      { pl: pl_plus, out: "correct" },
+      { pl: pl_plus, out: "correct" },
+      { pl: pl_g,    out: "correct" },
+      { pl: pl_pp,   out: "correct" }
+    ].each_with_index do |t_data, idx|
+      Trial.create!(
+        therapy_session: session,
+        session_participant: p2,
+        student_goal: sg_matching,
+        student_goal_step: nil,
+        prompt_level: t_data[:pl],
+        prompt_label_snapshot: t_data[:pl].label,
+        outcome: t_data[:out],
+        client_event_id: SecureRandom.uuid,
+        logged_at: session_time + 25.minutes + (idx * 3).minutes
+      )
+    end
+  end
+end
+
+puts "  ✓ #{TherapySession.count} therapy sessions (#{TherapySession.status_completed.count} completed)"
+puts "  ✓ #{SessionParticipant.count} session participants"
+puts "  ✓ #{SessionSummary.count} session summaries (all reviewed by Therapy Coordinator)"
+puts "  ✓ #{Trial.count} trials logged across standard and task analysis goals"
+
+# ==============================================================================
+# 17. Baseline Behavior Incidents (ABC Logs)
+# ==============================================================================
+puts "Seeding baseline behavior incidents (ABC logs)..."
+
+behavior_seeds = [
+  # Natnael Worku (student_d1)
+  {
+    student: student_d1,
+    staff_member: teacher3,
+    days_ago: 8,
+    behavior_name: "Hitting",
+    behavior_definition: "Striking table or wall with open hand or fist repeatedly",
+    frequency: :occasionally,
+    intensity: :moderate,
+    category: :difficulty_with_transitions,
+    antecedent: "Transition between activities",
+    consequence: "Redirected to task",
+    location: "Station 2 - Room 2A"
+  },
+  {
+    student: student_d1,
+    staff_member: teacher3,
+    days_ago: 5,
+    behavior_name: "Flopping",
+    behavior_definition: "Throwing self on the floor suddenly when instructed to transition",
+    frequency: :rarely,
+    intensity: :mild,
+    category: :flopping,
+    antecedent: "Task demand presented",
+    consequence: "Provided sensory break",
+    location: "Station 2 - Room 2A"
+  },
+  {
+    student: student_d1,
+    staff_member: teacher3,
+    days_ago: 3,
+    behavior_name: "Unable to remain seated",
+    behavior_definition: "Repeatedly standing up or leaning away from table during structured task",
+    frequency: :frequently,
+    intensity: :mild,
+    category: :hyperactivity,
+    antecedent: "Task demand presented",
+    consequence: "Differential reinforcement",
+    location: "Station 2 - Room 2A"
+  },
+  {
+    student: student_d1,
+    staff_member: teacher3,
+    days_ago: 1,
+    behavior_name: "Hitting",
+    behavior_definition: "Striking table surface when preferred toy was withheld",
+    frequency: :occasionally,
+    intensity: :moderate,
+    category: :attention_seeking,
+    antecedent: "Denied access to preferred item",
+    consequence: "Planned ignoring",
+    location: "Station 2 - Room 2A"
+  },
+
+  # Hiwot Alemu (student_d2)
+  {
+    student: student_d2,
+    staff_member: teacher3,
+    days_ago: 9,
+    behavior_name: "Screaming",
+    behavior_definition: "Producing a loud high-pitched sound that can be heard across the room",
+    frequency: :occasionally,
+    intensity: :moderate,
+    category: :making_noises,
+    antecedent: "Denied access to preferred item",
+    consequence: "Verbal redirection / Prompting",
+    location: "Station 2 - Room 2A"
+  },
+  {
+    student: student_d2,
+    staff_member: teacher3,
+    days_ago: 6,
+    behavior_name: "Elopement",
+    behavior_definition: "Running or wandering away from supervision (moving away at least 5 feet)",
+    frequency: :rarely,
+    intensity: :severe,
+    category: :safety_concerns,
+    antecedent: "Transition between activities",
+    consequence: "Verbal redirection / Prompting",
+    location: "Classroom Corridor"
+  },
+  {
+    student: student_d2,
+    staff_member: teacher3,
+    days_ago: 4,
+    behavior_name: "Screaming",
+    behavior_definition: "Vocal protest and screaming when transitioning between rooms",
+    frequency: :occasionally,
+    intensity: :mild,
+    category: :difficulty_with_transitions,
+    antecedent: "Transition between activities",
+    consequence: "Given break",
+    location: "Station 2 - Room 2A"
+  },
+  {
+    student: student_d2,
+    staff_member: teacher3,
+    days_ago: 2,
+    behavior_name: "Unable to remain seated",
+    behavior_definition: "Standing up from desk repeatedly during visual matching session",
+    frequency: :frequently,
+    intensity: :mild,
+    category: :hyperactivity,
+    antecedent: "Task demand presented",
+    consequence: "Differential reinforcement",
+    location: "Station 2 - Room 2A"
+  },
+
+  # Yonas Girma (student_c1)
+  {
+    student: student_c1,
+    staff_member: teacher1,
+    days_ago: 7,
+    behavior_name: "Property destruction",
+    behavior_definition: "Knocking materials off the work table onto the floor",
+    frequency: :occasionally,
+    intensity: :moderate,
+    category: :attention_seeking,
+    antecedent: "Task demand presented",
+    consequence: "Redirected to task",
+    location: "Station 1 - Room 1A"
+  },
+  {
+    student: student_c1,
+    staff_member: teacher1,
+    days_ago: 2,
+    behavior_name: "Screaming",
+    behavior_definition: "High-pitched vocal outcry upon removal of preferred picture cards",
+    frequency: :rarely,
+    intensity: :moderate,
+    category: :making_noises,
+    antecedent: "Denied access to preferred item",
+    consequence: "Provided sensory break",
+    location: "Station 1 - Room 1A"
+  }
+]
+
+behavior_seeds.each do |b|
+  occurred = b[:days_ago].days.ago.change(hour: 14, min: 20)
+  matching_session = TherapySession.find_by("DATE(started_at) = ?", occurred.to_date)
+
+  BehaviorIncident.find_or_create_by!(
+    student: b[:student],
+    behavior_name: b[:behavior_name],
+    occurred_at: occurred
+  ) do |inc|
+    inc.staff_member        = b[:staff_member]
+    inc.therapy_session     = matching_session
+    inc.behavior_definition = b[:behavior_definition]
+    inc.frequency           = b[:frequency]
+    inc.intensity           = b[:intensity]
+    inc.category            = b[:category]
+    inc.antecedent          = b[:antecedent]
+    inc.consequence         = b[:consequence]
+    inc.location            = b[:location]
+    inc.additional_notes    = "Logged during routine clinical monitoring."
+  end
+end
+
+puts "  ✓ #{BehaviorIncident.count} behavior incidents logged across last 10 days"
+
+# ==============================================================================
+# 18. Sensory Activities Catalogue
+# ==============================================================================
+puts "Seeding Sensory Activities catalogue..."
+
+sensory_activities_seed = [
+  { activity_code: "SEN-001", name: "Tactile - Sand and Water Play", display_order: 1, description: "Exploration of textured media including wet sand, water, and hydrogel beads." },
+  { activity_code: "SEN-002", name: "Vestibular - Swing and Rocking", display_order: 2, description: "Linear and rotational swinging movements to stimulate vestibular input." },
+  { activity_code: "SEN-003", name: "Proprioceptive - Deep Pressure / Weighted Blanket", display_order: 3, description: "Joint compression, therapy ball rolling, and weighted calming lap pads." },
+  { activity_code: "SEN-004", name: "Auditory - Calming Music & Sound Tubes", display_order: 4, description: "Low-frequency rhythms, rainsticks, and noise-dampening acoustic headsets." },
+  { activity_code: "SEN-005", name: "Visual - Bubble Tube & Fiber Optics", display_order: 5, description: "Illuminated color-cycling water tubes and safe handheld fiber optic strands." }
+]
+
+sensory_activity_records = sensory_activities_seed.map do |act_data|
+  SensoryActivity.find_or_create_by!(activity_code: act_data[:activity_code]) do |a|
+    a.name          = act_data[:name]
+    a.description   = act_data[:description]
+    a.display_order = act_data[:display_order]
+    a.is_active     = true
+  end
+end
+
+puts "  ✓ #{SensoryActivity.count} sensory activities in catalogue"
+
+# ==============================================================================
+# 19. Assessment Cycles & Full Assessment Data for "Ready for IUP" Students
+#     (Saron Tekle & Biniam Hailu)
+# ==============================================================================
+puts "Seeding complete assessment cycles for 'ready_for_iup' students..."
+
+[ student_b1, student_b2 ].each_with_index do |student, s_idx|
+  cycle = AssessmentCycle.find_or_initialize_by(student: student)
+  cycle.started_on   = 42.days.ago.to_date
+  cycle.completed_on = 2.days.ago.to_date
+  cycle.status       = "complete"
+  cycle.save!
+
+  # 1. ABLLS Assessment + Responses
+  ablls = AbllsAssessment.find_or_initialize_by(assessment_cycle: cycle)
+  ablls.staff_member = teacher1
+  ablls.status       = "completed"
+  ablls.started_at   = 40.days.ago
+  ablls.completed_at = 3.days.ago
+  ablls.save!
+
+  AbllsSkillItem.find_each.with_index do |skill_item, item_idx|
+    score =
+      case (item_idx + s_idx) % 5
+      when 0, 1 then "2"
+      when 2    then "1"
+      when 3    then "0"
+      else           "not_applicable"
+      end
+
+    AbllsResponse.find_or_create_by!(
+      ablls_assessment: ablls,
+      ablls_skill_item: skill_item
+    ) do |resp|
+      resp.score = score
+      resp.note  = "Evaluated in week #{(item_idx % 6) + 1} of initial 6-week assessment cycle."
+    end
+  end
+
+  # 2. Skills Assessment
+  skills = SkillsAssessment.find_or_initialize_by(assessment_cycle: cycle)
+  skills.status           = "submitted"
+  skills.progress_percent = 100
+  skills.started_at       = 40.days.ago
+  skills.submitted_at     = 3.days.ago
+  skills.save!
+
+  # 3. Preference Assessment + Observations
+  pref = PreferenceAssessment.find_or_initialize_by(assessment_cycle: cycle)
+  pref.status       = "submitted"
+  pref.submitted_at = 3.days.ago
+  pref.save!
+
+  pref_items = PreferenceInventoryItem.limit(9).to_a
+  pref_contexts = %w[sensory_time circle_time play_time]
+
+  pref_items.each_with_index do |item, p_idx|
+    ctx = pref_contexts[p_idx % 3]
+    PreferenceObservation.find_or_create_by!(
+      preference_assessment: pref,
+      preference_inventory_item: item,
+      context: ctx
+    ) do |obs|
+      obs.duration_seconds = 180 - (p_idx * 15)
+      obs.frequency_count  = 10 - p_idx
+      obs.rank             = p_idx + 1
+      obs.tier             = p_idx < 3 ? "highest" : (p_idx < 6 ? "moderate" : "low")
+      obs.combined_score   = (100.0 - (p_idx * 8.5)).round(2)
+    end
+  end
+
+  # 4. Behavior Assessment
+  beh = BehaviorAssessment.find_or_initialize_by(assessment_cycle: cycle)
+  beh.status = "submitted"
+  beh.save!
+
+  # 5. Sensory Assessment + Records
+  sensory = SensoryAssessment.find_or_initialize_by(student: student)
+  sensory.status = "complete"
+  sensory.save!
+
+  sensory_activity_records.each_with_index do |act, a_idx|
+    sensory.sensory_assessment_records.find_or_create_by!(sensory_activity: act) do |r|
+      r.engagement_level  = SensoryAssessmentRecord::ENGAGEMENT_LEVELS[(a_idx + s_idx) % 3]
+      r.response_reaction = SensoryAssessmentRecord::RESPONSE_REACTIONS[(a_idx + s_idx) % 2]
+      r.remark            = "Consistent engagement observed during baseline evaluation."
+    end
+  end
+
+  # 6. FAST Assessment (completed with calculated risks)
+  fast = FastAssessment.find_or_initialize_by(student: student)
+  fast.assessment_cycle = cycle
+  fast.teacher          = teacher1
+  fast_resp = {}
+  (1..16).each do |q_num|
+    ans = (q_num % 3 != 0)
+    fast_resp[q_num.to_s] = ans
+    fast_resp["F#{q_num}"] = ans if q_num <= 8
+  end
+  fast.responses = fast_resp
+  fast.calculate_risks!
+  fast.status       = "completed"
+  fast.completed_at = 3.days.ago
+  fast.save!
+
+  # 7. MASS Assessment (completed with calculated scores)
+  mass = MassAssessment.find_or_initialize_by(student: student)
+  mass.assessment_cycle = cycle
+  mass.teacher          = teacher1
+  mass_resp = {}
+  likert_names = [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ]
+  (1..20).each do |q_num|
+    val = (q_num * (s_idx + 2)) % 7
+    mass_resp[q_num.to_s] = val
+    mass_resp["M#{q_num}"] = likert_names[val] if q_num <= 12
+  end
+  mass.responses = mass_resp
+  mass.calculate_scores!
+  mass.status       = "completed"
+  mass.completed_at = 3.days.ago
+  mass.save!
+
+  cycle.update!(status: "complete", completed_on: 2.days.ago.to_date)
+end
+
+puts "  ✓ #{AssessmentCycle.count} assessment cycles (#{AssessmentCycle.status_complete.count} complete)"
+puts "  ✓ #{AbllsAssessment.count} ABLLS assessments (#{AbllsResponse.count} responses evaluated)"
+puts "  ✓ #{SkillsAssessment.count} skills assessments"
+puts "  ✓ #{PreferenceAssessment.count} preference assessments (#{PreferenceObservation.count} observations)"
+puts "  ✓ #{BehaviorAssessment.count} behavior assessments"
+puts "  ✓ #{SensoryAssessment.count} sensory assessments (#{SensoryAssessmentRecord.count} records)"
+puts "  ✓ #{FastAssessment.count} FAST assessments (#{FastAssessment.status_completed.count} completed)"
+puts "  ✓ #{MassAssessment.count} MASS assessments (#{MassAssessment.status_completed.count} completed)"
 
 # ==============================================================================
 # Summary
 # ==============================================================================
 puts ""
 puts "Done! Seed summary:"
-puts "  Prompt Levels    : #{PromptLevel.count}"
-puts "  Stations         : #{TherapyStation.count}"
-puts "  Rooms            : #{TherapyRoom.count}"
-puts "  Blocks           : #{SessionBlockDefinition.count}"
-puts "  Goal Domains     : #{GoalDomain.count}"
-puts "  Goals            : #{Goal.count}"
-puts "  ABC Options      : #{AbcDropdownOption.count}"
-puts "  Form Configs     : #{FormConfiguration.count}"
-puts "  Schedule Cfg     : #{SessionScheduleConfig.count}"
-puts "  Staff            : #{StaffMember.count}"
-puts "  Students         : #{Student.count}"
-puts "  IUPs             : #{Iup.count}"
-puts "  Student Goals    : #{StudentGoal.count}"
-puts "  Assignments      : #{TeacherStudentAssignment.count}"
-puts "  Guardian Links   : #{StudentGuardian.count}"
-puts "  ABLLS Domains    : #{AbllsDomain.count}"
-puts "  ABLLS Items      : #{AbllsSkillItem.count}"
+puts "  Roles & Permissions : #{Role.count} roles, #{RolePermission.count} role permissions, #{UserRole.count} user roles"
+puts "  Prompt Levels       : #{PromptLevel.count}"
+puts "  Stations            : #{TherapyStation.count}"
+puts "  Rooms               : #{TherapyRoom.count}"
+puts "  Blocks              : #{SessionBlockDefinition.count}"
+puts "  Goal Domains        : #{GoalDomain.count}"
+puts "  Goals               : #{Goal.count}"
+puts "  ABC Options         : #{AbcDropdownOption.count}"
+puts "  Form Configs        : #{FormConfiguration.count}"
+puts "  Schedule Cfg        : #{SessionScheduleConfig.count}"
+puts "  Staff               : #{StaffMember.count}"
+puts "  Students            : #{Student.count}"
+puts "  IUPs                : #{Iup.count}"
+puts "  Student Goals       : #{StudentGoal.count}"
+puts "  Assignments         : #{TeacherStudentAssignment.count}"
+puts "  Guardian Links      : #{StudentGuardian.count}"
+puts "  ABLLS Domains       : #{AbllsDomain.count}"
+puts "  ABLLS Items         : #{AbllsSkillItem.count}"
+puts "  Therapy Sessions    : #{TherapySession.count} (#{TherapySession.status_completed.count} completed)"
+puts "  Trials Logged       : #{Trial.count}"
+puts "  Session Summaries   : #{SessionSummary.count}"
+puts "  Behavior Incidents  : #{BehaviorIncident.count}"
+puts "  Sensory Activities  : #{SensoryActivity.count}"
+puts "  Assessment Cycles   : #{AssessmentCycle.count} (#{AssessmentCycle.status_complete.count} complete)"
+puts "  FAST Questionnaires : #{FastAssessment.count} completed"
+puts "  MASS Questionnaires : #{MassAssessment.count} completed"
 puts ""
 puts "Login credentials (all passwords: #{SEED_PASSWORD}):"
 puts "  System Admin         : admin@melue.foundation"
@@ -1108,6 +1738,6 @@ puts "  Parent               : parent@melue.foundation"
 puts ""
 puts "Student pipeline:"
 puts "  In Assessment (2)   : Amir Hassan, Tigist Bekele"
-puts "  Ready for IUP (2)   : Saron Tekle, Biniam Hailu"
+puts "  Ready for IUP (2)   : Saron Tekle, Biniam Hailu (Full 6-week assessment data)"
 puts "  Active Therapy (4)  : Yonas Girma, Meron Haile, Abel Tadesse, Liya Belay"
-puts "  Completed Sess. (2) : Natnael Worku, Hiwot Alemu (5 days history)"
+puts "  Completed Sess. (2) : Natnael Worku, Hiwot Alemu (5 days sessions, trials & summaries)"
