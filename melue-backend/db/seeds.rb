@@ -295,8 +295,24 @@ teacher_role          = roles_map[Role::Names::TEACHER]
 parent_role           = roles_map[Role::Names::PARENT]
 
 # Comprehensive permissions catalogue
-resources = %w[roles staff_members students assessments iups sessions goals reports audit_logs forms behavior_incidents]
-actions   = %w[index show create update destroy manage]
+resources = %w[
+  roles
+  staff_members
+  students
+  assessments
+  iups
+  sessions
+  goals
+  reports
+  audit_logs
+  forms
+  behavior_incidents
+  prompt_levels
+  goal_domains
+  session_block_definitions
+  session_schedule_configs
+]
+actions = %w[index show create update destroy manage update_status reset_password reorder import export]
 
 permission_catalog = {}
 resources.each do |res|
@@ -314,47 +330,82 @@ grant_permissions = lambda do |role, res_actions_hash|
   end
 end
 
-# System Admin & Institutional Admin: Full access
+# System Admin & Institutional Admin: Full access to all resources and actions
 all_permissions = resources.each_with_object({}) { |r, h| h[r] = actions }
 grant_permissions.call(admin_role, all_permissions)
 grant_permissions.call(inst_admin_role, all_permissions)
 
-# Director & Program Director: Clinical & operational oversight
+# Director: Full operational and clinical oversight
 director_perms = {
-  "staff_members"      => %w[index show create update manage],
-  "students"           => %w[index show create update manage],
-  "assessments"        => %w[index show create update manage],
-  "iups"               => %w[index show create update manage],
-  "sessions"           => %w[index show create update manage],
-  "goals"              => %w[index show create update manage],
-  "reports"            => %w[index show create update manage],
-  "behavior_incidents" => %w[index show create update manage],
-  "forms"              => %w[index show]
+  "staff_members"              => actions,
+  "students"                   => actions,
+  "assessments"                => actions,
+  "iups"                       => actions,
+  "sessions"                   => actions,
+  "goals"                      => actions,
+  "reports"                    => actions,
+  "behavior_incidents"         => actions,
+  "forms"                      => actions,
+  "roles"                      => %w[index show manage],
+  "audit_logs"                 => %w[index show],
+  "prompt_levels"              => actions,
+  "goal_domains"               => actions,
+  "session_block_definitions"  => actions,
+  "session_schedule_configs"   => actions
 }
 grant_permissions.call(director_role, director_perms)
-grant_permissions.call(program_director_role, director_perms)
+
+# Program Director: Clinical leadership, assessment pipeline and IUP governance
+program_director_perms = {
+  "staff_members"              => %w[index show update],
+  "students"                   => actions,
+  "assessments"                => actions,
+  "iups"                       => actions,
+  "sessions"                   => actions,
+  "goals"                      => actions,
+  "reports"                    => actions,
+  "behavior_incidents"         => actions,
+  "forms"                      => %w[index show manage export import],
+  "roles"                      => %w[index show],
+  "audit_logs"                 => %w[index show],
+  "prompt_levels"              => %w[index show],
+  "goal_domains"               => %w[index show manage],
+  "session_block_definitions"  => %w[index show],
+  "session_schedule_configs"   => %w[index show]
+}
+grant_permissions.call(program_director_role, program_director_perms)
 
 # Therapy Coordinator: Scheduling, review and student coordination
 coord_perms = {
-  "staff_members"      => %w[index show update],
-  "students"           => %w[index show create update],
-  "assessments"        => %w[index show create update],
-  "iups"               => %w[index show create update],
-  "sessions"           => %w[index show create update manage],
-  "goals"              => %w[index show create update],
-  "reports"            => %w[index show],
-  "behavior_incidents" => %w[index show create update]
+  "staff_members"              => %w[index show update],
+  "students"                   => %w[index show create update manage],
+  "assessments"                => %w[index show create update manage],
+  "iups"                       => %w[index show create update manage],
+  "sessions"                   => actions,
+  "goals"                      => %w[index show create update manage],
+  "reports"                    => %w[index show create export manage],
+  "behavior_incidents"         => actions,
+  "forms"                      => %w[index show],
+  "roles"                      => %w[index show],
+  "audit_logs"                 => %w[index show],
+  "prompt_levels"              => %w[index show],
+  "goal_domains"               => %w[index show],
+  "session_block_definitions"  => %w[index show update manage],
+  "session_schedule_configs"   => %w[index show update manage]
 }
 grant_permissions.call(coordinator_role, coord_perms)
 
 # Teacher: Clinical therapy execution and logging
 teacher_perms = {
-  "students"           => %w[index show update],
-  "assessments"        => %w[index show create update],
-  "iups"               => %w[index show],
-  "sessions"           => %w[index show create update],
-  "goals"              => %w[index show create update],
-  "behavior_incidents" => %w[index show create update]
+  "students"                   => %w[index show update],
+  "assessments"                => %w[index show create update],
+  "iups"                       => %w[index show],
+  "sessions"                   => %w[index show create update],
+  "goals"                      => %w[index show create update],
+  "behavior_incidents"         => %w[index show create update],
+  "reports"                    => %w[index show],
+  "prompt_levels"              => %w[index show],
+  "goal_domains"               => %w[index show]
 }
 grant_permissions.call(teacher_role, teacher_perms)
 
@@ -362,20 +413,10 @@ grant_permissions.call(teacher_role, teacher_perms)
 parent_perms = {
   "students" => %w[index show],
   "iups"     => %w[index show],
-  "reports"  => %w[index show]
+  "reports"  => %w[index show],
+  "sessions" => %w[index show]
 }
 grant_permissions.call(parent_role, parent_perms)
-
-# UserRole records (required for current_user.has_permission?)
-UserRole.find_or_create_by!(user: admin_user,            role: admin_role)
-UserRole.find_or_create_by!(user: inst_admin_user,       role: inst_admin_role)
-UserRole.find_or_create_by!(user: director_user,         role: director_role)
-UserRole.find_or_create_by!(user: program_director_user, role: program_director_role)
-UserRole.find_or_create_by!(user: coordinator_user,      role: coordinator_role)
-[ teacher1_user, teacher2_user, teacher3_user ].each do |u|
-  UserRole.find_or_create_by!(user: u, role: teacher_role)
-end
-UserRole.find_or_create_by!(user: parent_user, role: parent_role)
 
 # Role assignments (idempotent)
 [ teacher1_user, teacher2_user, teacher3_user ].each { |u| u.assign_role(Role::Names::TEACHER) }
@@ -385,6 +426,19 @@ coordinator_user.assign_role(Role::Names::THERAPY_COORDINATOR)
 program_director_user.assign_role(Role::Names::PROGRAM_DIRECTOR)
 director_user.assign_role(Role::Names::DIRECTOR)
 parent_user.assign_role(Role::Names::PARENT)
+
+# UserRole records (required for current_user.has_permission?)
+# Ensure every user in the database has matching UserRole records for all assigned roles
+User.find_each do |user|
+  user.roles.each do |role|
+    UserRole.find_or_create_by!(user: user, role: role)
+  end
+end
+
+# Remove any extraneous UserRole records that do not match the user's active assigned roles
+UserRole.find_each do |ur|
+  ur.destroy! unless ur.user.roles.include?(ur.role)
+end
 
 puts "  ✓ #{Role.count} roles, #{Permission.count} permissions, #{RolePermission.count} role permissions, #{UserRole.count} user roles"
 
