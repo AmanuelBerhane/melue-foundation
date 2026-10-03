@@ -13,7 +13,7 @@ class ApplicationService
     ServiceResult.success(data)
   end
 
-  def failure(error = nil)
-    ServiceResult.failure(error)
+  def failure(error = nil, status = nil)
+    ServiceResult.failure(error, status)
   end
 end

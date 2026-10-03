@@ -1,6 +1,9 @@
 module Api
   module V1
     class ReportsController < BaseController
+      before_action :authenticate_user!
+      before_action :require_oversight_role
+
       # @oas_include
       # @summary Get foundation overview metrics
       # @tags Reports

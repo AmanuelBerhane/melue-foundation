@@ -22,6 +22,9 @@ Rails.application.routes.draw do
         end
         get "students/:id/profile", to: "students#profile"
         patch "students/:id/profile", to: "students#update_profile"
+
+        # SCR-TC-002: Live Session Monitoring
+        get "sessions/active", to: "sessions#active"
       end
 
       # Sessions & active trial data collection
@@ -150,7 +153,9 @@ Rails.application.routes.draw do
 
       # Director Schedule & Assignments
       namespace :director do
+        get "dashboard", to: "dashboard#show"
         get "schedule", to: "schedule#show"
+        post "schedule/assign", to: "schedule#assign_student"
         post "schedule/assignments", to: "schedule#save_assignment"
         post "schedule/blocks/:block_id/clear", to: "schedule#clear_block"
       end
