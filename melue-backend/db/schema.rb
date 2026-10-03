@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_03_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_03_100002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -293,6 +293,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_03_100000) do
     t.index ["user_id"], name: "index_guardians_on_user_id"
   end
 
+  create_table "home_observations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.uuid "guardian_id", null: false
+    t.date "observed_on", null: false
+    t.uuid "student_id", null: false
+    t.datetime "submitted_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id"], name: "index_home_observations_on_guardian_id"
+    t.index ["student_id", "observed_on"], name: "index_home_observations_on_student_id_and_observed_on"
+    t.index ["student_id"], name: "index_home_observations_on_student_id"
+  end
+
   create_table "internal_student_notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.bigint "author_id", null: false
     t.text "content", null: false
@@ -365,6 +378,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_03_100000) do
     t.bigint "recipient_user_id"
     t.string "type"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "parent_communications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.string "direction", null: false
+    t.uuid "guardian_id", null: false
+    t.string "kind", default: "general", null: false
+    t.datetime "read_at"
+    t.bigint "sender_user_id", null: false
+    t.datetime "sent_at", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id", "direction", "read_at"], name: "idx_on_guardian_id_direction_read_at_9b2c37a460"
+    t.index ["guardian_id"], name: "index_parent_communications_on_guardian_id"
+    t.index ["sender_user_id"], name: "index_parent_communications_on_sender_user_id"
+    t.index ["student_id", "sent_at"], name: "index_parent_communications_on_student_id_and_sent_at"
+    t.index ["student_id"], name: "index_parent_communications_on_student_id"
+    t.check_constraint "direction::text = ANY (ARRAY['inbound'::character varying, 'outbound'::character varying]::text[])", name: "parent_communications_direction_check"
+    t.check_constraint "kind::text = ANY (ARRAY['progress_update'::character varying, 'general'::character varying, 'alert'::character varying]::text[])", name: "parent_communications_kind_check"
   end
 
   create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -859,6 +892,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_03_100000) do
   add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
+  add_foreign_key "home_observations", "guardians"
+  add_foreign_key "home_observations", "students"
   add_foreign_key "internal_student_notes", "students"
   add_foreign_key "internal_student_notes", "users", column: "author_id"
   add_foreign_key "iup_signatures", "iups"
@@ -870,6 +905,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_03_100000) do
   add_foreign_key "mass_assessments", "assessment_cycles"
   add_foreign_key "mass_assessments", "staff_members", column: "teacher_id"
   add_foreign_key "mass_assessments", "students"
+  add_foreign_key "parent_communications", "guardians"
+  add_foreign_key "parent_communications", "students"
+  add_foreign_key "parent_communications", "users", column: "sender_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"
