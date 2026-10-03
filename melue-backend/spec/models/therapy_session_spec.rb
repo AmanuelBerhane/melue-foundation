@@ -38,10 +38,35 @@ RSpec.describe TherapySession, type: :model do
   describe "#secondary_participant" do
     it "returns the participant in the secondary card slot" do
       session    = create(:therapy_session)
-      _active    = create(:session_participant, therapy_session: session, card_position: :active)
       secondary  = create(:session_participant, :secondary, therapy_session: session)
-
       expect(session.secondary_participant).to eq(secondary)
+    end
+  end
+
+  describe "completion invariant" do
+    let(:session) { create(:therapy_session, status: :in_progress) }
+
+    context "when completing a session" do
+      it "is valid when session has two participants" do
+        create(:session_participant, therapy_session: session, card_position: :active)
+        create(:session_participant, :secondary, therapy_session: session)
+
+        session.status = :completed
+        expect(session).to be_valid
+      end
+
+      it "is valid when session has one participant (does not block single-student sessions)" do
+        create(:session_participant, therapy_session: session, card_position: :active)
+
+        session.status = :completed
+        expect(session).to be_valid
+      end
+
+      it "is invalid when session has zero participants" do
+        session.status = :completed
+        expect(session).not_to be_valid
+        expect(session.errors[:base]).to include("a session must have one or two participants")
+      end
     end
   end
 end

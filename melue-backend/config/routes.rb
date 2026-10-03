@@ -29,10 +29,17 @@ Rails.application.routes.draw do
         member do
           post :start
           get :roster
+          post :swap_students
+          post "swap-students", to: "sessions#swap_students"
+          post :swap, to: "sessions#swap_students"
+          post :incidents, to: "sessions#record_incident"
+          delete "trials/last", to: "sessions#undo_last_trial"
         end
         post "students/:student_id/goals/:goal_id/trials", to: "sessions#log_trial"
         delete "students/:student_id/goals/:goal_id/trials/last", to: "sessions#undo_last_trial"
+        delete "trials/last", to: "sessions#undo_last_trial"
         post "students/:student_id/incidents", to: "sessions#record_incident"
+        post "incidents", to: "sessions#record_incident"
         get :summary, to: "sessions#summary"
         post :summary, to: "sessions#submit_summary"
         post "summary/draft", to: "sessions#draft_summary"
