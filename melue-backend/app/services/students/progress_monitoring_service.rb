@@ -16,18 +16,7 @@ module Students
     end
 
     def call
-      student = Student
-        .includes(
-          :guardians,
-          :iups,
-          student_goals: [
-            :goal,
-            :therapy_station,
-            :student_goal_steps,
-            { goal_mastery_checks: :mastery_verifications }
-          ]
-        )
-        .find_by(id: @student_id)
+      student = Student.includes(:guardians).find_by(id: @student_id)
 
       return failure("Student not found", :not_found) unless student
 
@@ -155,31 +144,31 @@ module Students
 
     def build_goals_summary(student)
       student.student_goals
-             .includes(:goal, :therapy_station, :student_goal_steps, goal_mastery_checks: :mastery_verifications)
+             .includes(:goal, :therapy_station, :student_goal_steps, goal_mastery_checks: :goal_mastery_verifications)
              .order(updated_at: :desc)
              .map do |sg|
         # Full mastery check history, most recent first
-        mastery_checks = sg.goal_mastery_checks.order(created_at: :desc).map do |check|
+        mastery_checks = sg.goal_mastery_checks.sort_by(&:created_at).reverse.map do |check|
           {
             id:                         check.id,
             status:                     check.status,
-            primary_teacher_id:         check.primary_teacher_id,
-            primary_independence_percent: check.primary_independence_percent,
-            submitted_at:               check.submitted_at,
+            primary_teacher_id:         check.initiating_teacher_id,
+            submitted_at:               check.created_at,
             rejection_reason:           check.rejection_reason,
-            verifications:              check.mastery_verifications.map do |v|
+            verifications:              check.goal_mastery_verifications.map do |v|
               {
                 id:          v.id,
-                verifier_id: v.verifier_id,
+                verifier_id: v.verifying_teacher_id,
                 outcome:     v.outcome,
+                prompt_used: v.prompt_used,
                 notes:       v.notes,
-                verified_at: v.verified_at
+                verified_at: v.created_at
               }
             end
           }
         end
 
-        steps_data = sg.student_goal_steps.order(:step_number).map do |step|
+        steps_data = sg.student_goal_steps.map do |step|
           {
             id:                  step.id,
             step_number:         step.step_number,
@@ -281,10 +270,9 @@ module Students
     def build_trial_performance(student)
       participants  = SessionParticipant.where(student_id: student.id)
       trials        = Trial.where(session_participant_id: participants.select(:id))
-                           .includes(:prompt_level)
 
       total_trials  = trials.count
-      prompt_counts = trials.group("prompt_levels.label").count
+      prompt_counts = trials.joins(:prompt_level).group("prompt_levels.label").count
 
       breakdown = prompt_counts.map do |label, count|
         pct = total_trials.positive? ? ((count.to_f / total_trials) * 100).round(1) : 0.0
@@ -308,9 +296,7 @@ module Students
     def build_behavior_incident_trends(student)
       incidents = []
       if defined?(BehaviorIncident) && ActiveRecord::Base.connection.table_exists?("behavior_incidents")
-        participants = SessionParticipant.where(student_id: student.id)
-        incidents    = BehaviorIncident.where(session_participant_id: participants.select(:id))
-                                       .order(occurred_at: :desc)
+        incidents    = BehaviorIncident.where(student_id: student.id).order(occurred_at: :desc)
       end
 
       total_incidents  = incidents.respond_to?(:count)  ? incidents.count  : 0
@@ -322,13 +308,13 @@ module Students
           {
             id:             inc.id,
             occurred_at:    inc.occurred_at,
-            behavior_name:  inc.behavior_name_snapshot,
-            intensity:      inc.intensity_snapshot,
-            frequency:      inc.frequency_snapshot,
-            category:       inc.category_snapshot,
-            antecedent:     inc.antecedent_snapshot,
-            consequence:    inc.consequence_snapshot,
-            notes:          inc.notes
+            behavior_name:  inc.behavior_name,
+            intensity:      inc.intensity,
+            frequency:      inc.frequency,
+            category:       inc.category,
+            antecedent:     inc.antecedent,
+            consequence:    inc.consequence,
+            notes:          inc.additional_notes
           }
         end
       }
@@ -342,14 +328,12 @@ module Students
       student.student_goals.includes(:goal).order(created_at: :asc).map do |sg|
         current_pct = sg.progress_percent.to_f
 
-        # Build a richer set of data points from mastery checks
-        check_points = sg.goal_mastery_checks
-                         .order(created_at: :asc)
-                         .map { |c| { date: c.created_at.to_date, progress_percent: c.primary_independence_percent.to_f } }
-
-        points = [ { date: sg.created_at.to_date, progress_percent: 0.0 } ]
-        points += check_points
-        points << { date: sg.updated_at.to_date, progress_percent: current_pct } if check_points.empty? || check_points.last[:progress_percent] != current_pct
+        # Mastery checks carry no percentage, so the trend runs from assignment
+        # (0%) to the goal's current progress.
+        points = [
+          { date: sg.created_at.to_date, progress_percent: 0.0 },
+          { date: sg.updated_at.to_date, progress_percent: current_pct }
+        ]
 
         {
           student_goal_id: sg.id,
@@ -366,15 +350,13 @@ module Students
     # ─────────────────────────────────────────────────────────
 
     def build_internal_notes(student)
-      notes_scope = student.internal_student_notes
-                           .includes(author: [ :staff_member, :roles ])
-                           .order(recorded_at: :desc)
+      notes_scope = student.internal_student_notes.internal.order(recorded_at: :desc)
 
       notes_count      = notes_scope.count
       latest_note      = notes_scope.first
 
       if director_or_admin?
-        serialized = notes_scope.map { |note| serialize_note(note) }
+        serialized = notes_scope.includes(author: :staff_member).map { |note| serialize_note(note) }
         {
           count:               notes_count,
           latest_recorded_at:  latest_note&.recorded_at,
@@ -399,14 +381,7 @@ module Students
     def director_or_admin?
       return false unless @current_user
 
-      @current_user.has_role?(Role::Names::DIRECTOR) ||
-        @current_user.has_role?(Role::Names::PROGRAM_DIRECTOR) ||
-        @current_user.has_role?(Role::Names::INSTITUTIONAL_ADMIN) ||
-        @current_user.has_role?(Role::Names::SYSTEM_ADMIN) ||
-        @current_user.has_role?(:system_admin) ||
-        @current_user.has_role?(:institutional_admin) ||
-        @current_user.has_role?("Director") ||
-        @current_user.has_role?("Program Director")
+      @current_user.has_any_role?(*Role::DIRECTOR_OR_ADMIN_ROLES)
     end
 
     def serialize_note(note)

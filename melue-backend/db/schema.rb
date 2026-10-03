@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_03_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_03_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -297,10 +297,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_03_000002) do
     t.bigint "author_id", null: false
     t.text "content", null: false
     t.datetime "created_at", null: false
+    t.boolean "internal_flag", default: true, null: false
     t.datetime "recorded_at", null: false
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
     t.index ["author_id"], name: "index_internal_student_notes_on_author_id"
+    t.index ["internal_flag"], name: "index_internal_student_notes_on_internal_flag"
     t.index ["student_id", "recorded_at"], name: "index_internal_student_notes_on_student_id_and_recorded_at"
     t.index ["student_id"], name: "index_internal_student_notes_on_student_id"
   end

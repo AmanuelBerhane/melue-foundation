@@ -8,7 +8,10 @@ class InternalStudentNote < ApplicationRecord
 
   validates :content, presence: true
   validates :recorded_at, presence: true
+  # Every note in this table is Director-only; a non-internal note is invalid.
+  validates :internal_flag, inclusion: { in: [ true ], message: "must be true for internal notes" }
 
+  scope :internal, -> { where(internal_flag: true) }
   scope :recent, -> { order(recorded_at: :desc) }
 
   # Convenience method for author full name
