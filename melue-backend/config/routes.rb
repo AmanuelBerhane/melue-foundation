@@ -150,7 +150,9 @@ Rails.application.routes.draw do
 
       # Director Schedule & Assignments
       namespace :director do
+        get "dashboard", to: "dashboard#show"
         get "schedule", to: "schedule#show"
+        post "schedule/assign", to: "schedule#assign_student"
         post "schedule/assignments", to: "schedule#save_assignment"
         post "schedule/blocks/:block_id/clear", to: "schedule#clear_block"
       end
