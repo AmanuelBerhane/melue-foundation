@@ -29,6 +29,7 @@ class InternalStudentNoteSerializer
       author_name: author_profile&.full_name || author&.email || "Unknown Author",
       author_role: author&.primary_role&.name || author&.role&.to_s&.titleize || "Staff",
       content: note.content,
+      internal_flag: note.internal_flag,
       recorded_at: note.recorded_at.iso8601,
       created_at: note.created_at.iso8601
     }

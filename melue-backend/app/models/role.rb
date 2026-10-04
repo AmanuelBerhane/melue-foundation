@@ -29,6 +29,25 @@ class Role < ApplicationRecord
     PARENT = "Parent"
   end
 
+  # Roles allowed to see foundation-wide oversight data: reports, student
+  # progress monitoring and live session monitoring (FR-126–FR-136, SCR-TC-002).
+  OVERSIGHT_ROLES = [
+    Names::DIRECTOR,
+    Names::PROGRAM_DIRECTOR,
+    Names::THERAPY_COORDINATOR,
+    Names::INSTITUTIONAL_ADMIN,
+    Names::SYSTEM_ADMIN
+  ].freeze
+
+  # Roles allowed to read and author Director-only data such as internal
+  # student notes (FR-135) and the Director dashboard (SCR-DIR-001).
+  DIRECTOR_OR_ADMIN_ROLES = [
+    Names::DIRECTOR,
+    Names::PROGRAM_DIRECTOR,
+    Names::INSTITUTIONAL_ADMIN,
+    Names::SYSTEM_ADMIN
+  ].freeze
+
   # Retained from main: Dynamic home route for post-login redirection
   def home_route
     case name
