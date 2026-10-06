@@ -26,7 +26,7 @@ class EnrollmentService < ApplicationService
     # Create a new student with minimal data to pass validations
     # In a real scenario, the first step would be filled in before saving
     # For the wizard flow, we want to save with default values
-    student.status = "draft"
+    student.status = "in_assessment"
 
     # If the student has no data, we need to set default values
     # This allows the wizard to start without requiring all fields

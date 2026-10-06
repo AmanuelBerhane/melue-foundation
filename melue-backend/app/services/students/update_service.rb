@@ -49,11 +49,14 @@ module Students
     end
 
     def student_params
-      @params.slice(
+      attrs = @params.slice(
         :first_name, :middle_name, :last_name,
         :date_of_birth, :program_type, :therapy_group,
-        :diagnosis, :guardian_name, :guardian_phone
+        :diagnosis, :guardian_name, :guardian_phone,
+        :guardian_email
       )
+      attrs[:custom_fields] = @params[:custom_fields] if @params.key?(:custom_fields)
+      attrs
     end
 
     def attach_headshot(student)

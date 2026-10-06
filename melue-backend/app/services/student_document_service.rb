@@ -47,8 +47,16 @@ class StudentDocumentService < ApplicationService
 
     # Remove existing photo if it exists
     student.headshot_photo.purge if student.headshot_photo.attached?
+    student.headshot.purge if student.headshot.attached?
 
-    student.headshot_photo.attach(file)
+    blob = file.is_a?(ActiveStorage::Blob) ? file : ActiveStorage::Blob.create_and_upload!(
+      io: file,
+      filename: file.respond_to?(:original_filename) ? file.original_filename : "photo.jpg",
+      content_type: file.respond_to?(:content_type) ? file.content_type : "image/jpeg"
+    )
+
+    student.headshot_photo.attach(blob)
+    student.headshot.attach(blob)
     if student.save
       success(student)
     else
@@ -73,7 +81,8 @@ class StudentDocumentService < ApplicationService
   def remove_photo
     return failure("Student not found") unless student.persisted?
 
-    student.headshot_photo.purge
+    student.headshot_photo.purge if student.headshot_photo.attached?
+    student.headshot.purge if student.headshot.attached?
     success(student)
   end
 

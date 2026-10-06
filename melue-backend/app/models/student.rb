@@ -16,10 +16,8 @@ class Student < ApplicationRecord
   has_many :behavior_incidents, dependent: :restrict_with_error
 
   has_one_attached :headshot
-
   has_one_attached :headshot_photo
   has_one_attached :baseline_video
-  has_many_attached :documents
 
   has_many :documents, class_name: "StudentDocument", dependent: :destroy
 
@@ -56,6 +54,7 @@ class Student < ApplicationRecord
   validates :guardian_name, :guardian_phone, presence: true
   validates :guardian_email, format: { with: URI::MailTo::EMAIL_REGEXP }, allow_blank: true
 
+  validate :custom_fields_format
   validate :photo_format_and_size, if: -> { headshot_photo.attached? }
   validate :video_format_and_size, if: -> { baseline_video.attached? }
 
@@ -160,7 +159,15 @@ class Student < ApplicationRecord
       .exists?
   end
 
+  def attached_photo
+    headshot_photo.attached? ? headshot_photo : (headshot.attached? ? headshot : nil)
+  end
+
   private
+
+  def custom_fields_format
+    errors.add(:custom_fields, "must be an object") unless custom_fields.is_a?(Hash)
+  end
 
   def photo_format_and_size
     unless headshot_photo.content_type.in?(%w[image/jpeg image/png image/webp])

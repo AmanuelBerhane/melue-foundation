@@ -106,8 +106,15 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
     )
 
     if result.success?
+      doc = result.data
+      doc_payload = doc.as_json
+      if doc.file.attached?
+        doc_payload["url"] = url_for(doc.file)
+        doc_payload["filename"] = doc.file.filename.to_s
+      end
+
       render json: {
-        document: result.data,
+        document: doc_payload,
         message: "Document attached successfully"
       }, status: :created
     else
@@ -198,21 +205,23 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
   #
   # @parameter id(path) [!Integer] Student ID
   def show
+    photo = @student.attached_photo
     render json: {
       student: @student,
       status: @student.status,
       enrolled_at: @student.enrolled_at,
       documents: @student.documents.map { |doc|
+        file = doc.file if doc.file.attached?
         {
           id: doc.id,
           type: doc.document_type,
-          filename: doc.file.filename.to_s,
-          url: url_for(doc.file)
+          filename: file&.filename&.to_s,
+          url: file ? url_for(file) : nil
         }
       },
-      has_photo: @student.headshot_photo.attached?,
+      has_photo: photo.present?,
       has_video: @student.baseline_video.attached?,
-      photo_url: @student.headshot_photo.attached? ? url_for(@student.headshot_photo) : nil,
+      photo_url: photo ? url_for(photo) : nil,
       video_url: @student.baseline_video.attached? ? url_for(@student.baseline_video) : nil
     }
   end

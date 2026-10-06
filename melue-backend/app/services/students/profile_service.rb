@@ -55,15 +55,17 @@ module Students
         guardian_name: student.guardian_name,
         guardian_phone: student.guardian_phone,
         headshot_url: headshot_url(student),
+        custom_fields: student.custom_fields || {},
         current_goals_summary: student.current_goals_summary
       }
     end
 
     def headshot_url(student)
-      return nil unless student.headshot.attached?
+      photo = student.attached_photo
+      return nil unless photo&.attached?
 
       Rails.application.routes.url_helpers.rails_blob_url(
-        student.headshot,
+        photo,
         only_path: true
       )
     end
