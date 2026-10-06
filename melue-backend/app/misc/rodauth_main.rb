@@ -53,11 +53,45 @@ class RodauthMain < Rodauth::Rails::Auth
       remember_device? ? Hash[days: 30] : Hash[days: 14]
     end
 
+    # Refresh token configuration: allow refreshing when access token is expired
+    allow_refresh_with_expired_jwt_access_token? true
+    expired_jwt_access_token_status 401
+
     # Helper for FR-004: true when the client sends "remember_device" in the login body.
     auth_class_eval do
       def remember_device?
         v = param("remember_device")
         v == true || v == "true"
+      end
+
+      # Return HTTP 401 Unauthorized instead of HTTP 400 Bad Request when an Authorization Bearer token is expired or invalid
+      def session
+        return @session if @session
+        return super unless use_jwt?
+
+        s = {}
+        if jwt_token
+          unless session_data = jwt_payload
+            response.status = 401
+            json_response[json_response_error_key] ||= "Invalid or expired authorization token"
+            _return_json_response
+          end
+
+          if jwt_session_key
+            session_data = session_data[jwt_session_key]
+          end
+
+          if session_data
+            if jwt_symbolize_deeply?
+              s = JSON.parse(JSON.generate(session_data), symbolize_names: true)
+            elsif scope.opts[:sessions_convert_symbols]
+              s = session_data
+            else
+              session_data.each { |k, v| s[k.to_sym] = v }
+            end
+          end
+        end
+        @session = s
       end
     end
 
@@ -173,6 +207,7 @@ class RodauthMain < Rodauth::Rails::Auth
         # Normalize canonical role names to front-end snake_case keys.
         role_display_map = {
           Role::Names::TEACHER              => "teacher",
+          Role::Names::THERAPIST            => "therapist",
           Role::Names::THERAPY_COORDINATOR  => "coordinator",
           Role::Names::PROGRAM_DIRECTOR     => "program_director",
           Role::Names::DIRECTOR             => "director",
@@ -184,10 +219,12 @@ class RodauthMain < Rodauth::Rails::Auth
         roles = user.role_names.map { |n| role_display_map[n] || n.downcase.tr(" ", "_") }.uniq
         roles = [ "teacher" ] if roles.empty?
 
-        # Expose the role-based home route directly in the JSON login response.
+        # Expose role, modules, and permissions in the JSON login response.
         json_response[:home_route] = user.home_route
         json_response[:role]  = roles.first
         json_response[:roles] = roles
+        json_response[:modules] = user.permitted_modules
+        json_response[:permissions] = user.permissions_list
       end
     end
 

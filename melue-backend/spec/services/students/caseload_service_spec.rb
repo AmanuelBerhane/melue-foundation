@@ -17,8 +17,8 @@ RSpec.describe Students::CaseloadService, type: :service do
     end
 
     it 'filters by search term' do
-      student1 = create(:student, first_name: 'John')
-      student2 = create(:student, first_name: 'Jane')
+      student1 = create(:student, first_name: 'John', last_name: 'Smith')
+      student2 = create(:student, first_name: 'Jane', last_name: 'Doe')
       create(:iup, student: student1, status: 'active')
       create(:iup, student: student2, status: 'active')
 

@@ -82,9 +82,35 @@ module Api
             return render json: { error: "Full name is required" }, status: :unprocessable_entity
           end
 
-          roles = Array(params[:roles]).presence || [ "Teacher" ]
-          primary_ui_role = roles.first
+          roles = Array(params[:roles]).presence
+          if roles.blank?
+            return render json: { error: "At least one role must be selected" }, status: :unprocessable_entity
+          end
 
+          # Validate that every role exists and has permissions configured before creation
+          roles_with_no_perms = []
+          resolved_role_records = []
+
+          roles.each do |r_name|
+            canonical = canonical_role_name(r_name)
+            role_record = Role.find_by(name: canonical)
+            unless role_record
+              return render json: { error: "Role '#{r_name}' does not exist" }, status: :unprocessable_entity
+            end
+
+            if role_record.permissions.empty?
+              roles_with_no_perms << role_record.name
+            end
+            resolved_role_records << role_record
+          end
+
+          if roles_with_no_perms.any?
+            return render json: {
+              error: "Cannot create staff member with role(s) [#{roles_with_no_perms.join(', ')}]: these roles do not have any permissions configured yet. Please configure permissions on the Permission Configuration page first."
+            }, status: :unprocessable_entity
+          end
+
+          primary_ui_role = roles.first
           is_active = params[:active] != false
 
           ActiveRecord::Base.transaction do
@@ -97,21 +123,19 @@ module Api
             user.role = case primary_ui_role
             when "System Admin" then :system_admin
             when "Institutional Admin" then :institutional_admin
-            when "Teacher" then :therapist
+            when "Teacher", "Therapist" then :therapist
             else :clinical_staff
             end
 
             user.save!
 
             # Assign roles
-            roles.each do |r_name|
-              canonical = canonical_role_name(r_name)
-              role_record = Role.find_by(name: canonical)
-              user.assign_role(role_record) if role_record
+            resolved_role_records.each do |role_record|
+              user.assign_role(role_record)
             end
 
             staff_role = case primary_ui_role
-            when "Teacher" then "teacher"
+            when "Teacher", "Therapist" then "teacher"
             when "Coordinator" then "therapy_coordinator"
             when "Program Director", "Director" then "program_director"
             else "admin"
@@ -153,15 +177,35 @@ module Api
               @user.update!(attrs) if attrs.any?
 
               if roles.is_a?(Array) && roles.any?
-                # Revoke active roles not in new list
                 canonical_roles = roles.map { |r| canonical_role_name(r) }
+                roles_with_no_perms = []
+                resolved_role_records = []
+
+                canonical_roles.each do |c_name|
+                  r = Role.find_by(name: c_name)
+                  unless r
+                    return render json: { error: "Role '#{c_name}' does not exist" }, status: :unprocessable_entity
+                  end
+
+                  if r.permissions.empty?
+                    roles_with_no_perms << r.name
+                  end
+                  resolved_role_records << r
+                end
+
+                if roles_with_no_perms.any?
+                  return render json: {
+                    error: "Cannot assign role(s) [#{roles_with_no_perms.join(', ')}]: these roles do not have any permissions configured yet. Please configure permissions on the Permission Configuration page first."
+                  }, status: :unprocessable_entity
+                end
+
+                # Revoke active roles not in new list
                 @user.role_assignments.active.each do |ra|
                   ra.revoke! unless canonical_roles.include?(ra.role.name)
                 end
                 # Assign new ones
-                canonical_roles.each do |c_name|
-                  r = Role.find_by(name: c_name)
-                  @user.assign_role(r) if r
+                resolved_role_records.each do |r|
+                  @user.assign_role(r)
                 end
               end
             end
@@ -272,7 +316,8 @@ module Api
 
           names.map do |n|
             case n
-            when Role::Names::TEACHER, "Teacher", "therapist" then "Teacher"
+            when Role::Names::TEACHER, "Teacher" then "Teacher"
+            when Role::Names::THERAPIST, "Therapist", "therapist" then "Therapist"
             when Role::Names::THERAPY_COORDINATOR, "Therapy Coordinator", "coordinator" then "Coordinator"
             when Role::Names::PROGRAM_DIRECTOR, "Program Director" then "Program Director"
             when Role::Names::DIRECTOR, "Director" then "Director"
@@ -286,6 +331,7 @@ module Api
         def canonical_role_name(ui_role)
           case ui_role
           when "Teacher" then Role::Names::TEACHER
+          when "Therapist" then Role::Names::THERAPIST
           when "Coordinator" then Role::Names::THERAPY_COORDINATOR
           when "Program Director" then Role::Names::PROGRAM_DIRECTOR
           when "Director" then Role::Names::DIRECTOR

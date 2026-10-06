@@ -21,6 +21,7 @@ class Role < ApplicationRecord
   # Retained from main: Canonical role name constants
   module Names
     TEACHER = "Teacher"
+    THERAPIST = "Therapist"
     THERAPY_COORDINATOR = "Therapy Coordinator"
     PROGRAM_DIRECTOR = "Program Director"
     DIRECTOR = "Director"
@@ -57,7 +58,19 @@ class Role < ApplicationRecord
     when Names::DIRECTOR then "/director/dashboard"
     when Names::INSTITUTIONAL_ADMIN, Names::SYSTEM_ADMIN then "/admin"
     when Names::PARENT then "/parent/dashboard"
-    else "/"
+    else
+      first_mod = permissions.pluck(:resource).first
+      case first_mod
+      when "iups" then "/IupGeneration"
+      when "assessments" then "/AssessmentDashboard"
+      when "sessions" then "/DailyNotes"
+      when "behavior_incidents" then "/AbcLog"
+      when "students" then "/StudentEnrollmentWizard"
+      when "staff" then "/admin"
+      when "reports" then "/reports"
+      when "admin" then "/admin"
+      else "/"
+      end
     end
   end
 
