@@ -39,12 +39,32 @@ class User < ApplicationRecord
     roles.where(role_assignments: { revoked_at: nil })
   end
 
+  # Returns all effective permissions through active role assignments
+  def effective_permissions
+    Permission.joins(role_permissions: { role: :role_assignments })
+              .where(role_assignments: { user_id: id, revoked_at: nil })
+              .distinct
+  end
+
+  # Returns unique module/resource identifiers the user has access to
+  def permitted_modules
+    effective_permissions.pluck(:resource).uniq
+  end
+
+  # Returns permissions as formatted "resource:action" strings
+  def permissions_list
+    effective_permissions.map { |p| "#{p.resource}:#{p.action}" }
+  end
+
   # Returns canonical role name strings for all active roles.
   def role_names
-    names = active_roles.pluck(:name) | staff_member_role_names
+    names = active_roles.pluck(:name)
     return names if names.any?
 
-    # Fall back to the legacy enum column when no role_assignments exist.
+    # Fall back to the legacy staff_member or enum column only when no role_assignments exist.
+    names = staff_member_role_names
+    return names if names.any?
+
     derived = derived_role
     derived ? [ derived.name ] : []
   end
@@ -87,7 +107,7 @@ class User < ApplicationRecord
     case role&.to_sym
     when :system_admin then Role.find_by(name: Role::Names::SYSTEM_ADMIN)
     when :institutional_admin then Role.find_by(name: Role::Names::INSTITUTIONAL_ADMIN)
-    when :therapist then Role.find_by(name: Role::Names::TEACHER)
+    when :therapist then Role.find_by(name: Role::Names::THERAPIST) || Role.find_by(name: Role::Names::TEACHER)
     else nil
     end
   end
@@ -98,7 +118,8 @@ class User < ApplicationRecord
 
     case role&.to_sym
     when :system_admin, :institutional_admin then "/admin"
-    when :therapist, :clinical_staff then "/teacher/dashboard"
+    when :therapist then "/IupGeneration"
+    when :clinical_staff then "/teacher/dashboard"
     else "/"
     end
   end
@@ -125,13 +146,13 @@ class User < ApplicationRecord
   LEGACY_ENUM_TO_CANONICAL = {
     "system_admin"        => Role::Names::SYSTEM_ADMIN,
     "institutional_admin" => Role::Names::INSTITUTIONAL_ADMIN,
-    "therapist"           => Role::Names::TEACHER,
+    "therapist"           => Role::Names::THERAPIST,
     "clinical_staff"      => Role::Names::THERAPY_COORDINATOR
   }.freeze
 
   ALIAS_TO_CANONICAL = {
     "teacher"              => Role::Names::TEACHER,
-    "therapist"            => Role::Names::TEACHER,
+    "therapist"            => Role::Names::THERAPIST,
     "therapy_coordinator"  => Role::Names::THERAPY_COORDINATOR,
     "coordinator"          => Role::Names::THERAPY_COORDINATOR,
     "clinical_staff"       => Role::Names::THERAPY_COORDINATOR,

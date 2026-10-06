@@ -48,12 +48,30 @@ module Api
         # @response Unauthorized(401) [Hash{error: String}]
         # @response Forbidden(403) [Hash{error: String}]
         def create
-          goal_domain = GoalDomain.new(goal_domain_params)
-
-          if goal_domain.save
-            render json: goal_domain, status: :created
+          if params[:domains].is_a?(Array)
+            saved = []
+            ActiveRecord::Base.transaction do
+              params[:domains].each_with_index do |d, idx|
+                domain = if d[:id].present?
+                  GoalDomain.find_by(id: d[:id])
+                end
+                domain ||= GoalDomain.find_or_initialize_by(name: d[:name])
+                domain.description = d[:description] if d.key?(:description)
+                domain.display_order = d[:display_order] || d[:order] || idx
+                domain.is_active = (d[:is_active] != false && d[:status].to_s.downcase != "inactive")
+                domain.save!
+                saved << domain
+              end
+            end
+            render json: saved, status: :ok
           else
-            render json: { errors: goal_domain.errors }, status: :unprocessable_entity
+            goal_domain = GoalDomain.new(goal_domain_params)
+
+            if goal_domain.save
+              render json: goal_domain, status: :created
+            else
+              render json: { errors: goal_domain.errors }, status: :unprocessable_entity
+            end
           end
         end
 
@@ -140,7 +158,10 @@ module Api
         end
 
         def goal_domain_params
-          params.require(:goal_domain).permit(:name, :description, :display_order, :is_active)
+          raw = params[:goal_domain] || params
+          raw.permit(:name, :description, :display_order, :order, :is_active).tap do |p|
+            p[:display_order] = p.delete(:order) if p[:order].present? && p[:display_order].blank?
+          end
         end
       end
     end
