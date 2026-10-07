@@ -53,7 +53,7 @@ module Api
           if session_block_definition.save
             render json: session_block_definition, status: :created
           else
-            render json: { errors: session_block_definition.errors }, status: :unprocessable_entity
+            render json: { errors: session_block_definition.errors }, status: :unprocessable_content
           end
         end
 
@@ -75,7 +75,7 @@ module Api
           if @session_block_definition.update(session_block_definition_params)
             render json: @session_block_definition
           else
-            render json: { errors: @session_block_definition.errors }, status: :unprocessable_entity
+            render json: { errors: @session_block_definition.errors }, status: :unprocessable_content
           end
         end
 
@@ -96,7 +96,7 @@ module Api
           deletion_check = DeletionCheckService.call(@session_block_definition)
 
           if deletion_check.failure?
-            render json: { error: deletion_check.error }, status: :unprocessable_entity
+            render json: { error: deletion_check.error }, status: :unprocessable_content
             return
           end
 

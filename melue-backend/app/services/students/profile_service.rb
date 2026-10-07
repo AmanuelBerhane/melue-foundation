@@ -36,12 +36,18 @@ module Students
         )
       end
 
-      scope.find_by(id: @student_id)
+      if @student_id.to_s.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/)
+        scope.find_by(id: @student_id)
+      else
+        scope.find_by("student_id ILIKE ?", @student_id.to_s.strip) || scope.find_by(id: @student_id)
+      end
     end
 
     def build_profile(student)
       {
         id: student.id,
+        student_id: student.student_id,
+        studentId: student.student_id,
         full_name: student.full_name,
         first_name: student.first_name,
         middle_name: student.middle_name,
@@ -55,15 +61,17 @@ module Students
         guardian_name: student.guardian_name,
         guardian_phone: student.guardian_phone,
         headshot_url: headshot_url(student),
+        custom_fields: student.custom_fields || {},
         current_goals_summary: student.current_goals_summary
       }
     end
 
     def headshot_url(student)
-      return nil unless student.headshot.attached?
+      photo = student.attached_photo
+      return nil unless photo&.attached?
 
       Rails.application.routes.url_helpers.rails_blob_url(
-        student.headshot,
+        photo,
         only_path: true
       )
     end

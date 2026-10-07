@@ -26,7 +26,7 @@ module Director
       return reject(:not_found, "Session block not found", "block_not_found") unless @block
 
       resolve_location!
-      return reject(:unprocessable_entity, "No therapy station/room is configured", "location_missing") unless @station && @room
+      return reject(:unprocessable_content, "No therapy station/room is configured", "location_missing") unless @station && @room
 
       TeacherStudentAssignment.transaction do
         # Serialize concurrent assignments to the same teacher so two requests
@@ -37,11 +37,11 @@ module Director
         return reject_double_booking(conflict) if conflict
 
         if @teacher.unavailable_for_date?(@date, @block.id)
-          return reject(:unprocessable_entity, "#{@teacher.full_name} is unavailable for this block", "teacher_unavailable")
+          return reject(:unprocessable_content, "#{@teacher.full_name} is unavailable for this block", "teacher_unavailable")
         end
 
         if capacity_used >= capacity_limit
-          return reject(:unprocessable_entity,
+          return reject(:unprocessable_content,
                         "#{@teacher.full_name} has reached the capacity limit of #{capacity_limit} students for this block",
                         "capacity_exceeded")
         end
@@ -53,7 +53,7 @@ module Director
     rescue ActiveRecord::RecordNotUnique
       reject(:conflict, "#{@student.full_name} is already assigned for this block", "double_booking")
     rescue ActiveRecord::RecordInvalid => e
-      reject(:unprocessable_entity, e.record.errors.full_messages.join(", "), "invalid")
+      reject(:unprocessable_content, e.record.errors.full_messages.join(", "), "invalid")
     end
 
     private

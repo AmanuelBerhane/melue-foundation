@@ -47,7 +47,7 @@ module Students
       return failure("Student not found", :not_found) unless student
 
       content = params[:content].to_s.strip
-      return failure("Content can't be blank", :unprocessable_entity) if content.blank?
+      return failure("Content can't be blank", :unprocessable_content) if content.blank?
 
       recorded_at = params[:recorded_at].present? ? Time.zone.parse(params[:recorded_at].to_s) : Time.current
 
@@ -60,9 +60,9 @@ module Students
 
       success(note)
     rescue ActiveRecord::RecordInvalid => e
-      failure(e.record.errors.full_messages.join(", "), :unprocessable_entity)
+      failure(e.record.errors.full_messages.join(", "), :unprocessable_content)
     rescue ArgumentError
-      failure("Invalid recorded_at timestamp", :unprocessable_entity)
+      failure("Invalid recorded_at timestamp", :unprocessable_content)
     rescue StandardError => e
       failure(e.message)
     end
@@ -77,7 +77,7 @@ module Students
       return failure("Note not found", :not_found) unless note
 
       content = params[:content].to_s.strip
-      return failure("Content can't be blank", :unprocessable_entity) if content.blank?
+      return failure("Content can't be blank", :unprocessable_content) if content.blank?
 
       update_attrs = { content: content }
       update_attrs[:recorded_at] = Time.zone.parse(params[:recorded_at].to_s) if params[:recorded_at].present?
@@ -85,7 +85,7 @@ module Students
       note.update!(update_attrs)
       success(note)
     rescue ActiveRecord::RecordInvalid => e
-      failure(e.record.errors.full_messages.join(", "), :unprocessable_entity)
+      failure(e.record.errors.full_messages.join(", "), :unprocessable_content)
     rescue StandardError => e
       failure(e.message)
     end

@@ -27,7 +27,7 @@ module Api
             }
           }, status: :created
         else
-          render_error(result.error, :unprocessable_entity)
+          render_error(result.error, :unprocessable_content)
         end
       end
 
@@ -40,7 +40,7 @@ module Api
 
       def ensure_iup_is_draft
         unless @iup&.status_draft?
-          render_error("Signatures can only be added to draft IUPs", :unprocessable_entity)
+          render_error("Signatures can only be added to draft IUPs", :unprocessable_content)
         end
       end
     end

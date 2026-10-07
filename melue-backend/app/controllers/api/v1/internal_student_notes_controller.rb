@@ -128,7 +128,7 @@ module Api
         case error
         when /forbidden/i then :forbidden
         when /not found/i then :not_found
-        else :unprocessable_entity
+        else :unprocessable_content
         end
       end
     end

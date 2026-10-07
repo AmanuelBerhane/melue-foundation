@@ -165,7 +165,7 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
             params: { score: "5" },
             headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "rejects modification of completed assessment" do
@@ -218,7 +218,7 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
             },
             headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       # First response should NOT have been saved
       expect(assessment.ablls_responses.find_by(ablls_skill_item: item1).score).to be_nil
     end
@@ -266,7 +266,7 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
       it "rejects completion with 422" do
         post assessment_path(assessment, "complete"), headers: headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body["error"]).to match(/unanswered/)
       end
     end

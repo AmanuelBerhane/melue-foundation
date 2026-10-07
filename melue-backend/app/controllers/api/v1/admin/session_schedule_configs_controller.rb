@@ -15,7 +15,7 @@ module Api
           if config.update(config_params)
             render json: serialize_config(config)
           else
-            render json: { errors: config.errors }, status: :unprocessable_entity
+            render json: { errors: config.errors }, status: :unprocessable_content
           end
         end
 

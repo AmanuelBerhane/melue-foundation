@@ -32,7 +32,7 @@ module Api
           if role.save
             render json: serialize_role(role), status: :created
           else
-            render json: { error: role.errors.full_messages }, status: :unprocessable_entity
+            render json: { error: role.errors.full_messages }, status: :unprocessable_content
           end
         end
 
@@ -41,14 +41,14 @@ module Api
           if @role.update(role_params)
             render json: serialize_role(@role)
           else
-            render json: { error: @role.errors.full_messages }, status: :unprocessable_entity
+            render json: { error: @role.errors.full_messages }, status: :unprocessable_content
           end
         end
 
         # DELETE /api/v1/sysadmin/roles/:id
         def destroy
           if @role.is_system_critical?
-            return render json: { error: "System critical roles cannot be deleted" }, status: :unprocessable_entity
+            return render json: { error: "System critical roles cannot be deleted" }, status: :unprocessable_content
           end
 
           @role.destroy

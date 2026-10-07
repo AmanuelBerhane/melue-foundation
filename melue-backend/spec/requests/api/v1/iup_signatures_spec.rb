@@ -32,7 +32,7 @@ RSpec.describe "Api::V1::IupSignatures", type: :request do
            params: { signer_role: "program_director" },
            headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to include("draft")
     end
 
@@ -41,7 +41,7 @@ RSpec.describe "Api::V1::IupSignatures", type: :request do
            params: { signer_role: "invalid_role" },
            headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "returns 404 for unknown IUP" do

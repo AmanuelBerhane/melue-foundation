@@ -13,7 +13,7 @@ module Api
         if result.success?
           render json: ::Assessments::DashboardSerializer.new(result.data).as_json
         else
-          render json: { errors: result.errors }, status: :unprocessable_entity
+          render json: { errors: result.errors }, status: :unprocessable_content
         end
       end
 

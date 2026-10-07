@@ -31,7 +31,7 @@ module Api
           if result.success?
             render json: result.data, status: :ok
           else
-            render_error(result.error, :unprocessable_entity)
+            render_error(result.error, :unprocessable_content)
           end
         end
 

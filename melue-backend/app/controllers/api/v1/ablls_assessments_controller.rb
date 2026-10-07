@@ -52,7 +52,7 @@ class Api::V1::AbllsAssessmentsController < Api::V1::BaseController
       render json: { ablls_assessment: AbllsAssessmentSerializer.new(assessment).as_json },
              status: was_new ? :created : :ok
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 
@@ -77,7 +77,7 @@ class Api::V1::AbllsAssessmentsController < Api::V1::BaseController
     if result.success?
       render json: { response: AbllsResponseSerializer.new(result.data).as_json }
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 
@@ -128,7 +128,7 @@ class Api::V1::AbllsAssessmentsController < Api::V1::BaseController
     if result.success?
       render json: { responses: AbllsResponseSerializer.new(result.data).as_json }
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 
@@ -151,7 +151,7 @@ class Api::V1::AbllsAssessmentsController < Api::V1::BaseController
     if result.success?
       render json: { ablls_assessment: AbllsAssessmentSerializer.new(result.data).as_json }
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 

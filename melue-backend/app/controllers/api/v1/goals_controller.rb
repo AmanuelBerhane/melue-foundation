@@ -92,7 +92,7 @@ module Api
           if result.success?
             render json: GoalSerializer.new(result.data).as_json, status: :created
           else
-            render json: { error: result.error }, status: :unprocessable_entity
+            render json: { error: result.error }, status: :unprocessable_content
           end
           return
         end
@@ -110,7 +110,7 @@ module Api
 
           render json: GoalSerializer.new(goal.reload).as_json, status: :created
         else
-          render json: { errors: goal.errors }, status: :unprocessable_entity
+          render json: { errors: goal.errors }, status: :unprocessable_content
         end
       end
 
@@ -136,7 +136,7 @@ module Api
 
           render json: GoalSerializer.new(@goal.reload).as_json, status: :ok
         else
-          render json: { errors: @goal.errors }, status: :unprocessable_entity
+          render json: { errors: @goal.errors }, status: :unprocessable_content
         end
       end
 
@@ -153,7 +153,7 @@ module Api
         deletion_check = DeletionCheckService.call(@goal)
 
         if deletion_check.failure?
-          render json: { error: deletion_check.error }, status: :unprocessable_entity
+          render json: { error: deletion_check.error }, status: :unprocessable_content
           return
         end
 
@@ -176,7 +176,7 @@ module Api
 
         head :no_content
       rescue ActiveRecord::RecordNotDestroyed => e
-        render json: { error: e.record.errors.full_messages.join(", ") }, status: :unprocessable_entity
+        render json: { error: e.record.errors.full_messages.join(", ") }, status: :unprocessable_content
       end
 
       # PATCH /api/v1/goals/:id/deactivate
@@ -244,7 +244,7 @@ module Api
 
         if file.blank? && template_data.blank?
           render json: { error: "Please provide a template file (JSON or CSV) or template data" },
-                 status: :unprocessable_entity
+                 status: :unprocessable_content
           return
         end
 
@@ -258,7 +258,7 @@ module Api
         if result.success?
           render json: GoalSerializer.new(result.data).as_json, status: :created
         else
-          render json: { error: result.error }, status: :unprocessable_entity
+          render json: { error: result.error }, status: :unprocessable_content
         end
       end
 

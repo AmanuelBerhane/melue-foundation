@@ -120,7 +120,7 @@ RSpec.describe "Api::V1::PreferenceAssessments", type: :request do
     it "returns 422 for an unknown context" do
       get path("rankings?context=lunch_time"), headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -140,7 +140,7 @@ RSpec.describe "Api::V1::PreferenceAssessments", type: :request do
     it "returns 422 with no observations recorded" do
       post path("submit"), headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to match(/At least one observation/)
     end
   end

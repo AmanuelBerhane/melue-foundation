@@ -134,7 +134,7 @@ RSpec.describe "Api::V1::Admin::PromptLevels", type: :request do
       it "returns 422 with validation errors for invalid params" do
         post "/api/v1/admin/prompt_levels", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]).to have_key("label")
@@ -153,7 +153,7 @@ RSpec.describe "Api::V1::Admin::PromptLevels", type: :request do
 
         post "/api/v1/admin/prompt_levels", params: invalid_color_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["errors"]["color"]).to include("must be a valid hex code")
       end
@@ -244,7 +244,7 @@ RSpec.describe "Api::V1::Admin::PromptLevels", type: :request do
       it "returns 422 with validation errors for invalid params" do
         put "/api/v1/admin/prompt_levels/#{prompt_level.id}", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
       end
@@ -305,7 +305,7 @@ RSpec.describe "Api::V1::Admin::PromptLevels", type: :request do
             delete "/api/v1/admin/prompt_levels/#{prompt_level.id}", headers: admin_headers
           }.not_to change(PromptLevel, :count)
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           json = JSON.parse(response.body)
           expect(json).to have_key("error")
           expect(json["error"]).to include("existing trials")
@@ -379,7 +379,7 @@ RSpec.describe "Api::V1::Admin::PromptLevels", type: :request do
       it "returns 422 with error message for invalid IDs" do
         put "/api/v1/admin/prompt_levels/reorder", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("error")
       end

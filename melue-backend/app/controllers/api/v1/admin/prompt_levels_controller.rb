@@ -53,7 +53,7 @@ module Api
           if prompt_level.save
             render json: prompt_level, status: :created
           else
-            render json: { errors: prompt_level.errors }, status: :unprocessable_entity
+            render json: { errors: prompt_level.errors }, status: :unprocessable_content
           end
         end
 
@@ -75,7 +75,7 @@ module Api
           if @prompt_level.update(prompt_level_params)
             render json: @prompt_level
           else
-            render json: { errors: @prompt_level.errors }, status: :unprocessable_entity
+            render json: { errors: @prompt_level.errors }, status: :unprocessable_content
           end
         end
 
@@ -96,7 +96,7 @@ module Api
           deletion_check = DeletionCheckService.call(@prompt_level)
 
           if deletion_check.failure?
-            render json: { error: deletion_check.error }, status: :unprocessable_entity
+            render json: { error: deletion_check.error }, status: :unprocessable_content
             return
           end
 
@@ -129,7 +129,7 @@ module Api
             )
             head :ok
           else
-            render json: { error: result.error }, status: :unprocessable_entity
+            render json: { error: result.error }, status: :unprocessable_content
           end
         end
 

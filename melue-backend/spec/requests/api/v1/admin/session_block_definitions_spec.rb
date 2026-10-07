@@ -144,7 +144,7 @@ RSpec.describe "Api::V1::Admin::SessionBlockDefinitions", type: :request do
       it "returns 422 with validation errors for invalid params" do
         post "/api/v1/admin/session_block_definitions", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
       end
@@ -161,7 +161,7 @@ RSpec.describe "Api::V1::Admin::SessionBlockDefinitions", type: :request do
 
         post "/api/v1/admin/session_block_definitions", params: params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["errors"]["end_time"]).to include("must be after start time")
       end
@@ -178,7 +178,7 @@ RSpec.describe "Api::V1::Admin::SessionBlockDefinitions", type: :request do
 
         post "/api/v1/admin/session_block_definitions", params: params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["errors"]["end_time"]).to include("must be after start time")
       end
@@ -255,7 +255,7 @@ RSpec.describe "Api::V1::Admin::SessionBlockDefinitions", type: :request do
       it "returns 422 with validation errors for invalid params" do
         put "/api/v1/admin/session_block_definitions/#{block.id}", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
       end
@@ -319,7 +319,7 @@ RSpec.describe "Api::V1::Admin::SessionBlockDefinitions", type: :request do
             delete "/api/v1/admin/session_block_definitions/#{block.id}", headers: admin_headers
           }.not_to change(SessionBlockDefinition, :count)
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           json = JSON.parse(response.body)
           expect(json).to have_key("error")
         end

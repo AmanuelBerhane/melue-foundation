@@ -117,7 +117,7 @@ module Api
           if errors.empty?
             render json: { status: "ok" }
           else
-            render json: { status: "error", errors: errors }, status: :unprocessable_entity
+            render json: { status: "error", errors: errors }, status: :unprocessable_content
           end
         end
 

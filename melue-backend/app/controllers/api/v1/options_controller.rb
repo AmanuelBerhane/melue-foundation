@@ -9,6 +9,8 @@ class Api::V1::OptionsController < Api::V1::BaseController
       age = s.date_of_birth ? (Date.current.year - s.date_of_birth.year) : 6
       {
         id: s.id.to_s,
+        studentId: s.student_id,
+        student_id: s.student_id,
         name: "#{s.first_name} #{s.last_name}".strip,
         age: age,
         phase: s.respond_to?(:phase) ? s.phase : "active",

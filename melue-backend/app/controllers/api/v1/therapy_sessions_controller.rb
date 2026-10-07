@@ -54,7 +54,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
     if result.success?
       render json: { session: session_context(result.data) }, status: :created
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 
@@ -108,7 +108,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
       student_id: participant.student_id,
       therapy_station_id: @session.therapy_station_id
     )
-    return render_error("Goal not found for this participant at this station", :unprocessable_entity) unless goal
+    return render_error("Goal not found for this participant at this station", :unprocessable_content) unless goal
 
     if participant.update(current_focus_student_goal: goal)
       render json: {
@@ -116,7 +116,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
         current_focus_student_goal_id: participant.current_focus_student_goal_id
       }
     else
-      render_error(participant.errors.full_messages, :unprocessable_entity)
+      render_error(participant.errors.full_messages, :unprocessable_content)
     end
   end
 
@@ -137,7 +137,7 @@ class Api::V1::TherapySessionsController < Api::V1::BaseController
     if result.success?
       render json: TherapySessionSerializer.new(@session.reload).as_json
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 

@@ -53,15 +53,40 @@ class Api::V1::StudentsController < Api::V1::BaseController
   end
 
   def student_params
-    params.permit(
+    permitted = params.permit(
       :first_name, :middle_name, :last_name,
       :date_of_birth, :program_type, :therapy_group,
-      :diagnosis, :guardian_name, :guardian_phone, :headshot
+      :diagnosis, :guardian_name, :guardian_phone, :guardian_email, :headshot,
+      custom_fields: {},
+      customFields: {}
     ).to_h.symbolize_keys
+
+    custom_f = params[:custom_fields] || params[:customFields] || permitted[:custom_fields]
+    permitted[:custom_fields] = parse_custom_fields(custom_f) if custom_f.present?
+
+    permitted
+  end
+
+  def parse_custom_fields(fields)
+    return {} if fields.blank?
+
+    if fields.is_a?(String)
+      begin
+        JSON.parse(fields)
+      rescue JSON::ParserError
+        {}
+      end
+    elsif fields.respond_to?(:to_unsafe_h)
+      fields.to_unsafe_h
+    elsif fields.is_a?(Hash)
+      fields
+    else
+      {}
+    end
   end
 
   def render_service_error(result)
-    status = result.error&.match?(/permission/i) ? :forbidden : :unprocessable_entity
+    status = result.error&.match?(/permission/i) ? :forbidden : :unprocessable_content
     render json: { success: false, error: result.error, data: nil }, status: status
   end
 end

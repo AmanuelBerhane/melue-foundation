@@ -93,7 +93,7 @@ module Api
           if @goal_domain.update(goal_domain_params)
             render json: @goal_domain
           else
-            render json: { errors: @goal_domain.errors }, status: :unprocessable_entity
+            render json: { errors: @goal_domain.errors }, status: :unprocessable_content
           end
         end
 
@@ -114,7 +114,7 @@ module Api
           deletion_check = DeletionCheckService.call(@goal_domain)
 
           if deletion_check.failure?
-            render json: { error: deletion_check.error }, status: :unprocessable_entity
+            render json: { error: deletion_check.error }, status: :unprocessable_content
             return
           end
 
@@ -147,7 +147,7 @@ module Api
             )
             head :ok
           else
-            render json: { error: result.error }, status: :unprocessable_entity
+            render json: { error: result.error }, status: :unprocessable_content
           end
         end
 

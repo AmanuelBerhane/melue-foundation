@@ -47,7 +47,7 @@ module Api
           if message.save
             render json: { data: ParentCommunicationSerializer.new(message).as_json }, status: :created
           else
-            render_error(message.errors.full_messages, :unprocessable_entity)
+            render_error(message.errors.full_messages, :unprocessable_content)
           end
         end
 
