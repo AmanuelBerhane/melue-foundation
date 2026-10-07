@@ -92,11 +92,31 @@ Rails.application.routes.draw do
 
         resources :goal_domains do
           put :reorder, on: :collection
+          patch :reorder, on: :collection
+        end
+        resources "goal-domains", controller: "goal_domains", as: :goal_domains_hyphenated do
+          put :reorder, on: :collection
+          patch :reorder, on: :collection
         end
 
         resources :prompt_levels do
           put :reorder, on: :collection
+          patch :reorder, on: :collection
         end
+        resources "prompt-levels", controller: "prompt_levels", as: :prompt_levels_hyphenated do
+          put :reorder, on: :collection
+          patch :reorder, on: :collection
+        end
+
+        # Trial logging format configuration compatibility routes -> prompt_levels
+        get "trial-logging-config", to: "prompt_levels#index"
+        match "trial-logging-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
+        get "trial_logging_config", to: "prompt_levels#index"
+        match "trial_logging_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
+        get "trial-config", to: "prompt_levels#index"
+        match "trial-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
+        get "trial_config", to: "prompt_levels#index"
+        match "trial_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
 
         resources :session_block_definitions
 
@@ -145,11 +165,18 @@ Rails.application.routes.draw do
             get :permissions, to: "roles#permissions"
             post :permissions, to: "roles#update_permissions"
             get "permissions/audit", to: "roles#permissions_audit"
+            post "permissions/reset-default", to: "roles#reset_default_permissions"
+            post "permissions/reset_default", to: "roles#reset_default_permissions"
+            post "permissions/copy-from", to: "roles#copy_permissions"
+            post "permissions/copy_from", to: "roles#copy_permissions"
           end
         end
 
+        resources :permissions, only: [ :index ], controller: "permissions"
+
         get "audit-logs", to: "audit_logs#index"
       end
+
 
       # Director Schedule & Assignments
       namespace :director do

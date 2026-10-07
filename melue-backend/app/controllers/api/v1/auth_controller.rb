@@ -6,6 +6,7 @@ class Api::V1::AuthController < Api::V1::BaseController
   # Normalize a canonical Role::Names value to the snake_case key the front-end expects.
   ROLE_DISPLAY_MAP = {
     Role::Names::TEACHER              => "teacher",
+    Role::Names::THERAPIST            => "therapist",
     Role::Names::THERAPY_COORDINATOR  => "coordinator",
     Role::Names::PROGRAM_DIRECTOR     => "program_director",
     Role::Names::DIRECTOR             => "director",
@@ -29,7 +30,9 @@ class Api::V1::AuthController < Api::V1::BaseController
       name: name,
       email: current_user.email,
       role: roles.first,
-      roles: roles
+      roles: roles,
+      modules: current_user.permitted_modules,
+      permissions: current_user.permissions_list
     }
   end
 end
