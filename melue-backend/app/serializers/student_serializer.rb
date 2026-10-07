@@ -15,6 +15,8 @@ class StudentSerializer < ApplicationSerializer
   def serialize(student)
     payload = {
       id: student.id,
+      student_id: student.student_id,
+      studentId: student.student_id,
       full_name: student.full_name,
       first_name: student.first_name,
       middle_name: student.middle_name,

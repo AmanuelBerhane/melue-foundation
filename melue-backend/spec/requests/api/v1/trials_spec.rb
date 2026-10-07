@@ -80,7 +80,7 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
     it "returns 422 when outcome is missing" do
       post "/api/v1/therapy_sessions/#{session.id}/trials",
            params: trial_params.merge(outcome: nil), headers: headers, as: :json
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "returns 422 when a step is provided for a standard goal" do
@@ -91,7 +91,7 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
            headers: headers,
            as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     context "task analysis goals" do
@@ -132,7 +132,7 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
              headers: headers,
              as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "returns 422 when the step belongs to another student goal" do
@@ -147,7 +147,7 @@ RSpec.describe "Api::V1::TherapySessions::Trials", type: :request do
              headers: headers,
              as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end

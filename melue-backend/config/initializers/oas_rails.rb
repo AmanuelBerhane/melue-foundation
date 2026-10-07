@@ -123,7 +123,7 @@ OasRails.configure do |config|
     :unauthorized,
     :forbidden,
     :internal_server_error,
-    :unprocessable_entity
+    :unprocessable_content
   ]
 
   # Response body template for default errors

@@ -22,11 +22,11 @@ class Api::V1::GoalMasteryVerificationsController < Api::V1::BaseController
     end
 
     if @mastery_check.goal_mastery_verifications.where(verifying_teacher_id: current_staff_member.id).exists?
-      return render_error("You have already verified this mastery check", :unprocessable_entity)
+      return render_error("You have already verified this mastery check", :unprocessable_content)
     end
 
     if @mastery_check.goal_mastery_verifications.count >= 2
-      return render_error("This mastery check already has the required number of verifications", :unprocessable_entity)
+      return render_error("This mastery check already has the required number of verifications", :unprocessable_content)
     end
 
     verification = @mastery_check.goal_mastery_verifications.build(
@@ -40,7 +40,7 @@ class Api::V1::GoalMasteryVerificationsController < Api::V1::BaseController
       check_and_upgrade_status
       render json: { verification: verification, mastery_check: @mastery_check.reload }, status: :created
     else
-      render_error(verification.errors.full_messages, :unprocessable_entity)
+      render_error(verification.errors.full_messages, :unprocessable_content)
     end
   end
 

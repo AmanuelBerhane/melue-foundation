@@ -13,7 +13,12 @@ module Api
 
           if params[:search].present?
             query = "%#{params[:search].strip}%"
-            students = students.where("first_name ILIKE :q OR last_name ILIKE :q", q: query)
+            students = students.where("first_name ILIKE :q OR last_name ILIKE :q OR student_id ILIKE :q", q: query)
+          end
+
+          if params[:student_id].present? || params[:studentId].present?
+            sid = "%#{(params[:student_id] || params[:studentId]).to_s.strip}%"
+            students = students.where("student_id ILIKE :sid", sid: sid)
           end
 
           rows = students.map do |s|
@@ -23,6 +28,8 @@ module Api
 
             {
               id: s.id.to_s,
+              studentId: s.student_id,
+              student_id: s.student_id,
               fullName: "#{s.first_name} #{s.last_name}".strip,
               firstName: s.first_name,
               lastName: s.last_name,
@@ -32,7 +39,6 @@ module Api
               therapist: therapist_name,
               diagnosis: s.diagnosis.presence || "Autism Spectrum Disorder",
               status: s.status.to_s.downcase.include?("active") ? "active" : "inactive",
-              studentId: s.id.to_s,
               enrolledAt: s.enrolled_at || s.created_at,
               custom_fields: s.custom_fields || {},
               customFields: s.custom_fields || {}
@@ -87,6 +93,8 @@ module Api
 
             render json: {
               id: student.id.to_s,
+              studentId: student.student_id,
+              student_id: student.student_id,
               fullName: "#{student.first_name} #{student.last_name}".strip,
               program: student.program_type.to_s.humanize,
               status: student.status.to_s.humanize,
@@ -94,7 +102,7 @@ module Api
               customFields: student.custom_fields || {}
             }, status: :created
           else
-            render json: { errors: [ result.error ] }, status: :unprocessable_entity
+            render json: { errors: [ result.error ] }, status: :unprocessable_content
           end
         end
 
@@ -119,6 +127,8 @@ module Api
 
           render json: {
             id: @student.id.to_s,
+            studentId: @student.student_id,
+            student_id: @student.student_id,
             fullName: "#{@student.first_name} #{@student.last_name}".strip,
             firstName: @student.first_name,
             lastName: @student.last_name,
@@ -171,14 +181,20 @@ module Api
           if @student.update(attrs)
             render json: { success: true, student: @student }
           else
-            render json: { errors: @student.errors.full_messages }, status: :unprocessable_entity
+            render json: { errors: @student.errors.full_messages }, status: :unprocessable_content
           end
         end
 
         private
 
         def set_student
-          @student = Student.find(params[:id] || params[:student_id])
+          lookup = (params[:id] || params[:student_id] || params[:studentId]).to_s.strip
+          @student = if lookup.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/)
+            Student.find_by(id: lookup)
+          else
+            Student.find_by("student_id ILIKE ?", lookup) || Student.find_by(id: lookup)
+          end
+          render json: { error: "Student not found" }, status: :not_found unless @student
         end
 
         def create_params
@@ -190,6 +206,7 @@ module Api
             :programType, :program_type,
             :therapyGroup, :therapy_group,
             :diagnosis,
+            :studentId, :student_id,
             :parentName, :guardian_name,
             :parentPhone, :guardian_phone,
             :parentEmail, :guardian_email,

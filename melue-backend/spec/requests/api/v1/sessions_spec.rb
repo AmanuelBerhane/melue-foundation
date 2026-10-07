@@ -134,7 +134,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
       )
 
       post "/api/v1/sessions/#{single_session.id}/swap_students", headers: headers
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to match(/Need exactly two participants to swap/i)
     end
   end
@@ -204,7 +204,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
            headers: headers,
            as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to match(/not a participant/i)
     end
 
@@ -379,7 +379,7 @@ RSpec.describe "Api::V1::Sessions", type: :request do
            headers: headers,
            as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to match(/must have one or two participants/i)
       expect(empty_session.reload.status).to eq("in_progress")
     end

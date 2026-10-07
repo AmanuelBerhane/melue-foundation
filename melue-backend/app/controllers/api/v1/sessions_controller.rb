@@ -33,7 +33,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
   # POST /api/v1/sessions/:id/swap-students
   def swap_students
     if @session.session_participants.count < 2
-      return render json: { error: "Need exactly two participants to swap" }, status: :unprocessable_entity
+      return render json: { error: "Need exactly two participants to swap" }, status: :unprocessable_content
     end
 
     result = ::Sessions::SwapActiveStudent.call(therapy_session: @session)
@@ -51,7 +51,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
         participants: @session.session_participants.order(:card_position).map { |p| format_participant(p) }
       }, status: :ok
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -170,7 +170,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
       }
     }, status: :created
   rescue StandardError => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
   # DELETE /api/v1/sessions/:id/trials/last
@@ -201,7 +201,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
       render json: { success: false, message: "No trial to undo" }
     end
   rescue StandardError => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
   # POST /api/v1/sessions/:id/incidents
@@ -234,10 +234,10 @@ class Api::V1::SessionsController < Api::V1::BaseController
     if result.success?
       render json: { success: true, incident: result.data }, status: :created
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   rescue StandardError => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    render json: { error: e.message }, status: :unprocessable_content
   end
 
   # GET /api/v1/sessions/:session_id/summary
@@ -268,7 +268,7 @@ class Api::V1::SessionsController < Api::V1::BaseController
     if @session.update(status: :completed)
       render json: { success: true, summary: sum }
     else
-      render json: { error: @session.errors.full_messages.join(", ") }, status: :unprocessable_entity
+      render json: { error: @session.errors.full_messages.join(", ") }, status: :unprocessable_content
     end
   end
 

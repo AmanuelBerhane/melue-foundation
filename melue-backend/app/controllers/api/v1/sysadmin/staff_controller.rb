@@ -65,21 +65,21 @@ module Api
         def create
           email = params[:email].to_s.strip.downcase
           if email.blank?
-            return render json: { error: "Email is required" }, status: :unprocessable_entity
+            return render json: { error: "Email is required" }, status: :unprocessable_content
           end
 
           if User.exists?(email: email)
-            return render json: { error: "A user with email #{email} already exists." }, status: :unprocessable_entity
+            return render json: { error: "A user with email #{email} already exists." }, status: :unprocessable_content
           end
 
           password = params[:password].to_s.strip
           if password.blank?
-            return render json: { error: "Password is required" }, status: :unprocessable_entity
+            return render json: { error: "Password is required" }, status: :unprocessable_content
           end
 
           name = params[:name].to_s.strip
           if name.blank?
-            return render json: { error: "Full name is required" }, status: :unprocessable_entity
+            return render json: { error: "Full name is required" }, status: :unprocessable_content
           end
 
           roles = Array(params[:roles]).presence || [ "Teacher" ]
@@ -129,7 +129,7 @@ module Api
             render json: serialize_staff(staff, user), status: :created
           end
         rescue ActiveRecord::RecordInvalid => e
-          render json: { error: e.message }, status: :unprocessable_entity
+          render json: { error: e.message }, status: :unprocessable_content
         end
 
         # PATCH /api/v1/sysadmin/staff/:id
@@ -169,7 +169,7 @@ module Api
             render json: serialize_staff(@staff_member, @user)
           end
         rescue ActiveRecord::RecordInvalid => e
-          render json: { error: e.message }, status: :unprocessable_entity
+          render json: { error: e.message }, status: :unprocessable_content
         end
 
         # POST /api/v1/sysadmin/staff/:id/status

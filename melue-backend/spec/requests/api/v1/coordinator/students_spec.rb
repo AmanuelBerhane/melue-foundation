@@ -33,6 +33,8 @@ RSpec.describe 'Coordinator Students API', type: :request do
       expect(response).to have_http_status(:created)
       expect(json['status']).to eq('In assessment')
       expect(json['fullName']).to eq('Dawit Alemu')
+      expect(json['studentId']).to match(/\AMEL-\d{4,}-\d{2}\z/)
+      expect(json['student_id']).to eq(json['studentId'])
       expect(json['custom_fields']).to eq({
         'emergency_contact' => '+251922334455',
         'allergies' => [ 'peanut', 'dairy' ],
@@ -74,7 +76,7 @@ RSpec.describe 'Coordinator Students API', type: :request do
 
       post '/api/v1/coordinator/students', params: invalid_age_params, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json['errors'].join).to match(/not appropriate.*basic therapy/i)
       expect(Student.find_by(first_name: 'Dawit')).to be_nil
     end
@@ -87,8 +89,31 @@ RSpec.describe 'Coordinator Students API', type: :request do
 
       post '/api/v1/coordinator/students', params: invalid_fls_params, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json['errors'].join).to match(/not appropriate.*functional living skills/i)
+    end
+  end
+
+  describe 'GET /api/v1/coordinator/students' do
+    let!(:student1) { create(:student, first_name: 'Helen', last_name: 'Tesfaye') }
+    let!(:student2) { create(:student, first_name: 'Solomon', last_name: 'Girma') }
+
+    it 'returns studentId and student_id in the listing' do
+      get '/api/v1/coordinator/students', headers: headers
+
+      expect(response).to have_http_status(:ok)
+      first_item = json.find { |s| s['id'] == student1.id }
+      expect(first_item['studentId']).to eq(student1.student_id)
+      expect(first_item['student_id']).to eq(student1.student_id)
+    end
+
+    it 'supports searching by studentId' do
+      get "/api/v1/coordinator/students?search=#{student1.student_id}", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      ids = json.map { |s| s['studentId'] }
+      expect(ids).to include(student1.student_id)
+      expect(ids).not_to include(student2.student_id)
     end
   end
 
@@ -173,6 +198,15 @@ RSpec.describe 'Coordinator Students API', type: :request do
       # Photo
       expect(json['hasPhoto']).to be true
       expect(json['photoUrl']).to be_present
+    end
+
+    it 'allows fetching profile using studentId instead of UUID' do
+      get "/api/v1/coordinator/students/#{CGI.escape(student.student_id)}/profile", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      expect(json['id']).to eq(student.id)
+      expect(json['studentId']).to eq(student.student_id)
+      expect(json['fullName']).to eq('Yonas Kebede')
     end
   end
 

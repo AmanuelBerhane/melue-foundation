@@ -86,7 +86,7 @@ class Api::V1::StudentsController < Api::V1::BaseController
   end
 
   def render_service_error(result)
-    status = result.error&.match?(/permission/i) ? :forbidden : :unprocessable_entity
+    status = result.error&.match?(/permission/i) ? :forbidden : :unprocessable_content
     render json: { success: false, error: result.error, data: nil }, status: status
   end
 end

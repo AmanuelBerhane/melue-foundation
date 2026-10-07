@@ -20,7 +20,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         message: "Enrollment wizard started successfully"
       }, status: :created
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -43,7 +43,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         required_fields: required_fields_for_step(params[:step].to_i + 1)
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -64,7 +64,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         message: "Enrollment completed successfully"
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -84,7 +84,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         message: "Draft saved successfully"
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -118,7 +118,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         message: "Document attached successfully"
       }, status: :created
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -139,7 +139,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         message: "Photo uploaded successfully"
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -160,7 +160,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
         message: "Video uploaded successfully"
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -177,7 +177,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
     if result.success?
       render json: { message: "Photo removed successfully" }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -194,7 +194,7 @@ class Api::V1::EnrollmentsController < Api::V1::BaseController
     if result.success?
       render json: { message: "Video removed successfully" }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 

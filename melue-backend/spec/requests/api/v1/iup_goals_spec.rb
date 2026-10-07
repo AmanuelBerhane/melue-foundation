@@ -37,7 +37,7 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
            params: { goal_id: goal.id, therapy_station_id: station.id },
            headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to include("active")
     end
 
@@ -49,7 +49,7 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
            params: { goal_id: goal.id, therapy_station_id: station.id },
            headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -74,7 +74,7 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
             params: { new_goal_id: new_goal.id },
             headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -95,7 +95,7 @@ RSpec.describe "Api::V1::IupGoals", type: :request do
       delete "/api/v1/iups/#{iup.id}/goals/#{student_goal.id}",
              headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 end

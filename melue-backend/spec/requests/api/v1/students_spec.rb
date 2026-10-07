@@ -52,7 +52,7 @@ RSpec.describe 'Students API', type: :request do
 
       post '/api/v1/students', params: invalid_params, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json['success']).to be false
       expect(json['error']).to match(/not appropriate.*basic therapy/i)
     end

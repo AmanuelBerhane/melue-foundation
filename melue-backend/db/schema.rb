@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_07_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -70,7 +70,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
     t.index ["ablls_assessment_id", "ablls_skill_item_id"], name: "idx_ablls_responses_unique_assessment_item", unique: true
     t.index ["ablls_assessment_id"], name: "index_ablls_responses_on_ablls_assessment_id"
     t.index ["ablls_skill_item_id"], name: "index_ablls_responses_on_ablls_skill_item_id"
-    t.check_constraint "score IS NULL OR (score::text = ANY (ARRAY['0'::character varying, '1'::character varying, '2'::character varying, 'not_applicable'::character varying]::text[]))", name: "chk_ablls_response_score_valid"
+    t.check_constraint "score IS NULL OR (score::text = ANY (ARRAY['0'::character varying::text, '1'::character varying::text, '2'::character varying::text, 'not_applicable'::character varying::text]))", name: "chk_ablls_response_score_valid"
   end
 
   create_table "ablls_skill_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -228,7 +228,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
     t.index ["submittable_type", "submittable_id"], name: "index_form_submissions_on_submittable"
     t.index ["submittable_type", "submittable_id"], name: "index_form_submissions_on_submittable_type_and_submittable_id", unique: true
     t.index ["values"], name: "index_form_submissions_on_values", using: :gin
-    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'submitted'::character varying, 'finalized'::character varying]::text[])", name: "form_submissions_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying::text, 'submitted'::character varying::text, 'finalized'::character varying::text])", name: "form_submissions_status_check"
   end
 
   create_table "goal_domains", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -332,7 +332,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
     t.index ["iup_id"], name: "index_iup_signatures_on_iup_id"
     t.index ["signed_at"], name: "index_iup_signatures_on_signed_at"
     t.index ["signer_user_id"], name: "index_iup_signatures_on_signer_user_id"
-    t.check_constraint "signer_role::text = ANY (ARRAY['program_director'::character varying, 'guardian'::character varying]::text[])", name: "iup_signatures_signer_role_check"
+    t.check_constraint "signer_role::text = ANY (ARRAY['program_director'::character varying::text, 'guardian'::character varying::text])", name: "iup_signatures_signer_role_check"
   end
 
   create_table "iups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -396,8 +396,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
     t.index ["sender_user_id"], name: "index_parent_communications_on_sender_user_id"
     t.index ["student_id", "sent_at"], name: "index_parent_communications_on_student_id_and_sent_at"
     t.index ["student_id"], name: "index_parent_communications_on_student_id"
-    t.check_constraint "direction::text = ANY (ARRAY['inbound'::character varying, 'outbound'::character varying]::text[])", name: "parent_communications_direction_check"
-    t.check_constraint "kind::text = ANY (ARRAY['progress_update'::character varying, 'general'::character varying, 'alert'::character varying]::text[])", name: "parent_communications_kind_check"
+    t.check_constraint "direction::text = ANY (ARRAY['inbound'::character varying::text, 'outbound'::character varying::text])", name: "parent_communications_direction_check"
+    t.check_constraint "kind::text = ANY (ARRAY['progress_update'::character varying::text, 'general'::character varying::text, 'alert'::character varying::text])", name: "parent_communications_kind_check"
   end
 
   create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -594,7 +594,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
     t.index ["status"], name: "index_session_summaries_on_status"
     t.index ["submitted_at"], name: "index_session_summaries_on_submitted_at"
     t.index ["therapy_session_id"], name: "index_session_summaries_on_therapy_session_id", unique: true
-    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'submitted'::character varying, 'reviewed'::character varying]::text[])", name: "session_summaries_status_check"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying::text, 'submitted'::character varying::text, 'reviewed'::character varying::text])", name: "session_summaries_status_check"
   end
 
   create_table "skills_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -715,9 +715,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_120001) do
     t.string "middle_name"
     t.string "program_type"
     t.string "status", default: "in_assessment", null: false
+    t.string "student_id", null: false
     t.string "therapy_group"
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
+    t.index ["student_id"], name: "index_students_on_student_id", unique: true
   end
 
   create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

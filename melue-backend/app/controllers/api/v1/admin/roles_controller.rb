@@ -37,7 +37,7 @@ class Api::V1::Admin::RolesController < Api::V1::BaseController
       update_role_permissions if params[:permission_ids].present?
       render json: @role.as_json(include: :permissions), status: :created
     else
-      render json: { errors: @role.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @role.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -54,7 +54,7 @@ class Api::V1::Admin::RolesController < Api::V1::BaseController
       update_role_permissions if params.key?(:permission_ids)
       render json: @role.as_json(include: :permissions)
     else
-      render json: { errors: @role.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @role.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -69,7 +69,7 @@ class Api::V1::Admin::RolesController < Api::V1::BaseController
     if @role.destroy
       head :no_content
     else
-      render json: { errors: @role.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @role.errors.full_messages }, status: :unprocessable_content
     end
   end
 

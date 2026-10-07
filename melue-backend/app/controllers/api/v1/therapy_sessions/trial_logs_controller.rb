@@ -42,7 +42,7 @@ module Api
         def set_student_goal
           @student_goal = StudentGoal.find_by(id: params[:student_goal_id])
           unless @student_goal && @student_goal.student_id == @participant.student_id
-            render_error("Goal does not belong to this participant's student", :unprocessable_entity)
+            render_error("Goal does not belong to this participant's student", :unprocessable_content)
           end
         end
       end

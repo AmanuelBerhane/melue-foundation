@@ -38,7 +38,7 @@ RSpec.describe "Api::V1::Iups", type: :request do
            params: { student_id: student.id, assessment_cycle_id: cycle.id },
            headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "returns 401 without a token" do
@@ -131,7 +131,7 @@ RSpec.describe "Api::V1::Iups", type: :request do
             params: { form_values: { "field" => "value" } },
             headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to include("finalized")
     end
   end
@@ -152,7 +152,7 @@ RSpec.describe "Api::V1::Iups", type: :request do
 
       delete "/api/v1/iups/#{iup.id}", headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 
@@ -193,7 +193,7 @@ RSpec.describe "Api::V1::Iups", type: :request do
     it "rejects finalization without signatures" do
       post "/api/v1/iups/#{iup.id}/finalize", headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.parsed_body["error"]).to include("signatures")
     end
 

@@ -41,7 +41,7 @@ module Api
           if observation.save
             render json: { data: HomeObservationSerializer.new(observation).as_json }, status: :created
           else
-            render_error(observation.errors.full_messages, :unprocessable_entity)
+            render_error(observation.errors.full_messages, :unprocessable_content)
           end
         end
 

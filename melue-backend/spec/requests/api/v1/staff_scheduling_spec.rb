@@ -116,7 +116,7 @@ RSpec.describe 'Staff Scheduling API', type: :request do
 
       post '/api/v1/assignments', params: params, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json['error']).to include('capacity limit')
     end
 
@@ -141,7 +141,7 @@ RSpec.describe 'Staff Scheduling API', type: :request do
 
       post '/api/v1/assignments', params: params, headers: headers
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json['error']).to include('already assigned')
     end
   end

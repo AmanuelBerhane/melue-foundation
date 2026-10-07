@@ -46,9 +46,21 @@ class Student < ApplicationRecord
     archived: "archived"
   }, prefix: true
 
+  def studentId
+    student_id
+  end
+
+  def studentId=(value)
+    self.student_id = value
+  end
+
   validates :first_name, :last_name, :date_of_birth, presence: true
   validates :program_type, :therapy_group, presence: true
   validates :status, presence: true
+  validates :student_id, presence: true, uniqueness: { case_sensitive: false }
+
+  before_validation :assign_student_id, on: :create
+  before_create :assign_student_id
 
   # Guardian fields
   validates :guardian_name, :guardian_phone, presence: true
@@ -62,7 +74,7 @@ class Student < ApplicationRecord
     return all if query.blank?
 
     sanitized = "%#{sanitize_sql_like(query)}%"
-    where("first_name ILIKE :q OR last_name ILIKE :q", q: sanitized)
+    where("students.first_name ILIKE :q OR students.last_name ILIKE :q OR students.student_id ILIKE :q", q: sanitized)
   }
 
   scope :by_program_type, ->(type) {
@@ -187,5 +199,11 @@ class Student < ApplicationRecord
     if baseline_video.byte_size > 100.megabytes
       errors.add(:baseline_video, "size must be less than 100MB")
     end
+  end
+
+  def assign_student_id
+    return if student_id.present?
+
+    self.student_id = Students::IdGeneratorService.generate(enrolled_at: enrolled_at || created_at || Time.current)
   end
 end

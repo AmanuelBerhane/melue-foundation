@@ -67,7 +67,7 @@ class Api::V1::PreferenceAssessmentsController < Api::V1::BaseController
     if result.success?
       render json: { preference_assessment: serialize(result.data.reload) }
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 
@@ -91,7 +91,7 @@ class Api::V1::PreferenceAssessmentsController < Api::V1::BaseController
     if context && !PreferenceAssessment::CONTEXTS.include?(context)
       return render_error(
         "Context must be one of: #{PreferenceAssessment::CONTEXTS.join(', ')}",
-        :unprocessable_entity
+        :unprocessable_content
       )
     end
 

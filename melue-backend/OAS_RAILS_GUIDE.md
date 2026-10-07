@@ -164,9 +164,9 @@ Then fill it with your data. Below are the available configuration options:
 - **`config.set_default_responses`**: Determines whether to add default error responses to endpoints. Default is `true`.
 
 - **`config.possible_default_responses`**: An array of possible default error responses. Some responses are added conditionally based on the endpoint (e.g., `:not_found` only applies to `show`, `update`, or `delete` actions).  
-  **Default**: `[:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_entity]`  
+  **Default**: `[:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_content]`  
   **Allowed Values**: Symbols representing HTTP status codes from the list:  
-  `[:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_entity]`
+  `[:not_found, :unauthorized, :forbidden, :internal_server_error, :unprocessable_content]`
 
 - **`config.response_body_of_default`**: The response body template for default error responses. Must be a string representing a hash, similar to those used in request body tags.  
   **Default**: `"Hash{ message: String }"`
@@ -1350,7 +1350,7 @@ class UsersController < ApplicationController
     if @user.save
       render json: @user, status: :created
     else
-      render json: { success: false, errors: @user.errors }, status: :unprocessable_entity
+      render json: { success: false, errors: @user.errors }, status: :unprocessable_content
     end
   end
 
@@ -1365,7 +1365,7 @@ class UsersController < ApplicationController
     if @user.update(user_params)
       render json: @user
     else
-      render json: @user.errors, status: :unprocessable_entity
+      render json: @user.errors, status: :unprocessable_content
     end
   end
 

@@ -82,7 +82,7 @@ module Api
                     type: "application/pdf",
                     disposition: "attachment"
         else
-          render json: { error: pdf_result.error }, status: :unprocessable_entity
+          render json: { error: pdf_result.error }, status: :unprocessable_content
         end
       end
 
@@ -92,7 +92,7 @@ module Api
         status = case result.error
         when /forbidden/i then :forbidden
         when /not found/i then :not_found
-        else :unprocessable_entity
+        else :unprocessable_content
         end
         render json: { success: false, error: result.error }, status: status
       end

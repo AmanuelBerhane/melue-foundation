@@ -131,7 +131,7 @@ RSpec.describe "Api::V1::Admin::GoalDomains", type: :request do
       it "returns 422 with validation errors for invalid params" do
         post "/api/v1/admin/goal_domains", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]).to have_key("name")
@@ -206,7 +206,7 @@ RSpec.describe "Api::V1::Admin::GoalDomains", type: :request do
       it "returns 422 with validation errors for invalid params" do
         put "/api/v1/admin/goal_domains/#{goal_domain.id}", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
       end
@@ -267,7 +267,7 @@ RSpec.describe "Api::V1::Admin::GoalDomains", type: :request do
             delete "/api/v1/admin/goal_domains/#{goal_domain.id}", headers: admin_headers
           }.not_to change(GoalDomain, :count)
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           json = JSON.parse(response.body)
           expect(json).to have_key("error")
           expect(json["error"]).to include("existing goals")
@@ -341,7 +341,7 @@ RSpec.describe "Api::V1::Admin::GoalDomains", type: :request do
       it "returns 422 with error message for invalid IDs" do
         put "/api/v1/admin/goal_domains/reorder", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("error")
       end

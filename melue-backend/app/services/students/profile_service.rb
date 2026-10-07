@@ -36,12 +36,18 @@ module Students
         )
       end
 
-      scope.find_by(id: @student_id)
+      if @student_id.to_s.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/)
+        scope.find_by(id: @student_id)
+      else
+        scope.find_by("student_id ILIKE ?", @student_id.to_s.strip) || scope.find_by(id: @student_id)
+      end
     end
 
     def build_profile(student)
       {
         id: student.id,
+        student_id: student.student_id,
+        studentId: student.student_id,
         full_name: student.full_name,
         first_name: student.first_name,
         middle_name: student.middle_name,

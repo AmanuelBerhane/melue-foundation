@@ -49,8 +49,9 @@ module Students
         :first_name, :middle_name, :last_name,
         :date_of_birth, :program_type, :therapy_group,
         :diagnosis, :guardian_name, :guardian_phone,
-        :guardian_email, :enrolled_at
+        :guardian_email, :enrolled_at, :student_id
       )
+      attrs[:student_id] ||= @params[:studentId] if @params[:studentId].present?
       attrs[:custom_fields] = @params[:custom_fields] if @params[:custom_fields].present?
       attrs
     end

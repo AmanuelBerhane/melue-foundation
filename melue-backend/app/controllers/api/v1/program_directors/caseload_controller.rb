@@ -32,7 +32,7 @@ class Api::V1::ProgramDirectors::CaseloadController < Api::V1::BaseController
         filters: filters
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
