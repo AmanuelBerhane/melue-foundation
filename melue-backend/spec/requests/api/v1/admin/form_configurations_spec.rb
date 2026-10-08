@@ -152,7 +152,7 @@ RSpec.describe "Api::V1::Admin::FormConfigurations", type: :request do
       it "returns 422 with validation errors for invalid params" do
         post "/api/v1/admin/form_configurations", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]).to have_key("form_name")
@@ -174,7 +174,7 @@ RSpec.describe "Api::V1::Admin::FormConfigurations", type: :request do
 
         post "/api/v1/admin/form_configurations", params: params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["errors"]["field_schema"]).to include("contains duplicate field IDs")
       end
@@ -194,7 +194,7 @@ RSpec.describe "Api::V1::Admin::FormConfigurations", type: :request do
 
         post "/api/v1/admin/form_configurations", params: params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["errors"]["field_schema"]).to include(a_string_matching(/unsupported field type/))
       end
@@ -268,7 +268,7 @@ RSpec.describe "Api::V1::Admin::FormConfigurations", type: :request do
       it "returns 422 with validation errors for invalid params" do
         put "/api/v1/admin/form_configurations/#{form_config.id}", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
       end
@@ -416,7 +416,7 @@ RSpec.describe "Api::V1::Admin::FormConfigurations", type: :request do
              params: {},
              headers: admin_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["error"]).to eq("File is required")
       end
@@ -432,7 +432,7 @@ RSpec.describe "Api::V1::Admin::FormConfigurations", type: :request do
              params: { file: invalid_file },
              headers: admin_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
 

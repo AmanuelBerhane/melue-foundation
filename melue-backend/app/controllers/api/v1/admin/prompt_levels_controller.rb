@@ -53,7 +53,7 @@ module Api
           if prompt_level.save
             render json: prompt_level, status: :created
           else
-            render json: { errors: prompt_level.errors }, status: :unprocessable_entity
+            render json: { errors: prompt_level.errors }, status: :unprocessable_content
           end
         end
 
@@ -75,7 +75,7 @@ module Api
           if @prompt_level.update(prompt_level_params)
             render json: @prompt_level
           else
-            render json: { errors: @prompt_level.errors }, status: :unprocessable_entity
+            render json: { errors: @prompt_level.errors }, status: :unprocessable_content
           end
         end
 
@@ -96,7 +96,7 @@ module Api
           deletion_check = DeletionCheckService.call(@prompt_level)
 
           if deletion_check.failure?
-            render json: { error: deletion_check.error }, status: :unprocessable_entity
+            render json: { error: deletion_check.error }, status: :unprocessable_content
             return
           end
 
@@ -129,8 +129,29 @@ module Api
             )
             head :ok
           else
-            render json: { error: result.error }, status: :unprocessable_entity
+            render json: { error: result.error }, status: :unprocessable_content
           end
+        end
+
+        # POST /api/v1/admin/trial-logging-config
+        def save_trial_config
+          if params[:prompt_levels].is_a?(Array)
+            params[:prompt_levels].each_with_index do |pl, idx|
+              level = PromptLevel.find_by(id: pl[:id]) if pl[:id].present?
+              level ||= PromptLevel.find_or_initialize_by(label: pl[:name] || pl[:label])
+              level.label = pl[:name] || pl[:label] if (pl[:name] || pl[:label]).present?
+              level.color = pl[:color] if pl[:color].present?
+              level.display_order = pl[:order] || pl[:display_order] || idx
+              level.is_active = (pl[:status].to_s.downcase != "inactive" && pl[:is_active] != false)
+              level.save if level.valid?
+            end
+          end
+
+          render json: {
+            status: "ok",
+            message: "Trial logging format saved successfully",
+            prompt_levels: PromptLevel.order(:display_order)
+          }
         end
 
         private
@@ -140,7 +161,11 @@ module Api
         end
 
         def prompt_level_params
-          params.require(:prompt_level).permit(:label, :color, :display_order, :is_active)
+          raw = params[:prompt_level] || params
+          raw.permit(:label, :name, :color, :display_order, :order, :is_active).tap do |p|
+            p[:label] = p.delete(:name) if p[:name].present? && p[:label].blank?
+            p[:display_order] = p.delete(:order) if p[:order].present? && p[:display_order].blank?
+          end
         end
       end
     end

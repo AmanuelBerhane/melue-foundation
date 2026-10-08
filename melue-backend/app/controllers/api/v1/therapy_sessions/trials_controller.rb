@@ -35,7 +35,7 @@ module Api::V1::TherapySessions
         status_code = result.data.previously_new_record? ? :created : :ok
         render json: { trial: TrialSerializer.new(result.data).as_json }, status: status_code
       else
-        render_error(result.error, :unprocessable_entity)
+        render_error(result.error, :unprocessable_content)
       end
     end
 

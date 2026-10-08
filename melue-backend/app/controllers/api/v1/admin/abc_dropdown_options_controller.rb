@@ -59,7 +59,7 @@ module Api
           if abc_dropdown_option.save
             render json: abc_dropdown_option, status: :created
           else
-            render json: { errors: abc_dropdown_option.errors }, status: :unprocessable_entity
+            render json: { errors: abc_dropdown_option.errors }, status: :unprocessable_content
           end
         end
 
@@ -81,7 +81,7 @@ module Api
           if @abc_dropdown_option.update(abc_dropdown_option_params)
             render json: @abc_dropdown_option
           else
-            render json: { errors: @abc_dropdown_option.errors }, status: :unprocessable_entity
+            render json: { errors: @abc_dropdown_option.errors }, status: :unprocessable_content
           end
         end
 
@@ -120,7 +120,7 @@ module Api
           ids = params[:ids]
 
           if category.blank?
-            render json: { error: "Category is required" }, status: :unprocessable_entity
+            render json: { error: "Category is required" }, status: :unprocessable_content
             return
           end
 
@@ -135,7 +135,7 @@ module Api
             )
             head :ok
           else
-            render json: { error: result.error }, status: :unprocessable_entity
+            render json: { error: result.error }, status: :unprocessable_content
           end
         end
 

@@ -19,4 +19,16 @@ class Api::V1::BaseController < Api::BaseController
   def render_not_found(message)
     render_error(message, :not_found)
   end
+
+  def require_oversight_role
+    return if current_user&.has_any_role?(*Role::OVERSIGHT_ROLES)
+
+    render_error("Forbidden: Oversight access required", :forbidden)
+  end
+
+  def require_director_or_admin
+    return if current_user&.has_any_role?(*Role::DIRECTOR_OR_ADMIN_ROLES)
+
+    render_error("Forbidden: Director or Administrator access required", :forbidden)
+  end
 end

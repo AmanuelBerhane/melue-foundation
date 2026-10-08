@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_07_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -93,7 +93,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
     t.string "name", null: false
-    t.bigint "record_id", null: false
+    t.string "record_id", null: false
     t.string "record_type", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
@@ -293,14 +293,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
     t.index ["user_id"], name: "index_guardians_on_user_id"
   end
 
+  create_table "home_observations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.uuid "guardian_id", null: false
+    t.date "observed_on", null: false
+    t.uuid "student_id", null: false
+    t.datetime "submitted_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id"], name: "index_home_observations_on_guardian_id"
+    t.index ["student_id", "observed_on"], name: "index_home_observations_on_student_id_and_observed_on"
+    t.index ["student_id"], name: "index_home_observations_on_student_id"
+  end
+
   create_table "internal_student_notes", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.bigint "author_id", null: false
     t.text "content", null: false
     t.datetime "created_at", null: false
+    t.boolean "internal_flag", default: true, null: false
     t.datetime "recorded_at", null: false
     t.uuid "student_id", null: false
     t.datetime "updated_at", null: false
     t.index ["author_id"], name: "index_internal_student_notes_on_author_id"
+    t.index ["internal_flag"], name: "index_internal_student_notes_on_internal_flag"
     t.index ["student_id", "recorded_at"], name: "index_internal_student_notes_on_student_id_and_recorded_at"
     t.index ["student_id"], name: "index_internal_student_notes_on_student_id"
   end
@@ -363,6 +378,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
     t.bigint "recipient_user_id"
     t.string "type"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "parent_communications", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "content", null: false
+    t.datetime "created_at", null: false
+    t.string "direction", null: false
+    t.uuid "guardian_id", null: false
+    t.string "kind", default: "general", null: false
+    t.datetime "read_at"
+    t.bigint "sender_user_id", null: false
+    t.datetime "sent_at", null: false
+    t.uuid "student_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["guardian_id", "direction", "read_at"], name: "idx_on_guardian_id_direction_read_at_9b2c37a460"
+    t.index ["guardian_id"], name: "index_parent_communications_on_guardian_id"
+    t.index ["sender_user_id"], name: "index_parent_communications_on_sender_user_id"
+    t.index ["student_id", "sent_at"], name: "index_parent_communications_on_student_id_and_sent_at"
+    t.index ["student_id"], name: "index_parent_communications_on_student_id"
+    t.check_constraint "direction::text = ANY (ARRAY['inbound'::character varying::text, 'outbound'::character varying::text])", name: "parent_communications_direction_check"
+    t.check_constraint "kind::text = ANY (ARRAY['progress_update'::character varying::text, 'general'::character varying::text, 'alert'::character varying::text])", name: "parent_communications_kind_check"
   end
 
   create_table "permissions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -594,6 +629,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
     t.datetime "created_at", null: false
     t.datetime "discarded_at"
     t.string "full_name", null: false
+    t.string "phone"
     t.string "role", default: "teacher", null: false
     t.string "staff_number", null: false
     t.datetime "updated_at", null: false
@@ -666,21 +702,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
   create_table "students", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "assessment_started_at"
     t.datetime "created_at", null: false
-    t.date "date_of_birth", null: false
+    t.jsonb "custom_fields", default: {}, null: false
+    t.date "date_of_birth"
     t.string "diagnosis"
     t.datetime "discarded_at"
     t.datetime "enrolled_at"
-    t.string "first_name", null: false
+    t.string "first_name"
     t.string "guardian_email"
     t.string "guardian_name"
     t.string "guardian_phone"
-    t.string "last_name", null: false
+    t.string "last_name"
     t.string "middle_name"
-    t.string "program_type", null: false
+    t.string "program_type"
     t.string "status", default: "in_assessment", null: false
-    t.string "therapy_group", null: false
+    t.string "student_id", null: false
+    t.string "therapy_group"
     t.datetime "updated_at", null: false
     t.index ["discarded_at"], name: "index_students_on_discarded_at"
+    t.index ["student_id"], name: "index_students_on_student_id", unique: true
   end
 
   create_table "task_analysis_step_templates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -856,6 +895,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
   add_foreign_key "goal_mastery_verifications", "goal_mastery_checks"
   add_foreign_key "goals", "goal_domains"
   add_foreign_key "guardians", "users"
+  add_foreign_key "home_observations", "guardians"
+  add_foreign_key "home_observations", "students"
   add_foreign_key "internal_student_notes", "students"
   add_foreign_key "internal_student_notes", "users", column: "author_id"
   add_foreign_key "iup_signatures", "iups"
@@ -867,6 +908,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_25_000000) do
   add_foreign_key "mass_assessments", "assessment_cycles"
   add_foreign_key "mass_assessments", "staff_members", column: "teacher_id"
   add_foreign_key "mass_assessments", "students"
+  add_foreign_key "parent_communications", "guardians"
+  add_foreign_key "parent_communications", "students"
+  add_foreign_key "parent_communications", "users", column: "sender_user_id"
   add_foreign_key "preference_assessments", "assessment_cycles"
   add_foreign_key "preference_observations", "preference_assessments"
   add_foreign_key "preference_observations", "preference_inventory_items"

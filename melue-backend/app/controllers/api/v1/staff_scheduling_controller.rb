@@ -26,7 +26,7 @@ class Api::V1::StaffSchedulingController < Api::V1::BaseController
         }
       }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -66,7 +66,7 @@ class Api::V1::StaffSchedulingController < Api::V1::BaseController
     if result.success?
       render json: result.data, status: :created
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -89,7 +89,7 @@ class Api::V1::StaffSchedulingController < Api::V1::BaseController
     if result.success?
       render json: result.data
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 
@@ -110,7 +110,7 @@ class Api::V1::StaffSchedulingController < Api::V1::BaseController
     if result.success?
       render json: { message: result.data }
     else
-      render json: { error: result.error }, status: :unprocessable_entity
+      render json: { error: result.error }, status: :unprocessable_content
     end
   end
 

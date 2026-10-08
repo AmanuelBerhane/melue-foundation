@@ -165,7 +165,7 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
             params: { score: "5" },
             headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "rejects modification of completed assessment" do
@@ -218,9 +218,26 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
             },
             headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       # First response should NOT have been saved
       expect(assessment.ablls_responses.find_by(ablls_skill_item: item1).score).to be_nil
+    end
+
+    it "persists per-item scores (0, 1, 2, not_applicable) in ablls_responses" do
+      patch assessment_path(assessment, "responses/bulk"),
+            params: {
+              responses: [
+                { skill_item_id: item1.id, score: 0 },
+                { skill_item_id: item2.id, score: "not_applicable" }
+              ]
+            },
+            headers: headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      r1 = assessment.ablls_responses.find_by(ablls_skill_item: item1)
+      r2 = assessment.ablls_responses.find_by(ablls_skill_item: item2)
+      expect(r1.score).to eq("0")
+      expect(r2.score).to eq("not_applicable")
     end
   end
 
@@ -249,7 +266,7 @@ RSpec.describe "Api::V1::AbllsAssessments", type: :request do
       it "rejects completion with 422" do
         post assessment_path(assessment, "complete"), headers: headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.parsed_body["error"]).to match(/unanswered/)
       end
     end

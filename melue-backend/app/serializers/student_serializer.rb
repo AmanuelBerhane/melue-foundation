@@ -15,6 +15,8 @@ class StudentSerializer < ApplicationSerializer
   def serialize(student)
     payload = {
       id: student.id,
+      student_id: student.student_id,
+      studentId: student.student_id,
       full_name: student.full_name,
       first_name: student.first_name,
       middle_name: student.middle_name,
@@ -24,7 +26,8 @@ class StudentSerializer < ApplicationSerializer
       program_type: student.program_type,
       therapy_group: student.therapy_group,
       status: student.status,
-      headshot_url: headshot_url(student)
+      headshot_url: headshot_url(student),
+      custom_fields: student.custom_fields || {}
     }
 
     if @profile
@@ -40,10 +43,11 @@ class StudentSerializer < ApplicationSerializer
   end
 
   def headshot_url(student)
-    return nil unless student.headshot.attached?
+    photo = student.attached_photo
+    return nil unless photo&.attached?
 
     Rails.application.routes.url_helpers.rails_blob_url(
-      student.headshot,
+      photo,
       only_path: true
     )
   end

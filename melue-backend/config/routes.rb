@@ -22,6 +22,9 @@ Rails.application.routes.draw do
         end
         get "students/:id/profile", to: "students#profile"
         patch "students/:id/profile", to: "students#update_profile"
+
+        # SCR-TC-002: Live Session Monitoring
+        get "sessions/active", to: "sessions#active"
       end
 
       # Sessions & active trial data collection
@@ -29,10 +32,17 @@ Rails.application.routes.draw do
         member do
           post :start
           get :roster
+          post :swap_students
+          post "swap-students", to: "sessions#swap_students"
+          post :swap, to: "sessions#swap_students"
+          post :incidents, to: "sessions#record_incident"
+          delete "trials/last", to: "sessions#undo_last_trial"
         end
         post "students/:student_id/goals/:goal_id/trials", to: "sessions#log_trial"
         delete "students/:student_id/goals/:goal_id/trials/last", to: "sessions#undo_last_trial"
+        delete "trials/last", to: "sessions#undo_last_trial"
         post "students/:student_id/incidents", to: "sessions#record_incident"
+        post "incidents", to: "sessions#record_incident"
         get :summary, to: "sessions#summary"
         post :summary, to: "sessions#submit_summary"
         post "summary/draft", to: "sessions#draft_summary"
@@ -48,6 +58,10 @@ Rails.application.routes.draw do
         resources :notifications, only: [ :index ] do
           member { post :read, to: "notifications#mark_as_read" }
         end
+        # SCR-TEA-003: Behavior Assessment (MASS + FAST + ABC)
+        get  "students/:student_id/assessments/behavior", to: "behavior_assessments#show"
+        post "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
+        patch "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
       end
 
       resources :notifications, only: [ :index ] do
@@ -78,11 +92,31 @@ Rails.application.routes.draw do
 
         resources :goal_domains do
           put :reorder, on: :collection
+          patch :reorder, on: :collection
+        end
+        resources "goal-domains", controller: "goal_domains", as: :goal_domains_hyphenated do
+          put :reorder, on: :collection
+          patch :reorder, on: :collection
         end
 
         resources :prompt_levels do
           put :reorder, on: :collection
+          patch :reorder, on: :collection
         end
+        resources "prompt-levels", controller: "prompt_levels", as: :prompt_levels_hyphenated do
+          put :reorder, on: :collection
+          patch :reorder, on: :collection
+        end
+
+        # Trial logging format configuration compatibility routes -> prompt_levels
+        get "trial-logging-config", to: "prompt_levels#index"
+        match "trial-logging-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
+        get "trial_logging_config", to: "prompt_levels#index"
+        match "trial_logging_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
+        get "trial-config", to: "prompt_levels#index"
+        match "trial-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
+        get "trial_config", to: "prompt_levels#index"
+        match "trial_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
 
         resources :session_block_definitions
 
@@ -112,6 +146,45 @@ Rails.application.routes.draw do
         # Schedule capacity config compatibility
         get "schedule-capacity-config", to: "session_schedule_configs#show"
         post "schedule-capacity-config", to: "session_schedule_configs#update"
+      end
+
+      # Sysadmin Staff, Roles & Audit Logs
+      namespace :sysadmin do
+        resources :staff, controller: "staff" do
+          member do
+            post :status, to: "staff#update_status"
+            post "reset-password", to: "staff#reset_password"
+          end
+          collection do
+            post :bulk, to: "staff#bulk"
+          end
+        end
+
+        resources :roles, controller: "roles" do
+          member do
+            get :permissions, to: "roles#permissions"
+            post :permissions, to: "roles#update_permissions"
+            get "permissions/audit", to: "roles#permissions_audit"
+            post "permissions/reset-default", to: "roles#reset_default_permissions"
+            post "permissions/reset_default", to: "roles#reset_default_permissions"
+            post "permissions/copy-from", to: "roles#copy_permissions"
+            post "permissions/copy_from", to: "roles#copy_permissions"
+          end
+        end
+
+        resources :permissions, only: [ :index ], controller: "permissions"
+
+        get "audit-logs", to: "audit_logs#index"
+      end
+
+
+      # Director Schedule & Assignments
+      namespace :director do
+        get "dashboard", to: "dashboard#show"
+        get "schedule", to: "schedule#show"
+        post "schedule/assign", to: "schedule#assign_student"
+        post "schedule/assignments", to: "schedule#save_assignment"
+        post "schedule/blocks/:block_id/clear", to: "schedule#clear_block"
       end
 
       # Student registration and management
@@ -209,7 +282,7 @@ Rails.application.routes.draw do
       resources :ablls_assessments, only: [], param: :id do
         member do
           post :complete
-          patch "responses/bulk", action: "bulk_update_responses"
+          match "responses/bulk", action: "bulk_update_responses", via: %i[patch put]
           patch "responses/:response_id", action: "update_response", as: :response
         end
       end
@@ -266,11 +339,11 @@ Rails.application.routes.draw do
 
       # Behavior Assessment (MR-23)
       namespace :assessments do
-        resources :mass, only: [ :create, :update ] do
+        resources :mass, only: [ :create, :update, :show ] do
           member { post :submit }
         end
 
-        resources :fast, only: [ :create, :update ] do
+        resources :fast, only: [ :create, :update, :show ] do
           member { post :submit }
         end
       end

@@ -61,5 +61,24 @@ RSpec.describe "Goal Mastery Workflow API", type: :request do
       expect(mastery_check.approving_director_id).to eq(pd.id)
       expect(student_goal.reload.status).to eq("mastered")
     end
+
+    it "rejects mastery check and updates student_goal.status to in_progress" do
+      # Setup a mastery check in pending_approval
+      mastery_check = student_goal.goal_mastery_checks.create!(
+        initiating_teacher: teacher_a,
+        status: :pending_approval
+      )
+      student_goal.update!(status: :pending_approval)
+
+      patch "/api/v1/mastery_checks/#{mastery_check.id}/reject",
+            params: { reason: "Needs further independent data" },
+            headers: authenticated_headers(pd_user),
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(mastery_check.reload.status).to eq("rejected")
+      expect(mastery_check.rejection_reason).to eq("Needs further independent data")
+      expect(student_goal.reload.status).to eq("in_progress")
+    end
   end
 end

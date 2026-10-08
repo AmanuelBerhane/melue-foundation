@@ -66,7 +66,7 @@ RSpec.describe "Api::V1::PreferenceAssessments::Observations", type: :request do
     it "returns 422 with neither an item nor a custom name" do
       post base_path, params: { context: "sensory_time" }, headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "returns 404 for an unknown assessment cycle" do
@@ -123,7 +123,7 @@ RSpec.describe "Api::V1::PreferenceAssessments::Observations", type: :request do
       patch "#{base_path}/#{observation.id}",
             params: { duration_seconds: -5 }, headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "returns 404 for an observation belonging to another assessment" do
@@ -141,7 +141,7 @@ RSpec.describe "Api::V1::PreferenceAssessments::Observations", type: :request do
       patch "#{base_path}/#{observation.id}",
             params: { duration_seconds: 10 }, headers: headers, as: :json
 
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
   end
 

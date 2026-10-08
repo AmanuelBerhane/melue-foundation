@@ -108,7 +108,7 @@ module Api
               success: true
             }, status: :created
           else
-            render json: { errors: incident.errors.full_messages }, status: :unprocessable_entity
+            render json: { errors: incident.errors.full_messages }, status: :unprocessable_content
           end
         end
 

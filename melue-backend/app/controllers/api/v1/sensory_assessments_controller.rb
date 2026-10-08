@@ -27,7 +27,7 @@ class Api::V1::SensoryAssessmentsController < Api::V1::BaseController
     if @assessment.save
       render json: @assessment.as_json(include: :sensory_assessment_records), status: :created
     else
-      render json: { errors: @assessment.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @assessment.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -42,7 +42,7 @@ class Api::V1::SensoryAssessmentsController < Api::V1::BaseController
     if @assessment.update(assessment_params)
       render json: @assessment.as_json(include: :sensory_assessment_records)
     else
-      render json: { errors: @assessment.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @assessment.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -59,7 +59,7 @@ class Api::V1::SensoryAssessmentsController < Api::V1::BaseController
         methods: :summary
       )
     else
-      render json: { errors: @assessment.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @assessment.errors.full_messages }, status: :unprocessable_content
     end
   end
 

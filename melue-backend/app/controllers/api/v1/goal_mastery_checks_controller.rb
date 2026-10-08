@@ -19,7 +19,7 @@ class Api::V1::GoalMasteryChecksController < Api::V1::BaseController
     student_goal = StudentGoal.find(params[:student_goal_id])
 
     if student_goal.goal_mastery_checks.where(status: [ "pending_verifications", "pending_approval" ]).exists?
-      return render_error("Mastery check already in progress for this goal", :unprocessable_entity)
+      return render_error("Mastery check already in progress for this goal", :unprocessable_content)
     end
 
     mastery_check = student_goal.goal_mastery_checks.build(
@@ -30,7 +30,7 @@ class Api::V1::GoalMasteryChecksController < Api::V1::BaseController
     if mastery_check.save
       render json: { mastery_check: mastery_check }, status: :created
     else
-      render_error(mastery_check.errors.full_messages, :unprocessable_entity)
+      render_error(mastery_check.errors.full_messages, :unprocessable_content)
     end
   end
 
@@ -65,18 +65,22 @@ class Api::V1::GoalMasteryChecksController < Api::V1::BaseController
     mastery_check = GoalMasteryCheck.find(params[:id])
 
     if mastery_check.status != "pending_approval"
-      return render_error("Only pending checks can be approved", :unprocessable_entity)
+      return render_error("Only pending checks can be approved", :unprocessable_content)
     end
 
     ActiveRecord::Base.transaction do
-      mastery_check.update!(status: :approved, approving_director_id: current_staff_member.id)
+      mastery_check.update!(status: :approved, approving_director_id: current_staff_member&.id)
       mastery_check.student_goal.update!(status: :mastered)
 
       # We would also notify the teachers and therapy coordinator here
       # Notifications::GoalMasteredNotifier.call(mastery_check)
     end
 
-    render json: { message: "Goal approved and marked as mastered." }, status: :ok
+    render json: {
+      message: "Goal approved and marked as mastered.",
+      mastery_check: mastery_check,
+      student_goal: mastery_check.student_goal
+    }, status: :ok
   end
 
   # PATCH /api/v1/mastery_checks/:id/reject
@@ -91,18 +95,24 @@ class Api::V1::GoalMasteryChecksController < Api::V1::BaseController
     mastery_check = GoalMasteryCheck.find(params[:id])
 
     if mastery_check.status != "pending_approval"
-      return render_error("Only pending checks can be rejected", :unprocessable_entity)
+      return render_error("Only pending checks can be rejected", :unprocessable_content)
     end
 
+    rejection_reason = params[:rejection_reason] || params[:reason]
+
     ActiveRecord::Base.transaction do
-      mastery_check.update!(status: :rejected, rejection_reason: params[:reason])
+      mastery_check.update!(status: :rejected, rejection_reason: rejection_reason)
       mastery_check.student_goal.update!(status: :in_progress)
 
       # We would also notify Teacher A here
       # Notifications::GoalRejectedNotifier.call(mastery_check)
     end
 
-    render json: { message: "Goal rejected and returned to in_progress." }, status: :ok
+    render json: {
+      message: "Goal rejected and returned to in_progress.",
+      mastery_check: mastery_check,
+      student_goal: mastery_check.student_goal
+    }, status: :ok
   end
 
   private

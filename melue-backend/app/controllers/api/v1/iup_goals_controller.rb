@@ -48,7 +48,7 @@ module Api
             }
           }, status: :created
         else
-          render_error(result.error, :unprocessable_entity)
+          render_error(result.error, :unprocessable_content)
         end
       end
 
@@ -87,7 +87,7 @@ module Api
             }
           }, status: :ok
         else
-          render_error(result.error, :unprocessable_entity)
+          render_error(result.error, :unprocessable_content)
         end
       end
 
@@ -123,7 +123,7 @@ module Api
 
       def ensure_iup_is_draft
         unless @iup.status_draft?
-          render_error("Cannot modify goals on a #{@iup.status} IUP", :unprocessable_entity)
+          render_error("Cannot modify goals on a #{@iup.status} IUP", :unprocessable_content)
         end
       end
     end

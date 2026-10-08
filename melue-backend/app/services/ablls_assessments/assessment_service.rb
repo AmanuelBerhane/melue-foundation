@@ -111,7 +111,7 @@ module AbllsAssessments
       return failure("Skill item response not found in this assessment") unless response
 
       attrs = {}
-      attrs[:score] = @kwargs[:score] if @kwargs.key?(:score)
+      attrs[:score] = normalize_score(@kwargs[:score]) if @kwargs.key?(:score)
       attrs[:note] = @kwargs[:note] if @kwargs.key?(:note)
 
       response.update!(attrs)
@@ -137,17 +137,29 @@ module AbllsAssessments
 
       AbllsResponse.transaction do
         responses_data.each do |entry|
-          target_id = entry[:response_id] || entry["response_id"] || entry[:skill_item_id] || entry["skill_item_id"] || entry[:id] || entry["id"]
+          target_id = entry[:response_id] || entry["response_id"] ||
+                      entry[:skill_item_id] || entry["skill_item_id"] ||
+                      entry[:ablls_skill_item_id] || entry["ablls_skill_item_id"] ||
+                      entry[:id] || entry["id"]
+
           response = assessment.ablls_responses.find_by(id: target_id) ||
                      assessment.ablls_responses.find_by(ablls_skill_item_id: target_id)
+
+          unless response
+            item = AbllsSkillItem.find_by(id: target_id) || AbllsSkillItem.find_by(identifier: target_id)
+            response = assessment.ablls_responses.find_or_initialize_by(ablls_skill_item: item) if item
+          end
 
           raise ActiveRecord::RecordNotFound, "Response not found" unless response
 
           attrs = {}
-          score_val = entry[:score] || entry["score"]
-          note_val = entry[:note] || entry["note"]
-          attrs[:score] = score_val unless score_val.nil? && !entry.key?(:score) && !entry.key?("score")
-          attrs[:note] = note_val if entry.key?(:note) || entry.key?("note")
+          if entry.key?(:score) || entry.key?("score")
+            score_val = entry.key?(:score) ? entry[:score] : entry["score"]
+            attrs[:score] = normalize_score(score_val)
+          end
+          if entry.key?(:note) || entry.key?("note")
+            attrs[:note] = entry.key?(:note) ? entry[:note] : entry["note"]
+          end
 
           response.update!(attrs) if attrs.any?
           updated_responses << response
@@ -164,6 +176,19 @@ module AbllsAssessments
       failure("One or more skill items not found in this assessment")
     rescue ActiveRecord::RecordInvalid => e
       failure(e.record.errors.full_messages.join(", "))
+    end
+
+    def normalize_score(val)
+      return nil if val.nil?
+
+      str = val.to_s.strip
+      case str.downcase
+      when "0" then "0"
+      when "1" then "1"
+      when "2" then "2"
+      when "not_applicable", "n/a", "na" then "not_applicable"
+      else str
+      end
     end
 
     def complete_assessment

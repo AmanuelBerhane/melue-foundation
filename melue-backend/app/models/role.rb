@@ -21,6 +21,7 @@ class Role < ApplicationRecord
   # Retained from main: Canonical role name constants
   module Names
     TEACHER = "Teacher"
+    THERAPIST = "Therapist"
     THERAPY_COORDINATOR = "Therapy Coordinator"
     PROGRAM_DIRECTOR = "Program Director"
     DIRECTOR = "Director"
@@ -28,6 +29,25 @@ class Role < ApplicationRecord
     SYSTEM_ADMIN = "System Administrator"
     PARENT = "Parent"
   end
+
+  # Roles allowed to see foundation-wide oversight data: reports, student
+  # progress monitoring and live session monitoring (FR-126–FR-136, SCR-TC-002).
+  OVERSIGHT_ROLES = [
+    Names::DIRECTOR,
+    Names::PROGRAM_DIRECTOR,
+    Names::THERAPY_COORDINATOR,
+    Names::INSTITUTIONAL_ADMIN,
+    Names::SYSTEM_ADMIN
+  ].freeze
+
+  # Roles allowed to read and author Director-only data such as internal
+  # student notes (FR-135) and the Director dashboard (SCR-DIR-001).
+  DIRECTOR_OR_ADMIN_ROLES = [
+    Names::DIRECTOR,
+    Names::PROGRAM_DIRECTOR,
+    Names::INSTITUTIONAL_ADMIN,
+    Names::SYSTEM_ADMIN
+  ].freeze
 
   # Retained from main: Dynamic home route for post-login redirection
   def home_route
@@ -38,7 +58,19 @@ class Role < ApplicationRecord
     when Names::DIRECTOR then "/director/dashboard"
     when Names::INSTITUTIONAL_ADMIN, Names::SYSTEM_ADMIN then "/admin"
     when Names::PARENT then "/parent/dashboard"
-    else "/"
+    else
+      first_mod = permissions.pluck(:resource).first
+      case first_mod
+      when "iups" then "/IupGeneration"
+      when "assessments" then "/AssessmentDashboard"
+      when "sessions" then "/DailyNotes"
+      when "behavior_incidents" then "/AbcLog"
+      when "students" then "/StudentEnrollmentWizard"
+      when "staff" then "/admin"
+      when "reports" then "/reports"
+      when "admin" then "/admin"
+      else "/"
+      end
     end
   end
 

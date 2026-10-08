@@ -72,11 +72,8 @@ module Iups
     end
 
     def transition_student_status
-      student = @iup.student
-
-      if student.status == "ready_for_iup"
-        student.update!(status: "active_therapy")
-      end
+      @iup.student.update!(status: "active_therapy")
+      @iup.student.reload
     end
 
     def log_finalization

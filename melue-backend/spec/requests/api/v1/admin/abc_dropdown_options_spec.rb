@@ -166,7 +166,7 @@ RSpec.describe "Api::V1::Admin::AbcDropdownOptions", type: :request do
       it "returns 422 with validation errors for invalid params" do
         post "/api/v1/admin/abc_dropdown_options", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]).to have_key("label")
@@ -201,7 +201,7 @@ RSpec.describe "Api::V1::Admin::AbcDropdownOptions", type: :request do
 
         post "/api/v1/admin/abc_dropdown_options", params: params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["errors"]["is_other"]).to include("only one 'Other' option allowed per category")
       end
@@ -294,7 +294,7 @@ RSpec.describe "Api::V1::Admin::AbcDropdownOptions", type: :request do
       it "returns 422 with validation errors for invalid params" do
         put "/api/v1/admin/abc_dropdown_options/#{option.id}", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
       end
@@ -423,7 +423,7 @@ RSpec.describe "Api::V1::Admin::AbcDropdownOptions", type: :request do
             headers: admin_headers,
             as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["error"]).to eq("Category is required")
       end
@@ -431,7 +431,7 @@ RSpec.describe "Api::V1::Admin::AbcDropdownOptions", type: :request do
       it "returns 422 with error message for invalid IDs" do
         put "/api/v1/admin/abc_dropdown_options/reorder", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("error")
       end

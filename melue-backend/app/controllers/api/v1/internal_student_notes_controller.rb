@@ -29,7 +29,7 @@ module Api
       # @response Forbidden (403) [Hash]
       # @response Not Found (404) [Hash]
       def index
-        result = Students::InternalNotesService.list(
+        result = ::Students::InternalNotesService.list(
           student_id: params[:student_id],
           current_user: current_user
         )
@@ -52,7 +52,7 @@ module Api
       # @response Forbidden (403) [Hash]
       # @response Unprocessable Entity (422) [Hash]
       def create
-        result = Students::InternalNotesService.create(
+        result = ::Students::InternalNotesService.create(
           student_id: params[:student_id],
           current_user: current_user,
           params: note_params
@@ -77,7 +77,7 @@ module Api
       # @response Forbidden (403) [Hash]
       # @response Not Found (404) [Hash]
       def update
-        result = Students::InternalNotesService.update(
+        result = ::Students::InternalNotesService.update(
           student_id: params[:student_id],
           note_id: params[:id],
           current_user: current_user,
@@ -101,7 +101,7 @@ module Api
       # @response Forbidden (403) [Hash]
       # @response Not Found (404) [Hash]
       def destroy
-        result = Students::InternalNotesService.destroy(
+        result = ::Students::InternalNotesService.destroy(
           student_id: params[:student_id],
           note_id: params[:id],
           current_user: current_user
@@ -121,12 +121,15 @@ module Api
       end
 
       def render_error_response(result)
-        status = case result.error
+        render json: { error: result.error }, status: result.status || status_for(result.error)
+      end
+
+      def status_for(error)
+        case error
         when /forbidden/i then :forbidden
         when /not found/i then :not_found
-        else :unprocessable_entity
+        else :unprocessable_content
         end
-        render json: { error: result.error }, status: status
       end
     end
   end

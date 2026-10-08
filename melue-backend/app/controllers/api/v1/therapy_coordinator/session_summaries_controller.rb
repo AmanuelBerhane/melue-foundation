@@ -147,7 +147,7 @@ module Api
             }
             render json: { session_summary: payload }, status: :ok
           else
-            render_error(result.error, :unprocessable_entity)
+            render_error(result.error, :unprocessable_content)
           end
         end
 

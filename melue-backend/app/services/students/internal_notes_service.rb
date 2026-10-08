@@ -32,7 +32,8 @@ module Students
       return failure("Student not found", :not_found) unless student
 
       notes = student.internal_student_notes
-                     .includes(author: [ :staff_member, :roles ])
+                     .internal
+                     .includes(author: :staff_member)
                      .order(recorded_at: :desc)
       success(notes)
     rescue StandardError => e
@@ -46,19 +47,22 @@ module Students
       return failure("Student not found", :not_found) unless student
 
       content = params[:content].to_s.strip
-      return failure("Content can't be blank", :unprocessable_entity) if content.blank?
+      return failure("Content can't be blank", :unprocessable_content) if content.blank?
 
       recorded_at = params[:recorded_at].present? ? Time.zone.parse(params[:recorded_at].to_s) : Time.current
 
       note = student.internal_student_notes.create!(
         author: current_user,
         content: content,
-        recorded_at: recorded_at
+        recorded_at: recorded_at,
+        internal_flag: true
       )
 
       success(note)
     rescue ActiveRecord::RecordInvalid => e
-      failure(e.record.errors.full_messages.join(", "), :unprocessable_entity)
+      failure(e.record.errors.full_messages.join(", "), :unprocessable_content)
+    rescue ArgumentError
+      failure("Invalid recorded_at timestamp", :unprocessable_content)
     rescue StandardError => e
       failure(e.message)
     end
@@ -69,11 +73,11 @@ module Students
       student = Student.find_by(id: student_id)
       return failure("Student not found", :not_found) unless student
 
-      note = student.internal_student_notes.find_by(id: note_id)
+      note = student.internal_student_notes.internal.find_by(id: note_id)
       return failure("Note not found", :not_found) unless note
 
       content = params[:content].to_s.strip
-      return failure("Content can't be blank", :unprocessable_entity) if content.blank?
+      return failure("Content can't be blank", :unprocessable_content) if content.blank?
 
       update_attrs = { content: content }
       update_attrs[:recorded_at] = Time.zone.parse(params[:recorded_at].to_s) if params[:recorded_at].present?
@@ -81,7 +85,7 @@ module Students
       note.update!(update_attrs)
       success(note)
     rescue ActiveRecord::RecordInvalid => e
-      failure(e.record.errors.full_messages.join(", "), :unprocessable_entity)
+      failure(e.record.errors.full_messages.join(", "), :unprocessable_content)
     rescue StandardError => e
       failure(e.message)
     end
@@ -92,7 +96,7 @@ module Students
       student = Student.find_by(id: student_id)
       return failure("Student not found", :not_found) unless student
 
-      note = student.internal_student_notes.find_by(id: note_id)
+      note = student.internal_student_notes.internal.find_by(id: note_id)
       return failure("Note not found", :not_found) unless note
 
       note.destroy!
@@ -106,14 +110,7 @@ module Students
     def authorized?(user)
       return false unless user
 
-      user.has_role?(Role::Names::DIRECTOR) ||
-        user.has_role?(Role::Names::PROGRAM_DIRECTOR) ||
-        user.has_role?(Role::Names::INSTITUTIONAL_ADMIN) ||
-        user.has_role?(Role::Names::SYSTEM_ADMIN) ||
-        user.has_role?(:system_admin) ||
-        user.has_role?(:institutional_admin) ||
-        user.has_role?("Director") ||
-        user.has_role?("Program Director")
+      user.has_any_role?(*Role::DIRECTOR_OR_ADMIN_ROLES)
     end
   end
 end

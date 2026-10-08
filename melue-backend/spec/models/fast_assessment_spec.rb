@@ -36,6 +36,40 @@ RSpec.describe FastAssessment, type: :model do
 
       expect(risk_indicators[:risk_level]).to eq('low')
     end
+
+    it 'calculates 4 motivation functions, category scores, and risk indicators from SCR-TEA-003 F1-F8 responses' do
+      fast_assessment.responses = {
+        "F1" => "Yes",   # Attention / Social-Positive
+        "F2" => true,    # Escape / Social-Negative
+        "F3" => "true",  # Sensory / Auto-Positive
+        "F4" => "No",    # Sensory / Auto-Negative (false)
+        "F5" => 1,       # Sensory / Auto-Positive
+        "F6" => "yes",   # Escape / Social-Negative
+        "F7" => false,   # Attention / Social-Positive
+        "F8" => "1"      # Tangible / Social-Positive
+      }
+      fast_assessment.save!
+
+      indicators = fast_assessment.calculate_risks!
+
+      expect(indicators[:sensory]).to eq(2)   # F3 + F5
+      expect(indicators[:escape]).to eq(2)    # F2 + F6
+      expect(indicators[:attention]).to eq(1) # F1
+      expect(indicators[:tangible]).to eq(1)  # F8
+
+      expect(fast_assessment.scores[:sensory]).to eq(2)
+      expect(fast_assessment.scores[:escape]).to eq(2)
+      expect(fast_assessment.scores[:attention]).to eq(1)
+      expect(fast_assessment.scores[:tangible]).to eq(1)
+
+      expect(indicators[:category_scores]["Social - Positive"]).to eq(2) # F1 + F8
+      expect(indicators[:category_scores]["Social - Negative"]).to eq(2) # F2 + F6
+      expect(indicators[:category_scores]["Automatic - Positive"]).to eq(2) # F3 + F5
+      expect(indicators[:category_scores]["Automatic - Negative"]).to eq(0)
+
+      expect(indicators[:total]).to be >= 5
+      expect(indicators[:risk_level]).to eq("high")
+    end
   end
 
   describe 'risk level methods' do

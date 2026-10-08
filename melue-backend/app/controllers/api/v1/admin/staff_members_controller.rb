@@ -34,7 +34,7 @@ class Api::V1::Admin::StaffMembersController < Api::V1::BaseController
       update_staff_roles if params.key?(:role_ids)
       render json: @staff_member.as_json(include: { user: { include: :roles } })
     else
-      render json: { errors: @staff_member.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @staff_member.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -53,7 +53,7 @@ class Api::V1::Admin::StaffMembersController < Api::V1::BaseController
     if user.update(status: new_status)
       render json: { message: "Account status updated", active: params[:active] }
     else
-      render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: user.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -79,7 +79,7 @@ class Api::V1::Admin::StaffMembersController < Api::V1::BaseController
   end
 
   def staff_params
-    params.permit(:full_name, :staff_number)
+    params.permit(:full_name, :staff_number, :phone)
   end
 
   def update_staff_roles

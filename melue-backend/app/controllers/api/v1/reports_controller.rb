@@ -1,6 +1,9 @@
 module Api
   module V1
     class ReportsController < BaseController
+      before_action :authenticate_user!
+      before_action :require_oversight_role
+
       # @oas_include
       # @summary Get foundation overview metrics
       # @tags Reports
@@ -22,7 +25,7 @@ module Api
             render json: { data: result.data }, status: :ok
           end
         else
-          render json: { error: result.error }, status: :unprocessable_entity
+          render json: { error: result.error }, status: :unprocessable_content
         end
       rescue ArgumentError => e
         render json: { error: "Invalid date format" }, status: :bad_request
@@ -59,7 +62,7 @@ module Api
             render json: { data: result.data }, status: :ok
           end
         else
-          render json: { error: result.error }, status: :unprocessable_entity
+          render json: { error: result.error }, status: :unprocessable_content
         end
       rescue ArgumentError => e
         render json: { error: "Invalid date format" }, status: :bad_request
@@ -89,7 +92,7 @@ module Api
             render json: { data: result.data }, status: :ok
           end
         else
-          render json: { error: result.error }, status: :unprocessable_entity
+          render json: { error: result.error }, status: :unprocessable_content
         end
       rescue ArgumentError => e
         render json: { error: "Invalid date format" }, status: :bad_request
@@ -119,7 +122,7 @@ module Api
             render json: { data: result.data }, status: :ok
           end
         else
-          render json: { error: result.error }, status: :unprocessable_entity
+          render json: { error: result.error }, status: :unprocessable_content
         end
       rescue ArgumentError => e
         render json: { error: "Invalid date format" }, status: :bad_request
@@ -136,7 +139,7 @@ module Api
                     filename: "#{report_type}_#{Date.today}.#{format}",
                     type: content_type
         else
-          render json: { error: export_result.error }, status: :unprocessable_entity
+          render json: { error: export_result.error }, status: :unprocessable_content
         end
       end
     end

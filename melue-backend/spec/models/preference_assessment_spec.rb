@@ -9,6 +9,23 @@ RSpec.describe PreferenceAssessment, type: :model do
     expect(create(:preference_assessment, assessment_cycle: cycle)).to be_status_draft
   end
 
+  it "accepts :in_progress status without ArgumentError" do
+    assessment = build(:preference_assessment, assessment_cycle: cycle, status: :in_progress)
+    expect(assessment).to be_valid
+    expect(assessment).to be_in_progress
+    expect(assessment).to be_status_in_progress
+  end
+
+  it "supports draft?, in_progress?, and submitted? predicates" do
+    draft = build(:preference_assessment, status: :draft)
+    in_prog = build(:preference_assessment, status: :in_progress)
+    submitted = build(:preference_assessment, status: :submitted)
+
+    expect(draft).to be_draft
+    expect(in_prog).to be_in_progress
+    expect(submitted).to be_submitted
+  end
+
   it "allows only one assessment per cycle" do
     create(:preference_assessment, assessment_cycle: cycle)
 

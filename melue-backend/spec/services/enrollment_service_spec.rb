@@ -6,7 +6,7 @@ RSpec.describe EnrollmentService, type: :service do
   let(:student) { create(:student, status: 'draft') }
 
   describe '.start_wizard' do
-    it 'creates a new student with draft status' do
+    it 'creates a new student with in_assessment status' do
       # Create a student with all required fields
       student_attrs = {
         first_name: 'Test',
@@ -21,7 +21,7 @@ RSpec.describe EnrollmentService, type: :service do
 
       # Create the student directly first to bypass validations
       student = Student.new(student_attrs)
-      student.status = 'draft'
+      student.status = 'in_assessment'
       student.save!
 
       service = EnrollmentService.new(student, {}, current_user)
@@ -29,7 +29,7 @@ RSpec.describe EnrollmentService, type: :service do
 
       expect(result.success?).to be true
       expect(result.data).to be_persisted
-      expect(result.data.status).to eq('draft')
+      expect(result.data.status).to eq('in_assessment')
     end
 
     it 'returns failure if user is not authenticated' do

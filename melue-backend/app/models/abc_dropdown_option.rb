@@ -1,7 +1,7 @@
 class AbcDropdownOption < ApplicationRecord
   include Auditable
 
-  enum :category, { antecedent: 0, behavior: 1, consequence: 2 }
+  enum :category, { antecedent: 0, behavior: 1, consequence: 2, location: 3 }
 
   validates :label, presence: true
   validates :category, presence: true

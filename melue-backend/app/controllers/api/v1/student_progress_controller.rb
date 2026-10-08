@@ -38,7 +38,7 @@ module Api
       # @response Forbidden (403) [Hash]
       # @response Not Found (404) [Hash]
       def show
-        result = Students::ProgressMonitoringService.call(
+        result = ::Students::ProgressMonitoringService.call(
           student_id: params[:id],
           current_user: current_user,
           page: params[:page],
@@ -61,7 +61,7 @@ module Api
       # @response Forbidden (403) [Hash]
       # @response Not Found (404) [Hash]
       def progress_report
-        progress_result = Students::ProgressMonitoringService.call(
+        progress_result = ::Students::ProgressMonitoringService.call(
           student_id: params[:id],
           current_user: current_user,
           page: 1,
@@ -82,7 +82,7 @@ module Api
                     type: "application/pdf",
                     disposition: "attachment"
         else
-          render json: { error: pdf_result.error }, status: :unprocessable_entity
+          render json: { error: pdf_result.error }, status: :unprocessable_content
         end
       end
 
@@ -92,7 +92,7 @@ module Api
         status = case result.error
         when /forbidden/i then :forbidden
         when /not found/i then :not_found
-        else :unprocessable_entity
+        else :unprocessable_content
         end
         render json: { success: false, error: result.error }, status: status
       end

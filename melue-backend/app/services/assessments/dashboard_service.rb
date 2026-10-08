@@ -34,7 +34,7 @@ module Assessments
       Student
         .joins(:teacher_student_assignments)
         .where(teacher_student_assignments: { teacher_id: @teacher.id })
-        .where(status: "in_assessment")
+        .where(status: %w[in_assessment assessment_complete])
         .where(teacher_student_assignments: { discarded_at: nil })  # respect soft-delete on assignments
         .distinct
         .order(:first_name, :last_name)

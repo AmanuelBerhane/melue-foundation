@@ -42,9 +42,15 @@ RSpec.describe Students::RegisterService, type: :service do
       expect { call(params: valid_basic_params) }.to change(Student, :count).by(1)
     end
 
-    it "sets status to registered" do
+    it "sets initial status to in_assessment" do
       result = call(params: valid_basic_params)
-      expect(result.data.status).to eq("registered")
+      expect(result.data.status).to eq("in_assessment")
+    end
+
+    it "persists custom_fields when provided" do
+      params = valid_basic_params.merge(custom_fields: { "dietary_restrictions" => "gluten-free" })
+      result = call(params: params)
+      expect(result.data.custom_fields).to eq({ "dietary_restrictions" => "gluten-free" })
     end
 
     it "returns a successful result for a valid FLS student" do

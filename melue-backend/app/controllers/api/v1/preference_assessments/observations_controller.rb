@@ -44,7 +44,7 @@ module Api::V1::PreferenceAssessments
       if result.success?
         render json: { observation: serialize(result.data) }, status: :created
       else
-        render_error(result.error, :unprocessable_entity)
+        render_error(result.error, :unprocessable_content)
       end
     end
 
@@ -71,7 +71,7 @@ module Api::V1::PreferenceAssessments
       if result.success?
         render json: { observation: serialize(result.data) }
       else
-        render_error(result.error, :unprocessable_entity)
+        render_error(result.error, :unprocessable_content)
       end
     end
 
@@ -92,7 +92,7 @@ module Api::V1::PreferenceAssessments
       if result.success?
         head :no_content
       else
-        render_error(result.error, :unprocessable_entity)
+        render_error(result.error, :unprocessable_content)
       end
     end
 

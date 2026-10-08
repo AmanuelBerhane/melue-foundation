@@ -1346,7 +1346,7 @@ class Api::V1::IupsController < Api::V1::BaseController
     if result.success?
       render json: { iup: IupSerializer.new(result.data[:iup]).as_json }, status: :created
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 
@@ -1362,7 +1362,7 @@ class Api::V1::IupsController < Api::V1::BaseController
         message: "IUP finalized successfully - Student transitioned to Active Therapy"
       }, status: :ok
     else
-      render_error(result.error, :unprocessable_entity)
+      render_error(result.error, :unprocessable_content)
     end
   end
 

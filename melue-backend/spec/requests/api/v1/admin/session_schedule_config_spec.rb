@@ -117,7 +117,7 @@ RSpec.describe "Api::V1::Admin::SessionScheduleConfig", type: :request do
 
         put "/api/v1/admin/session_schedule_config", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]["morning_end_time"]).to include("must be after morning start time")
@@ -133,7 +133,7 @@ RSpec.describe "Api::V1::Admin::SessionScheduleConfig", type: :request do
 
         put "/api/v1/admin/session_schedule_config", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]["afternoon_end_time"]).to include("must be after afternoon start time")
@@ -148,7 +148,7 @@ RSpec.describe "Api::V1::Admin::SessionScheduleConfig", type: :request do
 
         put "/api/v1/admin/session_schedule_config", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]["pre_therapy_duration_minutes"]).to be_present
@@ -163,7 +163,7 @@ RSpec.describe "Api::V1::Admin::SessionScheduleConfig", type: :request do
 
         put "/api/v1/admin/session_schedule_config", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]["staff_to_student_capacity"]).to be_present
@@ -178,7 +178,7 @@ RSpec.describe "Api::V1::Admin::SessionScheduleConfig", type: :request do
 
         put "/api/v1/admin/session_schedule_config", params: invalid_params, headers: admin_headers, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json).to have_key("errors")
         expect(json["errors"]["draft_expiry_days"]).to be_present

@@ -13,7 +13,10 @@ puts "\e[32m🚀 Starting Pre-Flight CI Quality Checks\e[0m"
 step("RuboCop Linter") { "bundle exec rubocop" }
 step("Brakeman Security Scan") { "bundle exec brakeman --no-pager" }
 step("Bundler Audit Vulnerability Scan") { "ruby bin/bundler-audit" }
-step("Database Migration Check") { "ruby bin/rails db:test:prepare" }
+step("Database Migration Check") do
+  system(%(ruby -r active_record -e "ActiveRecord::Base.establish_connection(:development); ActiveRecord::Base.connection.execute(\\\"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'melue_backend_test' AND pid <> pg_backend_pid();\\\") rescue nil"))
+  "ruby bin/rails db:test:prepare"
+end
 step("RSpec Test Suite") { "bundle exec rspec" }
 
 puts "\n\e[32m✅ All Pre-Flight Checks Passed Cleanly!\e[0m\n"

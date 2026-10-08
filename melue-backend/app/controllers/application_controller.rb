@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::API
   rescue_from ActiveRecord::RecordNotFound,         with: :not_found
-  rescue_from ActiveRecord::RecordInvalid,          with: :unprocessable_entity
+  rescue_from ActiveRecord::RecordInvalid,          with: :unprocessable_content
   rescue_from ActionController::ParameterMissing,   with: :bad_request
   rescue_from StandardError,                        with: :internal_server_error
 
@@ -11,7 +11,7 @@ class ApplicationController < ActionController::API
   end
 
   def unprocessable_entity(exception)
-    render_error(exception.record.errors.full_messages, :unprocessable_entity)
+    render_error(exception.record.errors.full_messages, :unprocessable_content)
   end
 
   def bad_request(exception)

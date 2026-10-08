@@ -54,7 +54,7 @@ module Api
           if form_configuration.save
             render json: form_configuration, status: :created
           else
-            render json: { errors: form_configuration.errors }, status: :unprocessable_entity
+            render json: { errors: form_configuration.errors }, status: :unprocessable_content
           end
         end
 
@@ -76,7 +76,7 @@ module Api
           if @form_configuration.update(form_configuration_params)
             render json: @form_configuration
           else
-            render json: { errors: @form_configuration.errors }, status: :unprocessable_entity
+            render json: { errors: @form_configuration.errors }, status: :unprocessable_content
           end
         end
 
@@ -118,7 +118,7 @@ module Api
           file = params[:file]
 
           if file.blank?
-            render json: { error: "File is required" }, status: :unprocessable_entity
+            render json: { error: "File is required" }, status: :unprocessable_content
             return
           end
 
@@ -143,7 +143,7 @@ module Api
             )
             render json: result.data
           else
-            render json: { error: result.error }, status: :unprocessable_entity
+            render json: { error: result.error }, status: :unprocessable_content
           end
         end
 

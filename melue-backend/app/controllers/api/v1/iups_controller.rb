@@ -34,7 +34,7 @@ module Api
             }
           }, status: :created
         else
-          render_error(result.error, :unprocessable_entity)
+          render_error(result.error, :unprocessable_content)
         end
       end
 
@@ -140,11 +140,11 @@ module Api
 
       def update
         unless @iup.status_draft?
-          return render_error("Cannot update a finalized IUP", :unprocessable_entity)
+          return render_error("Cannot update a finalized IUP", :unprocessable_content)
         end
 
         if @iup.form_submission.nil?
-          return render_error("Form submission not found", :unprocessable_entity)
+          return render_error("Form submission not found", :unprocessable_content)
         end
 
         form_values = params.require(:form_values)
@@ -164,18 +164,18 @@ module Api
 
       def destroy
         unless @iup.status_draft?
-          return render_error("Only draft IUPs can be deleted", :unprocessable_entity)
+          return render_error("Only draft IUPs can be deleted", :unprocessable_content)
         end
 
         student_goal_count = @iup.student_goals.kept.count
         if student_goal_count > 0
-          return render_error("Cannot delete IUP - #{student_goal_count} goal(s) must be removed first", :unprocessable_entity)
+          return render_error("Cannot delete IUP - #{student_goal_count} goal(s) must be removed first", :unprocessable_content)
         end
 
         @iup.destroy!
 
         if @iup.errors[:base].any?
-          return render_error(@iup.errors[:base].join(", "), :unprocessable_entity)
+          return render_error(@iup.errors[:base].join(", "), :unprocessable_content)
         end
 
         AuditLog.create!(
@@ -221,14 +221,17 @@ module Api
             message: "IUP finalized successfully - Student transitioned to Active Therapy"
           }, status: :ok
         else
-          render_error(result.error, :unprocessable_entity)
+          render_error(result.error, :unprocessable_content)
         end
       end
 
       private
 
       def authorize_finalization
-        unless current_user_has_role?([ "Program Director" ])
+        unless current_user_has_role?([ "Program Director", "Director" ]) ||
+               current_user&.has_role?(Role::Names::PROGRAM_DIRECTOR) ||
+               current_user&.staff_member&.role_program_director? ||
+               current_user&.staff_member&.role_admin?
           render_error("Only Program Directors can finalize IUPs", :forbidden)
         end
       end
