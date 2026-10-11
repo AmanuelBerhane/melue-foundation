@@ -103,10 +103,13 @@ Rails.application.routes.draw do
           put :reorder, on: :collection
           patch :reorder, on: :collection
         end
+        match "prompt_levels", to: "prompt_levels#save_trial_config", via: %i[put patch]
+
         resources "prompt-levels", controller: "prompt_levels", as: :prompt_levels_hyphenated do
           put :reorder, on: :collection
           patch :reorder, on: :collection
         end
+        match "prompt-levels", to: "prompt_levels#save_trial_config", via: %i[put patch]
 
         # Trial logging format configuration compatibility routes -> prompt_levels
         get "trial-logging-config", to: "prompt_levels#index"

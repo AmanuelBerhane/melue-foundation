@@ -48,6 +48,10 @@ module Api
         # @response Unauthorized(401) [Hash{error: String}]
         # @response Forbidden(403) [Hash{error: String}]
         def create
+          if params[:prompt_levels].is_a?(Array) || params[:promptLevels].is_a?(Array)
+            return save_trial_config
+          end
+
           prompt_level = PromptLevel.new(prompt_level_params)
 
           if prompt_level.save
@@ -135,14 +139,15 @@ module Api
 
         # POST /api/v1/admin/trial-logging-config
         def save_trial_config
-          if params[:prompt_levels].is_a?(Array)
-            params[:prompt_levels].each_with_index do |pl, idx|
+          pls = params[:prompt_levels] || params[:promptLevels]
+          if pls.is_a?(Array)
+            pls.each_with_index do |pl, idx|
               level = PromptLevel.find_by(id: pl[:id]) if pl[:id].present?
               level ||= PromptLevel.find_or_initialize_by(label: pl[:name] || pl[:label])
               level.label = pl[:name] || pl[:label] if (pl[:name] || pl[:label]).present?
               level.color = pl[:color] if pl[:color].present?
-              level.display_order = pl[:order] || pl[:display_order] || idx
-              level.is_active = (pl[:status].to_s.downcase != "inactive" && pl[:is_active] != false)
+              level.display_order = pl[:order] || pl[:display_order] || pl[:displayOrder] || idx
+              level.is_active = (pl[:status].to_s.downcase != "inactive" && pl[:is_active] != false && pl[:isActive] != false)
               level.save if level.valid?
             end
           end
