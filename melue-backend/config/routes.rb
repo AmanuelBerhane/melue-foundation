@@ -134,6 +134,7 @@ Rails.application.routes.draw do
         resource :session_schedule_config, only: %i[show update]
 
         # Forms builder compatibility
+        get "forms", to: "forms#index"
         get "forms/:form_name", to: "forms#show"
         post "forms/:form_name", to: "forms#update_config"
         post "forms/:form_name/reset", to: "forms#reset"

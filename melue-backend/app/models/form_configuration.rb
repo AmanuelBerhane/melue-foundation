@@ -22,7 +22,10 @@ class FormConfiguration < ApplicationRecord
 
   before_validation :set_revision_date
 
-  SUPPORTED_FIELD_TYPES = %w[text number date dropdown checkbox radio textarea file_upload].freeze
+  SUPPORTED_FIELD_TYPES = %w[
+    text number date dropdown checkbox radio textarea file_upload file
+    checkbox_group switch phone image_picker section_header divider
+  ].freeze
 
   private
 
@@ -45,7 +48,8 @@ class FormConfiguration < ApplicationRecord
   def supported_field_types
     return unless field_schema["fields"].is_a?(Array)
     field_schema["fields"].each do |field|
-      next if SUPPORTED_FIELD_TYPES.include?(field["type"])
+      type = field["type"].to_s.downcase.underscore
+      next if SUPPORTED_FIELD_TYPES.include?(type)
       errors.add(:field_schema, "unsupported field type: #{field['type']}")
     end
   end
