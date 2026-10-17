@@ -1,7 +1,17 @@
 class FormConfiguration < ApplicationRecord
   include Auditable
 
-  enum :form_type, { enrollment: 0, iup: 1, ablls: 2 }
+  enum :form_type, {
+    enrollment: 0,
+    iup: 1,
+    ablls: 2,
+    abc_data_sheet: 3,
+    preference_assessment: 4,
+    task_analysis: 5,
+    social_skills: 6,
+    sensory: 7,
+    behavioral_assessment: 8
+  }
 
   validates :form_name, presence: true
   validates :form_type, presence: true
