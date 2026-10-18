@@ -281,6 +281,10 @@ module Api
       end
 
       def goal_params
+        if params[:goal].present? && params[:goal][:mastery_criteria].is_a?(String)
+          params[:goal][:mastery_criteria] = { description: params[:goal][:mastery_criteria] }
+        end
+
         permitted = params.require(:goal).permit(
           :name, :task_name, :description, :goal_domain_id, :goal_type,
           :suggested_age_range, :is_active,

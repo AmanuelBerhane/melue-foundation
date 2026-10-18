@@ -63,7 +63,18 @@ module Api
             parsed.is_a?(Hash) ? parsed : request.request_parameters.except("controller", "action", "form_name")
           end
 
-          fields = payload["fields"] || []
+          raw_fields = payload["fields"] || []
+          seen_ids = Set.new
+          fields = raw_fields.map.with_index do |f, idx|
+            fh = f.is_a?(Hash) ? f.deep_dup : {}
+            f_id = fh["id"].presence || "f_#{idx + 1}_#{SecureRandom.hex(3)}"
+            f_id = "#{f_id}_#{idx + 1}" if seen_ids.include?(f_id)
+            seen_ids.add(f_id)
+            fh["id"] = f_id
+            fh["type"] = fh["type"].presence || fh["field_type"].presence || "Text"
+            fh
+          end
+
           custom_sections = payload["customSections"] || payload["sections"] || []
           deleted_sections = payload["deletedSections"] || []
           history = payload["history"] || []

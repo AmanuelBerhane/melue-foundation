@@ -13,6 +13,7 @@ class ApplicationController < ActionController::API
   def unprocessable_entity(exception)
     render_error(exception.record.errors.full_messages, :unprocessable_content)
   end
+  alias_method :unprocessable_content, :unprocessable_entity
 
   def bad_request(exception)
     render_error(exception.message, :bad_request)
