@@ -11,7 +11,14 @@ module Api
         # GET /api/v1/sysadmin/roles
         def index
           roles = Role.all
-          user_counts = RoleAssignment.group(:role_id).count
+          user_counts = RoleAssignment
+            .joins(:user)
+            .left_joins(user: :staff_member)
+            .where(role_assignments: { revoked_at: nil })
+            .where(users: { status: :verified })
+            .where("staff_members.id IS NULL OR staff_members.discarded_at IS NULL")
+            .group(:role_id)
+            .count
           render json: roles.map { |r| serialize_role(r, user_count: user_counts[r.id] || 0) }
         end
 
@@ -65,28 +72,39 @@ module Api
 
         # POST /api/v1/sysadmin/roles/:id/permissions
         def update_permissions
-          permission_ids = if params[:permission_ids].present?
+          raw_identifiers = if params[:permission_ids].present?
             Array(params[:permission_ids]).map(&:to_s)
-          elsif params[:matrix].is_a?(Hash)
-            # Support matrix format from frontend { "students" => { "view" => true, ... } }
-            ids = []
+          else
+            []
+          end
+
+          resolved_perms = []
+          raw_identifiers.each do |id_or_tag|
+            if id_or_tag.include?(":")
+              res, act = id_or_tag.split(":", 2)
+              p = Permission.find_by(resource: res, action: act.downcase)
+              resolved_perms << p if p
+            else
+              p = Permission.find_by(id: id_or_tag)
+              resolved_perms << p if p
+            end
+          end
+
+          if params[:matrix].is_a?(Hash)
             params[:matrix].each do |mod, acts|
               next unless acts.is_a?(Hash)
               acts.each do |act, enabled|
                 next unless enabled == true || enabled == "true"
                 perm = Permission.find_by(resource: mod, action: act.to_s.downcase)
-                ids << perm.id.to_s if perm
+                resolved_perms << perm if perm
               end
             end
-            ids
-          else
-            []
           end
 
-          new_permissions = Permission.where(id: permission_ids)
+          new_permissions = resolved_perms.uniq
 
           old_ids = @role.permission_ids.map(&:to_s).sort
-          new_ids = new_permissions.pluck(:id).map(&:to_s).sort
+          new_ids = new_permissions.map { |p| p.id.to_s }.sort
 
           ActiveRecord::Base.transaction do
             @role.permissions = new_permissions
