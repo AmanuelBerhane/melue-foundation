@@ -133,10 +133,36 @@ module Api
           end
         end
 
+        # GET /api/v1/admin/trial-logging-config
+        def show_trial_config
+          config = Rails.cache.read("admin_trial_logging_config") || {
+            "layout" => "Horizontal",
+            "streamCount" => 5,
+            "consecutive" => 5,
+            "independence" => 80,
+            "autoSuggest" => true
+          }
+
+          render json: {
+            status: "ok",
+            prompt_levels: PromptLevel.order(:display_order),
+            layout: config["layout"],
+            trialStreamLayout: config["layout"],
+            streamCount: config["streamCount"],
+            trialStreamCount: config["streamCount"],
+            consecutive: config["consecutive"],
+            masteryConsecutiveTrials: config["consecutive"],
+            independence: config["independence"],
+            independenceThreshold: config["independence"],
+            autoSuggest: config["autoSuggest"]
+          }
+        end
+
         # POST /api/v1/admin/trial-logging-config
         def save_trial_config
-          if params[:prompt_levels].is_a?(Array)
-            params[:prompt_levels].each_with_index do |pl, idx|
+          levels_param = params[:prompt_levels] || params[:promptLevels]
+          if levels_param.is_a?(Array)
+            levels_param.each_with_index do |pl, idx|
               level = PromptLevel.find_by(id: pl[:id]) if pl[:id].present?
               level ||= PromptLevel.find_or_initialize_by(label: pl[:name] || pl[:label])
               level.label = pl[:name] || pl[:label] if (pl[:name] || pl[:label]).present?
@@ -147,10 +173,34 @@ module Api
             end
           end
 
+          layout = params[:layout] || params[:trialStreamLayout] || "Horizontal"
+          stream_count = (params[:streamCount] || params[:trialStreamCount] || 5).to_i
+          consecutive = (params[:consecutive] || params[:masteryConsecutiveTrials] || 5).to_i
+          independence = (params[:independence] || params[:independenceThreshold] || 80).to_i
+          auto_suggest = params.key?(:autoSuggest) ? ActiveModel::Type::Boolean.new.cast(params[:autoSuggest]) : true
+
+          config = {
+            "layout" => layout,
+            "streamCount" => stream_count,
+            "consecutive" => consecutive,
+            "independence" => independence,
+            "autoSuggest" => auto_suggest
+          }
+          Rails.cache.write("admin_trial_logging_config", config)
+
           render json: {
             status: "ok",
             message: "Trial logging format saved successfully",
-            prompt_levels: PromptLevel.order(:display_order)
+            prompt_levels: PromptLevel.order(:display_order),
+            layout: layout,
+            trialStreamLayout: layout,
+            streamCount: stream_count,
+            trialStreamCount: stream_count,
+            consecutive: consecutive,
+            masteryConsecutiveTrials: consecutive,
+            independence: independence,
+            independenceThreshold: independence,
+            autoSuggest: auto_suggest
           }
         end
 

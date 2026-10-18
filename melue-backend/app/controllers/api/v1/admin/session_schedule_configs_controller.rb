@@ -13,6 +13,28 @@ module Api
           config = SessionScheduleConfig.instance
 
           if config.update(config_params)
+            # Synchronize session sub-blocks if provided
+            raw_blocks = params[:blocks].presence || params.dig(:session_schedule_config, :blocks)
+            if raw_blocks.is_a?(Array)
+              raw_blocks.each do |blk|
+                name = blk[:name] || blk["name"]
+                s_time = blk[:startTime] || blk["startTime"]
+                e_time = blk[:endTime] || blk["endTime"]
+                next if name.blank? || s_time.blank? || e_time.blank?
+
+                b = SessionBlockDefinition.find_by(name: name) ||
+                    (blk[:id].present? && blk[:id].to_s.length > 10 ? SessionBlockDefinition.find_by(id: blk[:id]) : nil) ||
+                    SessionBlockDefinition.new(name: name)
+
+                b.name = name
+                b.start_time = s_time
+                b.end_time = e_time
+                b.round = name.to_s.downcase.include?("afternoon") ? "afternoon" : "morning"
+                b.is_active = true
+                b.save if b.valid?
+              end
+            end
+
             render json: serialize_config(config)
           else
             render json: { errors: config.errors }, status: :unprocessable_content
@@ -22,6 +44,17 @@ module Api
         private
 
         def serialize_config(config)
+          block_defs = SessionBlockDefinition.active.ordered
+          serialized_blocks = block_defs.map do |b|
+            {
+              "id" => b.id.to_s,
+              "name" => b.name,
+              "startTime" => b.start_time&.strftime("%I:%M %p"),
+              "endTime" => b.end_time&.strftime("%I:%M %p"),
+              "round" => b.round
+            }
+          end
+
           config.as_json.merge(
             "morningStart" => config.morning_start_time&.strftime("%I:%M %p"),
             "morningEnd" => config.morning_end_time&.strftime("%I:%M %p"),
@@ -31,7 +64,10 @@ module Api
             "station1Duration" => config.station_1_duration_minutes,
             "station2Duration" => config.station_2_duration_minutes,
             "capacity" => config.staff_to_student_capacity,
-            "draftExpiry" => config.draft_expiry_days
+            "staff_to_student_capacity" => config.staff_to_student_capacity,
+            "draftExpiry" => config.draft_expiry_days,
+            "draft_expiry_days" => config.draft_expiry_days,
+            "blocks" => serialized_blocks
           )
         end
 

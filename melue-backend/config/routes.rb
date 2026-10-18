@@ -109,13 +109,13 @@ Rails.application.routes.draw do
         end
 
         # Trial logging format configuration compatibility routes -> prompt_levels
-        get "trial-logging-config", to: "prompt_levels#index"
+        get "trial-logging-config", to: "prompt_levels#show_trial_config"
         match "trial-logging-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
-        get "trial_logging_config", to: "prompt_levels#index"
+        get "trial_logging_config", to: "prompt_levels#show_trial_config"
         match "trial_logging_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
-        get "trial-config", to: "prompt_levels#index"
+        get "trial-config", to: "prompt_levels#show_trial_config"
         match "trial-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
-        get "trial_config", to: "prompt_levels#index"
+        get "trial_config", to: "prompt_levels#show_trial_config"
         match "trial_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
 
         resources :session_block_definitions
