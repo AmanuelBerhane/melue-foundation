@@ -163,7 +163,7 @@ ActiveRecord::Base.transaction do
         perm = permission_catalog["#{res}:#{act}"]
         next unless perm
 
-        pair = [role.id, perm.id]
+        pair = [ role.id, perm.id ]
         unless existing_role_perms.include?(pair)
           role_perms_to_insert << {
             role_id: role.id,

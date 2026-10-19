@@ -132,7 +132,7 @@ ActiveRecord::Base.transaction do
   )
 
   # Provision in-progress assessment cycles for in_assessment students
-  [amir, tigist].each do |student|
+  [ amir, tigist ].each do |student|
     AssessmentCycle.find_or_create_by!(
       student:    student,
       started_on: student.assessment_started_at.to_date
@@ -195,7 +195,7 @@ ActiveRecord::Base.transaction do
   )
 
   # Provision full completed 5-part assessment battery for Saron and Biniam
-  [saron, biniam].each do |student|
+  [ saron, biniam ].each do |student|
     cycle = AssessmentCycle.find_or_create_by!(
       student:    student,
       started_on: 6.weeks.ago.to_date
@@ -421,32 +421,32 @@ ActiveRecord::Base.transaction do
     {
       student: yonas,
       station: station1,
-      goals:   ["Request preferred items using words", "Initiate greeting with peers"]
+      goals:   [ "Request preferred items using words", "Initiate greeting with peers" ]
     },
     {
       student: meron,
       station: station1,
-      goals:   ["Take turns in structured play", "Maintain pencil grip for 3 minutes"]
+      goals:   [ "Take turns in structured play", "Maintain pencil grip for 3 minutes" ]
     },
     {
       student: abel,
       station: station1,
-      goals:   ["Follow two-step verbal instructions", "Match identical objects"]
+      goals:   [ "Follow two-step verbal instructions", "Match identical objects" ]
     },
     {
       student: liya,
       station: station1,
-      goals:   ["Respond to greetings and goodbyes from others", "Maintain pencil grip for 3 minutes"]
+      goals:   [ "Respond to greetings and goodbyes from others", "Maintain pencil grip for 3 minutes" ]
     },
     {
       student: natnael,
       station: station2,
-      goals:   ["Request preferred items using words", "Washing Hands"]
+      goals:   [ "Request preferred items using words", "Washing Hands" ]
     },
     {
       student: hiwot,
       station: station2,
-      goals:   ["Make eye contact during conversation", "Match identical objects"]
+      goals:   [ "Make eye contact during conversation", "Match identical objects" ]
     }
   ]
 
@@ -501,7 +501,7 @@ ActiveRecord::Base.transaction do
   today = Date.current
 
   # Teacher 1 -> Yonas & Meron | Morning Block A | Station 1 (Room 1A)
-  [yonas, meron].each do |st|
+  [ yonas, meron ].each do |st|
     TeacherStudentAssignment.find_or_initialize_by(
       student:                   st,
       session_block_definition: morning_block_a,
@@ -516,7 +516,7 @@ ActiveRecord::Base.transaction do
   end
 
   # Teacher 2 -> Abel & Liya | Morning Block B | Station 1 (Room 1B)
-  [abel, liya].each do |st|
+  [ abel, liya ].each do |st|
     TeacherStudentAssignment.find_or_initialize_by(
       student:                   st,
       session_block_definition: morning_block_b,
@@ -531,7 +531,7 @@ ActiveRecord::Base.transaction do
   end
 
   # Teacher 3 -> Natnael & Hiwot | Afternoon Block A | Station 2 (Room 2A) (Today's Assignment)
-  [natnael, hiwot].each do |st|
+  [ natnael, hiwot ].each do |st|
     TeacherStudentAssignment.find_or_initialize_by(
       student:                   st,
       session_block_definition: afternoon_block_a,
@@ -673,17 +673,17 @@ ActiveRecord::Base.transaction do
         next if Trial.exists?(client_event_id: event_id)
 
         prompt = case t_idx
-                 when 0..1 then prompt_fp
-                 when 2..3 then prompt_pp
-                 when 4..5 then prompt_g
-                 else prompt_ind
-                 end
+        when 0..1 then prompt_fp
+        when 2..3 then prompt_pp
+        when 4..5 then prompt_g
+        else prompt_ind
+        end
 
         outcome = case t_idx
-                  when 0..1 then (t_idx.zero? ? "no_response" : "incorrect")
-                  when 2..4 then "correct"
-                  else (t_idx == 5 ? "incorrect" : "correct")
-                  end
+        when 0..1 then (t_idx.zero? ? "no_response" : "incorrect")
+        when 2..4 then "correct"
+        else (t_idx == 5 ? "incorrect" : "correct")
+        end
 
         trial_time = session_start + (10 + t_idx * 8).minutes
 

@@ -54,14 +54,14 @@ ActiveRecord::Base.transaction do
   station2.save!
 
   room_mappings = [
-    [station1, "Room 1A"],
-    [station1, "Room 1B"],
-    [station1, "Room 1C"],
-    [station1, "Room 1D"],
-    [station2, "Room 2A"],
-    [station2, "Room 2B"],
-    [station2, "Room 2C"],
-    [station2, "Room 2D"]
+    [ station1, "Room 1A" ],
+    [ station1, "Room 1B" ],
+    [ station1, "Room 1C" ],
+    [ station1, "Room 1D" ],
+    [ station2, "Room 2A" ],
+    [ station2, "Room 2B" ],
+    [ station2, "Room 2C" ],
+    [ station2, "Room 2D" ]
   ]
 
   room_mappings.each do |station, room_name|

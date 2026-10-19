@@ -215,10 +215,10 @@ module Api
           uuid_regex = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
           @prompt_level = if uuid_regex.match?(id)
                             PromptLevel.find_by(id: id)
-                          else
+          else
                             PromptLevel.find_by("lower(label) = ?", id.downcase) ||
-                              PromptLevel.order(:display_order).offset([id.scan(/\d+/).first.to_i - 1, 0].max).first
-                          end
+                              PromptLevel.order(:display_order).offset([ id.scan(/\d+/).first.to_i - 1, 0 ].max).first
+          end
 
           unless @prompt_level
             render json: { error: "Prompt level not found" }, status: :not_found

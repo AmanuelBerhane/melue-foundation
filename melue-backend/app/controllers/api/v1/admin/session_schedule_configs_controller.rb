@@ -69,10 +69,11 @@ module Api
             "station1Duration" => config.station_1_duration_minutes,
             "station1DurationMinutes" => config.station_1_duration_minutes,
             "station2Duration" => config.station_2_duration_minutes,
-            "station2DurationMinutes" => config.station_2_duration_minutes,
             "capacity" => config.staff_to_student_capacity,
+            "staffToStudentCapacity" => config.staff_to_student_capacity,
             "staff_to_student_capacity" => config.staff_to_student_capacity,
             "draftExpiry" => config.draft_expiry_days,
+            "draftExpiryDays" => config.draft_expiry_days,
             "draft_expiry_days" => config.draft_expiry_days,
             "blocks" => serialized_blocks
           )

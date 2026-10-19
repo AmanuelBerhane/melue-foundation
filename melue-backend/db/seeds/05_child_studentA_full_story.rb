@@ -744,19 +744,19 @@ ActiveRecord::Base.transaction do
       next if Trial.exists?(client_event_id: event_id)
 
       prompt = case t_idx
-               when 0..2 then prompt_fp
-               when 3..5 then prompt_pp
-               when 6..7 then prompt_g
-               else prompt_ind
-               end
+      when 0..2 then prompt_fp
+      when 3..5 then prompt_pp
+      when 6..7 then prompt_g
+      else prompt_ind
+      end
 
       outcome = case t_idx
-                when 0 then "no_response"
-                when 1..2 then "incorrect"
-                when 3..4 then "correct"
-                when 5 then "incorrect"
-                else "correct"
-                end
+      when 0 then "no_response"
+      when 1..2 then "incorrect"
+      when 3..4 then "correct"
+      when 5 then "incorrect"
+      else "correct"
+      end
 
       trial_time = s_start + (5 + t_idx * 7).minutes
 

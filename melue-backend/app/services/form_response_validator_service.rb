@@ -115,9 +115,9 @@ class FormResponseValidatorService < ApplicationService
   end
 
   def validate_switch!(field_id, value)
-    if [true, "true", 1, "1"].include?(value)
+    if [ true, "true", 1, "1" ].include?(value)
       @sanitized_data[field_id] = true
-    elsif [false, "false", 0, "0"].include?(value)
+    elsif [ false, "false", 0, "0" ].include?(value)
       @sanitized_data[field_id] = false
     else
       add_error(field_id, "Must be a valid boolean true/false")

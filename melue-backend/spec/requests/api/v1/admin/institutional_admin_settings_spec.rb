@@ -52,12 +52,13 @@ RSpec.describe "Institutional Admin Settings Endpoints", type: :request do
   describe "Trial Config Routing to Prompt Levels" do
     let!(:level) { PromptLevel.create!(label: "Full Physical", color: "#E5484D", display_order: 1) }
 
-    it "routes GET /api/v1/admin/trial-logging-config to prompt_levels#index" do
+    it "routes GET /api/v1/admin/trial-logging-config to prompt_levels#show_trial_config" do
       get "/api/v1/admin/trial-logging-config", headers: admin_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      expect(json.any? { |l| l["label"] == "Full Physical" }).to be true
+      prompt_levels = json.is_a?(Array) ? json : (json["prompt_levels"] || json["promptLevels"])
+      expect(prompt_levels.any? { |l| l["label"] == "Full Physical" }).to be true
     end
 
     it "routes POST /api/v1/admin/trial-logging-config to prompt_levels#save_trial_config" do

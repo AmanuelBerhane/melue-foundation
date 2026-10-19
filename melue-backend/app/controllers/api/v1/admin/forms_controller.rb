@@ -5,7 +5,7 @@ module Api
     module Admin
       class FormsController < BaseController
         before_action :authenticate_user!
-        before_action :set_form_config, except: [:index]
+        before_action :set_form_config, except: [ :index ]
 
         # GET /api/v1/admin/forms
         def index
@@ -118,9 +118,9 @@ module Api
 
           reset_schema = if default_seeded && default_seeded.field_schema.present?
                            default_seeded.field_schema.deep_dup
-                         else
+          else
                            empty_field_schema
-                         end
+          end
 
           @form_config.update!(
             field_schema: reset_schema,

@@ -51,9 +51,9 @@ module Api
           if params[:domains].is_a?(Array)
             saved = []
             ActiveRecord::Base.transaction do
-              kept_ids = []
+              uuid_regex = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
               params[:domains].each_with_index do |d, idx|
-                domain = if d[:id].present? && d[:id].to_s.match?(/\A\d+\z/)
+                domain = if d[:id].present? && uuid_regex.match?(d[:id].to_s)
                   GoalDomain.find_by(id: d[:id])
                 end
                 domain ||= GoalDomain.find_or_initialize_by(name: d[:name])
@@ -176,10 +176,14 @@ module Api
         private
 
         def set_goal_domain
-          @goal_domain = if params[:id].to_s.match?(/\A\d+\z/)
-            GoalDomain.find_by(id: params[:id])
+          id = params[:id].to_s.strip
+          uuid_regex = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+          @goal_domain = if uuid_regex.match?(id)
+            GoalDomain.find_by(id: id)
+          else
+            GoalDomain.find_by("lower(name) = ?", id.downcase) ||
+              GoalDomain.order(:display_order).offset([ id.scan(/\d+/).first.to_i - 1, 0 ].max).first
           end
-          @goal_domain ||= GoalDomain.find_by("LOWER(name) = ?", params[:id].to_s.downcase)
           render json: { error: "Goal domain not found" }, status: :not_found unless @goal_domain
         end
 
