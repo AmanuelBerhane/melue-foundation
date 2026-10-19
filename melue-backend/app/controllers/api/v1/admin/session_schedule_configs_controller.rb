@@ -57,12 +57,19 @@ module Api
 
           config.as_json.merge(
             "morningStart" => config.morning_start_time&.strftime("%I:%M %p"),
+            "morningStartTime" => config.morning_start_time&.strftime("%I:%M %p"),
             "morningEnd" => config.morning_end_time&.strftime("%I:%M %p"),
+            "morningEndTime" => config.morning_end_time&.strftime("%I:%M %p"),
             "afternoonStart" => config.afternoon_start_time&.strftime("%I:%M %p"),
+            "afternoonStartTime" => config.afternoon_start_time&.strftime("%I:%M %p"),
             "afternoonEnd" => config.afternoon_end_time&.strftime("%I:%M %p"),
+            "afternoonEndTime" => config.afternoon_end_time&.strftime("%I:%M %p"),
             "preTherapyDuration" => config.pre_therapy_duration_minutes,
+            "preTherapyDurationMinutes" => config.pre_therapy_duration_minutes,
             "station1Duration" => config.station_1_duration_minutes,
+            "station1DurationMinutes" => config.station_1_duration_minutes,
             "station2Duration" => config.station_2_duration_minutes,
+            "station2DurationMinutes" => config.station_2_duration_minutes,
             "capacity" => config.staff_to_student_capacity,
             "staff_to_student_capacity" => config.staff_to_student_capacity,
             "draftExpiry" => config.draft_expiry_days,
@@ -77,15 +84,15 @@ module Api
 
           transformed = {}
 
-          m_start = get_val.(:morningStart, :morningStartTime, "morningStart", "morningStartTime")
-          m_end   = get_val.(:morningEnd, :morningEndTime, "morningEnd", "morningEndTime")
-          a_start = get_val.(:afternoonStart, :afternoonStartTime, "afternoonStart", "afternoonStartTime")
-          a_end   = get_val.(:afternoonEnd, :afternoonEndTime, "afternoonEnd", "afternoonEndTime")
-          pre_dur = get_val.(:preTherapyDuration, :preTherapyDurationMinutes, "preTherapyDuration", "preTherapyDurationMinutes")
-          s1_dur  = get_val.(:station1Duration, :station1DurationMinutes, "station1Duration", "station1DurationMinutes")
-          s2_dur  = get_val.(:station2Duration, :station2DurationMinutes, "station2Duration", "station2DurationMinutes")
-          cap     = get_val.(:capacity, :staffToStudentCapacity, "capacity", "staffToStudentCapacity")
-          draft   = get_val.(:draftExpiry, :draftExpiryDays, "draftExpiry", "draftExpiryDays")
+          m_start = get_val.(:morningStart, :morningStartTime, :morning_start, "morningStart", "morningStartTime", "morning_start")
+          m_end   = get_val.(:morningEnd, :morningEndTime, :morning_end, "morningEnd", "morningEndTime", "morning_end")
+          a_start = get_val.(:afternoonStart, :afternoonStartTime, :afternoon_start, "afternoonStart", "afternoonStartTime", "afternoon_start")
+          a_end   = get_val.(:afternoonEnd, :afternoonEndTime, :afternoon_end, "afternoonEnd", "afternoonEndTime", "afternoon_end")
+          pre_dur = get_val.(:preTherapyDuration, :preTherapyDurationMinutes, :pre_therapy_duration, "preTherapyDuration", "preTherapyDurationMinutes", "pre_therapy_duration")
+          s1_dur  = get_val.(:station1Duration, :station1DurationMinutes, :station_1_duration, :station1_duration, "station1Duration", "station1DurationMinutes", "station_1_duration", "station1_duration")
+          s2_dur  = get_val.(:station2Duration, :station2DurationMinutes, :station_2_duration, :station2_duration, "station2Duration", "station2DurationMinutes", "station_2_duration", "station2_duration")
+          cap     = get_val.(:capacity, :staffToStudentCapacity, :staffCapacity, :staff_capacity, "capacity", "staffToStudentCapacity", "staffCapacity", "staff_capacity")
+          draft   = get_val.(:draftExpiry, :draftExpiryDays, :draft_expiry, "draftExpiry", "draftExpiryDays", "draft_expiry")
 
           transformed[:morning_start_time] = m_start if m_start.present?
           transformed[:morning_end_time] = m_end if m_end.present?
