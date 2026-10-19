@@ -3,6 +3,8 @@ class AbcDropdownOption < ApplicationRecord
 
   enum :category, { antecedent: 0, behavior: 1, consequence: 2, location: 3 }
 
+  attribute :is_other, :boolean, default: false
+
   validates :label, presence: true
   validates :category, presence: true
   validates :display_order, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
