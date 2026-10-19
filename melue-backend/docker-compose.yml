@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: melue_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: melue_backend_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        http_proxy: ""
+        https_proxy: ""
+        HTTP_PROXY: ""
+        HTTPS_PROXY: ""
+    container_name: melue_backend_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: development
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      CORS_ALLOWED_ORIGINS: "http://localhost:8081,http://127.0.0.1:8081,http://localhost:3000"
+    volumes:
+      # Mount current directory to support live code reloading
+      - .:/rails
+      # Use dedicated volume for gems so host files don't override Linux gem binaries
+      - bundle_data:/usr/local/bundle
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  bundle_data:

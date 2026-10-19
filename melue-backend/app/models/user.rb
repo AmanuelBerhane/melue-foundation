@@ -22,27 +22,40 @@ class User < ApplicationRecord
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
 
-  # Resolve has_permission? through active role_assignments → roles → permissions.
-  # Falls back to the legacy user_roles path for backwards-compat.
-  def has_permission?(resource, action)
-    # Primary path: role_assignments (RBAC)
-    return true if Permission.joins(role_permissions: { role: :role_assignments })
-                              .where(role_assignments: { user_id: id, revoked_at: nil })
-                              .exists?(resource: resource.to_s, action: action.to_s)
-
-    # Legacy fallback: user_roles
-    permissions.exists?(resource: resource.to_s, action: action.to_s)
-  end
-
   # Returns the user's currently active roles.
   def active_roles
     roles.where(role_assignments: { revoked_at: nil })
   end
 
-  # Returns all effective permissions through active role assignments
+  # Returns all active assigned roles including staff member and derived roles
+  def all_assigned_roles
+    assigned = active_roles.to_a
+    assigned << staff_member_role if respond_to?(:staff_member_role) && staff_member_role.present?
+    assigned << derived_role if respond_to?(:derived_role) && derived_role.present?
+    assigned.compact.uniq
+  end
+
+  # Resolve has_permission? through active role assignments, staff member roles, or derived roles.
+  # Falls back to the legacy user_roles path for backwards-compat.
+  def has_permission?(resource, action)
+    assigned = all_assigned_roles
+    if assigned.any?
+      return true if Permission.joins(:role_permissions)
+                                .where(role_permissions: { role_id: assigned.map(&:id) })
+                                .exists?(resource: resource.to_s, action: action.to_s)
+    end
+
+    # Legacy fallback: user_roles
+    permissions.exists?(resource: resource.to_s, action: action.to_s)
+  end
+
+  # Returns all effective permissions through active role assignments or derived roles
   def effective_permissions
-    Permission.joins(role_permissions: { role: :role_assignments })
-              .where(role_assignments: { user_id: id, revoked_at: nil })
+    assigned = all_assigned_roles
+    return Permission.none if assigned.empty?
+
+    Permission.joins(:role_permissions)
+              .where(role_permissions: { role_id: assigned.map(&:id) })
               .distinct
   end
 

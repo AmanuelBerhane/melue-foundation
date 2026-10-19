@@ -21,7 +21,8 @@ class Permission < ApplicationRecord
   CANONICAL_ACTIONS = %w[view create edit delete approve index show update destroy manage].freeze
 
   def self.ensure_catalog_exists!
-    %w[students assessments iups sessions behavior_incidents staff reports parent_portal admin].each do |res|
+    resources = (CANONICAL_RESOURCES + %w[students assessments iups sessions behavior_incidents staff reports parent_portal admin]).uniq
+    resources.each do |res|
       %w[view create edit delete approve].each do |act|
         find_or_create_by!(resource: res, action: act)
       end

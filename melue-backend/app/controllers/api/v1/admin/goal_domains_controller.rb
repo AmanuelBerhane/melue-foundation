@@ -51,8 +51,9 @@ module Api
           if params[:domains].is_a?(Array)
             saved = []
             ActiveRecord::Base.transaction do
+              uuid_regex = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
               params[:domains].each_with_index do |d, idx|
-                domain = if d[:id].present?
+                domain = if d[:id].present? && uuid_regex.match?(d[:id].to_s)
                   GoalDomain.find_by(id: d[:id])
                 end
                 domain ||= GoalDomain.find_or_initialize_by(name: d[:name])
@@ -60,7 +61,19 @@ module Api
                 domain.display_order = d[:display_order] || d[:order] || idx
                 domain.is_active = (d[:is_active] != false && d[:status].to_s.downcase != "inactive")
                 domain.save!
+                kept_ids << domain.id
                 saved << domain
+              end
+
+              # Clean up or deactivate domains no longer in the payload
+              if kept_ids.any?
+                GoalDomain.where.not(id: kept_ids).find_each do |obsolete|
+                  if obsolete.goals.empty?
+                    obsolete.destroy
+                  else
+                    obsolete.update(is_active: false)
+                  end
+                end
               end
             end
             render json: saved, status: :ok
@@ -111,6 +124,15 @@ module Api
         # @response Forbidden(403) [Hash{error: String}]
         # @response Not found(404) [Hash{error: String}]
         def destroy
+          if params[:cascade].to_s == "true" || params[:cascade] == true
+            ActiveRecord::Base.transaction do
+              @goal_domain.goals.destroy_all
+              @goal_domain.destroy
+            end
+            head :no_content
+            return
+          end
+
           deletion_check = DeletionCheckService.call(@goal_domain)
 
           if deletion_check.failure?
@@ -154,7 +176,15 @@ module Api
         private
 
         def set_goal_domain
-          @goal_domain = GoalDomain.find(params[:id])
+          id = params[:id].to_s.strip
+          uuid_regex = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+          @goal_domain = if uuid_regex.match?(id)
+            GoalDomain.find_by(id: id)
+          else
+            GoalDomain.find_by("lower(name) = ?", id.downcase) ||
+              GoalDomain.order(:display_order).offset([ id.scan(/\d+/).first.to_i - 1, 0 ].max).first
+          end
+          render json: { error: "Goal domain not found" }, status: :not_found unless @goal_domain
         end
 
         def goal_domain_params

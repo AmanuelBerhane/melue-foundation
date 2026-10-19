@@ -112,13 +112,13 @@ Rails.application.routes.draw do
         match "prompt-levels", to: "prompt_levels#save_trial_config", via: %i[put patch]
 
         # Trial logging format configuration compatibility routes -> prompt_levels
-        get "trial-logging-config", to: "prompt_levels#index"
+        get "trial-logging-config", to: "prompt_levels#show_trial_config"
         match "trial-logging-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
-        get "trial_logging_config", to: "prompt_levels#index"
+        get "trial_logging_config", to: "prompt_levels#show_trial_config"
         match "trial_logging_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
-        get "trial-config", to: "prompt_levels#index"
+        get "trial-config", to: "prompt_levels#show_trial_config"
         match "trial-config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
-        get "trial_config", to: "prompt_levels#index"
+        get "trial_config", to: "prompt_levels#show_trial_config"
         match "trial_config", to: "prompt_levels#save_trial_config", via: %i[post put patch]
 
         resources :session_block_definitions
@@ -137,6 +137,7 @@ Rails.application.routes.draw do
         resource :session_schedule_config, only: %i[show update]
 
         # Forms builder compatibility
+        get "forms", to: "forms#index"
         get "forms/:form_name", to: "forms#show"
         post "forms/:form_name", to: "forms#update_config"
         post "forms/:form_name/reset", to: "forms#reset"

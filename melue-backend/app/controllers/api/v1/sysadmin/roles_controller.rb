@@ -11,7 +11,14 @@ module Api
         # GET /api/v1/sysadmin/roles
         def index
           roles = Role.all
-          user_counts = RoleAssignment.group(:role_id).count
+          user_counts = RoleAssignment
+            .joins(:user)
+            .left_joins(user: :staff_member)
+            .where(role_assignments: { revoked_at: nil })
+            .where(users: { status: :verified })
+            .where("staff_members.id IS NULL OR staff_members.discarded_at IS NULL")
+            .group(:role_id)
+            .count
           render json: roles.map { |r| serialize_role(r, user_count: user_counts[r.id] || 0) }
         end
 
@@ -57,6 +64,7 @@ module Api
 
         # GET /api/v1/sysadmin/roles/:id/permissions
         def permissions
+          Permission.ensure_catalog_exists!
           permissions = @role.permissions.map do |p|
             { id: p.id, resource: p.resource, action: p.action, name: "#{p.resource}:#{p.action}" }
           end
@@ -65,28 +73,55 @@ module Api
 
         # POST /api/v1/sysadmin/roles/:id/permissions
         def update_permissions
-          permission_ids = if params[:permission_ids].present?
+          Permission.ensure_catalog_exists!
+
+          raw_identifiers = if params[:permission_ids].present?
             Array(params[:permission_ids]).map(&:to_s)
-          elsif params[:matrix].is_a?(Hash)
-            # Support matrix format from frontend { "students" => { "view" => true, ... } }
-            ids = []
-            params[:matrix].each do |mod, acts|
-              next unless acts.is_a?(Hash)
-              acts.each do |act, enabled|
-                next unless enabled == true || enabled == "true"
-                perm = Permission.find_by(resource: mod, action: act.to_s.downcase)
-                ids << perm.id.to_s if perm
-              end
-            end
-            ids
           else
             []
           end
 
-          new_permissions = Permission.where(id: permission_ids)
+          resolved_perms = []
+          raw_identifiers.each do |id_or_tag|
+            if id_or_tag.include?(":")
+              res, act = id_or_tag.split(":", 2)
+              p = Permission.find_by(resource: res, action: act.downcase)
+              if p.nil?
+                canonical_res = RESOURCE_ALIAS_MAP[res.downcase]
+                p = Permission.find_by(resource: canonical_res, action: act.downcase) if canonical_res
+                p ||= Permission.find_or_create_by!(resource: res, action: act.downcase) do |perm|
+                  perm.description = "Can #{act} #{res}"
+                end
+              end
+              resolved_perms << p if p
+            elsif id_or_tag =~ UUID_REGEX
+              p = Permission.find_by(id: id_or_tag)
+              resolved_perms << p if p
+            end
+          end
+
+          if params[:matrix].is_a?(Hash)
+            params[:matrix].each do |mod, acts|
+              next unless acts.is_a?(Hash)
+              acts.each do |act, enabled|
+                next unless enabled == true || enabled == "true"
+                perm = Permission.find_by(resource: mod.to_s, action: act.to_s.downcase)
+                if perm.nil?
+                  canonical_res = RESOURCE_ALIAS_MAP[mod.to_s.downcase]
+                  perm = Permission.find_by(resource: canonical_res, action: act.to_s.downcase) if canonical_res
+                  perm ||= Permission.find_or_create_by!(resource: mod.to_s, action: act.to_s.downcase) do |p|
+                    p.description = "Can #{act} #{mod}"
+                  end
+                end
+                resolved_perms << perm if perm
+              end
+            end
+          end
+
+          new_permissions = resolved_perms.uniq
 
           old_ids = @role.permission_ids.map(&:to_s).sort
-          new_ids = new_permissions.pluck(:id).map(&:to_s).sort
+          new_ids = new_permissions.map { |p| p.id.to_s }.sort
 
           ActiveRecord::Base.transaction do
             @role.permissions = new_permissions
@@ -191,10 +226,48 @@ module Api
           }
         end
 
+        UUID_REGEX = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+
+        RESOURCE_ALIAS_MAP = {
+          "enrollments" => "students",
+          "forms" => "students",
+          "skills_assessments" => "assessments",
+          "behavior_assessments" => "assessments",
+          "preference_assessments" => "assessments",
+          "goals" => "iups",
+          "goal_domains" => "iups",
+          "prompt_levels" => "iups",
+          "trials" => "sessions",
+          "session_summaries" => "sessions",
+          "abc_lists" => "behavior_incidents",
+          "staff_members" => "staff",
+          "staff_scheduling" => "staff",
+          "session_block_definitions" => "staff",
+          "session_schedule_configs" => "staff",
+          "oversight" => "reports",
+          "audit_logs" => "reports",
+          "parent_communications" => "parent_portal",
+          "home_observations" => "parent_portal",
+          "roles" => "admin",
+          "clinical_configs" => "admin",
+          "form_configurations" => "admin"
+        }.freeze
+
         private
 
         def set_role
-          @role = Role.find(params[:id])
+          role_id_or_name = params[:id].to_s.strip
+          @role = if role_id_or_name =~ UUID_REGEX
+            Role.find_by(id: role_id_or_name)
+          else
+            Role.find_by("LOWER(name) = ?", role_id_or_name.downcase.tr("_", " ")) ||
+            Role.find_by("LOWER(REPLACE(REPLACE(name, ' ', '_'), '-', '_')) = ?", role_id_or_name.downcase) ||
+            Role.find_by(name: role_id_or_name)
+          end
+
+          return if @role
+
+          render json: { error: "Role not found" }, status: :not_found
         end
 
         def role_params

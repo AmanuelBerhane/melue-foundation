@@ -5,28 +5,54 @@ module Api
     module Admin
       class FormsController < BaseController
         before_action :authenticate_user!
-        before_action :set_form_config
+        before_action :set_form_config, except: [ :index ]
+
+        # GET /api/v1/admin/forms
+        def index
+          configs = FormConfiguration.all.order(:form_name)
+          is_empty = configs.empty?
+
+          render json: {
+            forms: configs.map do |fc|
+              schema = fc.field_schema || empty_field_schema
+              fields = schema["fields"] || []
+              {
+                id: fc.id,
+                formName: fc.form_name,
+                formType: fc.form_type,
+                revisionNumber: fc.revision_number || 1,
+                isDefault: fc.is_default,
+                fieldCount: fields.size,
+                isEmpty: fields.empty?,
+                emptyState: fields.empty? ? empty_state_metadata(fc.form_name) : nil
+              }
+            end,
+            isEmpty: is_empty,
+            emptyState: is_empty ? {
+              title: "No Form Configurations",
+              message: "No forms have been configured in the database yet. Run db:seed to populate standard forms.",
+              action: "seed_forms"
+            } : nil
+          }
+        end
 
         # GET /api/v1/admin/forms/:form_name
         def show
-          schema = @form_config.field_schema || {}
+          schema = @form_config.field_schema || empty_field_schema
           fields = schema["fields"] || []
-
-          # If empty, populate with standard defaults
-          if fields.empty?
-            schema = default_schema_for(@form_config.form_type)
-            @form_config.update!(field_schema: schema)
-          end
+          is_empty = fields.empty?
 
           render json: {
             formName: @form_config.form_name,
             formType: @form_config.form_type,
-            revisionNumber: @form_config.revision_number,
+            revisionNumber: @form_config.revision_number || 1,
             isDefault: @form_config.is_default,
-            fields: schema["fields"] || [],
+            fields: fields,
             customSections: schema["customSections"] || schema["sections"] || [],
             deletedSections: schema["deletedSections"] || [],
-            history: schema["history"] || []
+            history: schema["history"] || [],
+            isEmpty: is_empty,
+            emptyState: is_empty ? empty_state_metadata : nil
           }
         end
 
@@ -37,11 +63,23 @@ module Api
             parsed.is_a?(Hash) ? parsed : request.request_parameters.except("controller", "action", "form_name")
           end
 
-          fields = payload["fields"] || []
+          raw_fields = payload["fields"] || []
+          seen_ids = Set.new
+          fields = raw_fields.map.with_index do |f, idx|
+            fh = f.is_a?(Hash) ? f.deep_dup : {}
+            f_id = fh["id"].presence || "f_#{idx + 1}_#{SecureRandom.hex(3)}"
+            f_id = "#{f_id}_#{idx + 1}" if seen_ids.include?(f_id)
+            seen_ids.add(f_id)
+            fh["id"] = f_id
+            fh["type"] = fh["type"].presence || fh["field_type"].presence || "Text"
+            fh
+          end
+
           custom_sections = payload["customSections"] || payload["sections"] || []
           deleted_sections = payload["deletedSections"] || []
           history = payload["history"] || []
           is_default = payload["isDefault"] == true
+          is_empty = fields.empty?
 
           schema = {
             "fields" => fields,
@@ -64,20 +102,42 @@ module Api
             fields: fields,
             customSections: custom_sections,
             deletedSections: deleted_sections,
-            history: history
+            history: history,
+            isEmpty: is_empty,
+            emptyState: is_empty ? empty_state_metadata : nil
           }
         end
 
         # POST /api/v1/admin/forms/:form_name/reset
         def reset
-          default_schema = default_schema_for(@form_config.form_type)
+          # Revert to the baseline seeded record from the database
+          default_seeded = FormConfiguration.where(form_type: @form_config.form_type, is_default: true)
+                                            .where.not(id: @form_config.id)
+                                            .first ||
+                           FormConfiguration.where(form_type: @form_config.form_type).first
+
+          reset_schema = if default_seeded && default_seeded.field_schema.present?
+                           default_seeded.field_schema.deep_dup
+          else
+                           empty_field_schema
+          end
+
           @form_config.update!(
-            field_schema: default_schema,
+            field_schema: reset_schema,
             is_default: true,
             revision_date: Date.current
           )
 
-          render json: { status: "ok" }
+          is_empty = (reset_schema["fields"] || []).empty?
+
+          render json: {
+            status: "ok",
+            formName: @form_config.form_name,
+            formType: @form_config.form_type,
+            fields: reset_schema["fields"] || [],
+            isEmpty: is_empty,
+            emptyState: is_empty ? empty_state_metadata : nil
+          }
         end
 
         private
@@ -87,63 +147,46 @@ module Api
 
           # Map user-friendly form names to form_type enum
           type = case name.downcase
-          when /enrollment/ then :enrollment
+          when /enroll/ then :enrollment
           when /iup/ then :iup
-          when /ablls|skills/ then :ablls
+          when /ablls/ then :ablls
+          when /incident/ then :abc_data_sheet
+          when /behavior/ then :behavioral_assessment
+          when /sensory/ then :sensory
+          when /preference/ then :preference_assessment
+          when /data record|task analysis/ then :task_analysis
+          when /social/ then :social_skills
           else :enrollment
           end
 
-          @form_config = FormConfiguration.find_or_create_by!(form_type: type) do |fc|
-            fc.form_name = name
-            fc.is_default = true
-            fc.revision_number = 1
-            fc.field_schema = default_schema_for(type)
-          end
+          # Retrieve directly from the database (seeded by db/seeds/02_admin_configuration.rb)
+          @form_config = FormConfiguration.find_by("lower(form_name) = ?", name.downcase) ||
+                         FormConfiguration.where(form_type: type).order(is_default: :desc, id: :asc).first ||
+                         FormConfiguration.find_or_initialize_by(form_name: name) do |fc|
+                           fc.form_type = type
+                           fc.is_default = true
+                           fc.revision_number = 1
+                           fc.revision_date = Date.current
+                           fc.field_schema = empty_field_schema
+                         end
         end
 
-        def default_schema_for(type)
-          case type.to_s
-          when "enrollment"
-            {
-              "fields" => [
-                { "id" => "f1", "type" => "text", "label" => "Full Name", "required" => true, "visible" => true, "section" => "Student Info" },
-                { "id" => "f2", "type" => "date", "label" => "Date of Birth", "required" => true, "visible" => true, "section" => "Student Info" },
-                { "id" => "f4", "type" => "text", "label" => "Parent / Guardian Name", "required" => true, "visible" => true, "section" => "Parent Info" },
-                { "id" => "f5", "type" => "text", "label" => "Parent Phone", "required" => true, "visible" => true, "section" => "Parent Info" },
-                { "id" => "f6", "type" => "text", "label" => "Parent Email", "required" => true, "visible" => true, "section" => "Parent Info" },
-                { "id" => "f7", "type" => "textarea", "label" => "Medical Notes & Allergies", "required" => false, "visible" => true, "section" => "Medical Info" },
-                { "id" => "f8", "type" => "checkbox", "label" => "Transportation Required", "required" => false, "visible" => true, "section" => "Medical Info" },
-                { "id" => "f9", "type" => "text", "label" => "Emergency Contact", "required" => false, "visible" => true, "section" => "Parent Info" }
-              ],
-              "customSections" => [],
-              "deletedSections" => [],
-              "history" => []
-            }
-          when "iup"
-            {
-              "fields" => [
-                { "id" => "i1", "type" => "text", "label" => "Student Name", "required" => true, "visible" => true },
-                { "id" => "i2", "type" => "dropdown", "label" => "Target Skill Domain", "required" => true, "visible" => true, "options" => [ "Language & Communication", "Social Interaction", "Adaptive & Self-Care", "Motor Skills", "Cognitive" ] },
-                { "id" => "i3", "type" => "number", "label" => "Baseline Mastery (%)", "required" => true, "visible" => true },
-                { "id" => "i4", "type" => "textarea", "label" => "Target Objective", "required" => true, "visible" => true }
-              ],
-              "customSections" => [],
-              "deletedSections" => [],
-              "history" => []
-            }
-          else # ablls
-            {
-              "fields" => [
-                { "id" => "A1", "type" => "radio", "label" => "A1: Matches identical objects", "required" => true, "visible" => true, "section" => "Visual Performance", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] },
-                { "id" => "A2", "type" => "radio", "label" => "A2: Matches identical pictures to objects", "required" => true, "visible" => true, "section" => "Visual Performance", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] },
-                { "id" => "B1", "type" => "radio", "label" => "B1: Gross motor imitation", "required" => true, "visible" => true, "section" => "Motor Imitation", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] },
-                { "id" => "C1", "type" => "radio", "label" => "C1: Imitation of vowel sounds", "required" => true, "visible" => true, "section" => "Vocal Imitation", "options" => [ "0 — Not Demonstrated", "1 — Emerging", "2 — Mastered", "N/A" ] }
-              ],
-              "customSections" => [],
-              "deletedSections" => [],
-              "history" => []
-            }
-          end
+        def empty_field_schema
+          {
+            "fields" => [],
+            "customSections" => [],
+            "deletedSections" => [],
+            "history" => []
+          }
+        end
+
+        def empty_state_metadata(form_name = nil)
+          title_name = form_name || @form_config&.form_name || "Form"
+          {
+            "title" => "#{title_name}: No Fields Configured",
+            "message" => "This form has no active fields yet. Add questions and sections in Form Builder to start collecting clinical data.",
+            "action" => "add_field"
+          }
         end
       end
     end

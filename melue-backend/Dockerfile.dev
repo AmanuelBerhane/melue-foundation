@@ -1,0 +1,45 @@
+ARG RUBY_VERSION=3.3.8
+FROM docker.io/library/ruby:$RUBY_VERSION-slim
+
+# Set working directory
+WORKDIR /rails
+
+# Install essential system dependencies for building native gems & PostgreSQL client
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      git \
+      libpq-dev \
+      libvips \
+      libffi-dev \
+      libyaml-dev \
+      pkg-config \
+      postgresql-client \
+      curl && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Set development environment and clear dead Docker proxy variables
+ENV RAILS_ENV="development" \
+    BUNDLE_PATH="/usr/local/bundle" \
+    http_proxy="" \
+    https_proxy="" \
+    HTTP_PROXY="" \
+    HTTPS_PROXY="" \
+    ALL_PROXY="" \
+    all_proxy=""
+
+# Copy Gemfile and lockfile first for efficient Docker layer caching
+COPY Gemfile Gemfile.lock ./
+
+# Install all gems including development and test groups (align bundler version with container)
+RUN sed -i 's/4\.0\.14/2.5.22/g' Gemfile.lock && \
+    env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY bundle install --jobs 4 --retry 5
+
+# Copy application source code
+COPY . .
+
+# Expose default Rails API port
+EXPOSE 3000
+
+# Remove any stale server PID and start Rails server
+CMD ["sh", "-c", "rm -f tmp/pids/server.pid && bundle exec rails db:prepare && bundle exec rails server -b 0.0.0.0 -p 3000"]

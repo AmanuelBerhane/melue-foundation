@@ -1,7 +1,17 @@
 class FormConfiguration < ApplicationRecord
   include Auditable
 
-  enum :form_type, { enrollment: 0, iup: 1, ablls: 2 }
+  enum :form_type, {
+    enrollment: 0,
+    iup: 1,
+    ablls: 2,
+    abc_data_sheet: 3,
+    preference_assessment: 4,
+    task_analysis: 5,
+    social_skills: 6,
+    sensory: 7,
+    behavioral_assessment: 8
+  }
 
   validates :form_name, presence: true
   validates :form_type, presence: true
@@ -12,7 +22,10 @@ class FormConfiguration < ApplicationRecord
 
   before_validation :set_revision_date
 
-  SUPPORTED_FIELD_TYPES = %w[text number date dropdown checkbox radio textarea file_upload].freeze
+  SUPPORTED_FIELD_TYPES = %w[
+    text number date dropdown checkbox radio textarea file_upload file
+    checkbox_group switch phone image_picker image counter timer section_header divider select
+  ].freeze
 
   private
 
@@ -35,8 +48,13 @@ class FormConfiguration < ApplicationRecord
   def supported_field_types
     return unless field_schema["fields"].is_a?(Array)
     field_schema["fields"].each do |field|
-      next if SUPPORTED_FIELD_TYPES.include?(field["type"])
-      errors.add(:field_schema, "unsupported field type: #{field['type']}")
+      raw_type = field["type"].presence || field["field_type"].presence || "text"
+      type = raw_type.to_s.downcase.underscore
+      type = "image_picker" if type == "image"
+      type = "number" if type == "counter" || type == "timer"
+      type = "dropdown" if type == "select"
+      next if SUPPORTED_FIELD_TYPES.include?(type)
+      errors.add(:field_schema, "unsupported field type: #{raw_type}")
     end
   end
 end
