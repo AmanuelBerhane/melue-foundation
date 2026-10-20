@@ -8,9 +8,7 @@ The foundational repository for the Melu-e special education management platform
 
 ```text
 melue-foundation/
-├── melue-backend/          # Ruby on Rails 8 API server (PostgreSQL, Rodauth, JWT)
-├── melue-frontend/         # Foundation frontend package
-├── references/             # Architectural specifications, domain models, and designs
+├── melue-backend/          # Ruby on Rails 8 API server 
 ├── .gitignore              # Monorepo-level git ignore rules
 └── README.md               # This repository documentation
 ```
