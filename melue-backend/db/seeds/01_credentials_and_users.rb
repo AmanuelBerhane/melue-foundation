@@ -150,11 +150,13 @@ ActiveRecord::Base.transaction do
   puts "    ✓ #{permission_catalog.size} granular permissions registered."
 
   # ----------------------------------------------------------------------------
-  # 3. Role-Permission Mappings
+  # 3. Role-Permission Mappings (Synchronized with RBAC Matrix)
   # ----------------------------------------------------------------------------
   puts "\n--> Mapping Permissions to Roles..."
 
-  existing_role_perms = RolePermission.pluck(:role_id, :permission_id).to_set
+  # Reset standard role permissions to ensure clean idempotent synchronization
+  RolePermission.where(role_id: roles_map.values.map(&:id)).delete_all
+  existing_role_perms = Set.new
   role_perms_to_insert = []
 
   grant_permissions = lambda do |role, rule_hash|
@@ -183,50 +185,50 @@ ActiveRecord::Base.transaction do
   view_and_edit = %w[view edit index show update manage]
   view_only = %w[view index show]
 
-  # 3a. System Administrator — Full unrestricted system access
-  all_resources_full_access = resources.each_with_object({}) { |r, h| h[r] = all_actions }
-  grant_permissions.call(roles_map[Role::Names::SYSTEM_ADMIN], all_resources_full_access)
+  # 3a. System Administrator — Staff Account Management, Role Management, Permission Configuration (RBAC), System Audit Log
+  sys_admin_perms = {
+    "staff_members"       => all_actions,
+    "roles"               => all_actions,
+    "clinical_configs"    => all_actions,
+    "audit_logs"          => all_actions,
+    "admin"               => all_actions,
+    "staff"               => all_actions
+  }
+  grant_permissions.call(roles_map[Role::Names::SYSTEM_ADMIN], sys_admin_perms)
 
-  # 3b. Institutional Administrator — Complete institutional, clinical, and user management
-  grant_permissions.call(roles_map[Role::Names::INSTITUTIONAL_ADMIN], all_resources_full_access)
-
-  # 3c. Executive Director — Foundation-wide operational, clinical, and financial oversight
-  director_perms = {
-    "students"                  => crud_approve,
-    "enrollments"               => crud_approve,
-    "forms"                     => crud_approve + %w[import export],
-    "assessments"               => crud_approve,
-    "skills_assessments"        => crud_approve,
-    "behavior_assessments"      => crud_approve,
-    "preference_assessments"    => crud_approve,
-    "iups"                      => crud_approve,
-    "goals"                     => crud_approve,
-    "goal_domains"              => crud_approve,
+  # 3b. Institutional Administrator — Schedule & Capacity Configuration, Form Builder, ABC Dropdown Lists, Trial Logging Format Config, Goal Bank / Domains
+  institutional_admin_perms = {
+    "session_schedule_configs"  => crud_approve,
+    "staff_scheduling"          => crud_approve,
+    "form_configurations"       => crud_approve,
+    "forms"                     => crud_approve,
+    "abc_lists"                 => crud_approve,
+    "behavior_incidents"        => crud_approve,
     "prompt_levels"             => crud_approve,
     "sessions"                  => crud_approve,
-    "trials"                    => view_only,
-    "session_summaries"         => crud_approve,
-    "behavior_incidents"        => crud_approve,
-    "abc_lists"                 => crud_approve,
-    "staff_members"             => crud_approve + %w[reset_password],
+    "goal_domains"              => crud_approve,
+    "goals"                     => crud_approve,
+    "iups"                      => crud_approve,
+    "clinical_configs"          => crud_approve,
+    "staff"                     => crud_approve,
+    "admin"                     => view_and_edit
+  }
+  grant_permissions.call(roles_map[Role::Names::INSTITUTIONAL_ADMIN], institutional_admin_perms)
+
+  # 3c. Executive Director — Staff Scheduling & Capacity, Goal Mastery Approval, Parent Communication, Reports & Executive Oversight, Custom Report Builder
+  director_perms = {
     "staff_scheduling"          => crud_approve,
-    "session_block_definitions" => crud_approve,
     "session_schedule_configs"  => crud_approve,
+    "goals"                     => crud_approve,
+    "parent_communications"     => crud_approve,
+    "parent_portal"             => crud_approve,
     "reports"                   => all_actions,
     "oversight"                 => all_actions,
-    "audit_logs"                => view_only,
-    "parent_communications"     => view_only,
-    "home_observations"         => view_only,
-    "roles"                     => view_only + %w[manage],
-    "clinical_configs"          => crud_approve,
-    "form_configurations"       => crud_approve,
-    "staff"                     => crud_approve,
-    "admin"                     => view_and_edit,
-    "parent_portal"             => view_only
+    "staff"                     => crud_approve
   }
   grant_permissions.call(roles_map[Role::Names::DIRECTOR], director_perms)
 
-  # 3d. Clinical Program Director — Clinical leadership, assessment evaluation & IUP approvals
+  # 3d. Clinical Program Director — Student Enrollment Wizard, Student Register & Roster List, IUP Creation & Goal Assignment, IUP Library Management, Assessment Review & Sign-Off, Assessment Summary Report, Student Caseload Management, Goal Bank, Reports & Executive Oversight
   program_director_perms = {
     "students"                  => crud_approve,
     "enrollments"               => crud_approve,
@@ -238,107 +240,54 @@ ActiveRecord::Base.transaction do
     "iups"                      => all_actions,
     "goals"                     => all_actions,
     "goal_domains"              => all_actions,
-    "prompt_levels"             => view_and_edit,
-    "sessions"                  => crud_approve,
-    "trials"                    => view_only,
-    "session_summaries"         => crud_approve,
-    "behavior_incidents"        => all_actions,
-    "abc_lists"                 => all_actions,
-    "staff_members"             => view_and_edit,
-    "staff_scheduling"          => crud_approve,
-    "session_block_definitions" => view_and_edit,
-    "session_schedule_configs"  => view_and_edit,
     "reports"                   => all_actions,
     "oversight"                 => all_actions,
-    "audit_logs"                => view_only,
-    "parent_communications"     => view_and_edit,
-    "home_observations"         => view_only,
-    "roles"                     => view_only,
     "clinical_configs"          => all_actions,
-    "form_configurations"       => all_actions,
-    "staff"                     => view_and_edit,
-    "admin"                     => view_only,
-    "parent_portal"             => view_only
+    "form_configurations"       => all_actions
   }
   grant_permissions.call(roles_map[Role::Names::PROGRAM_DIRECTOR], program_director_perms)
 
-  # 3e. Therapy Coordinator — Operational scheduling, caseload routing, and therapist supervision
+  # 3e. Therapy Coordinator — Live Session Monitoring, Session Summary Review, Student Register & Roster List, Student Enrollment Wizard, Staff Workload & Therapist Linking, Room Resource Scheduling, Parent Communication
   coordinator_perms = {
-    "students"                  => crud_approve,
-    "enrollments"               => crud_approve,
-    "forms"                     => view_and_edit,
-    "assessments"               => crud_approve,
-    "skills_assessments"        => crud_approve,
-    "behavior_assessments"      => crud_approve,
-    "preference_assessments"    => crud_approve,
-    "iups"                      => crud_approve,
-    "goals"                     => crud_approve,
-    "goal_domains"              => view_only,
-    "prompt_levels"             => view_only,
     "sessions"                  => all_actions,
     "trials"                    => all_actions,
     "session_summaries"         => all_actions,
-    "behavior_incidents"        => all_actions,
-    "abc_lists"                 => view_and_edit,
+    "students"                  => crud_approve,
+    "enrollments"               => crud_approve,
     "staff_members"             => view_and_edit,
     "staff_scheduling"          => all_actions,
     "session_block_definitions" => all_actions,
-    "session_schedule_configs"  => all_actions,
-    "reports"                   => all_actions,
-    "oversight"                 => all_actions,
-    "audit_logs"                => view_only,
     "parent_communications"     => all_actions,
-    "home_observations"         => view_and_edit,
-    "roles"                     => view_only,
-    "clinical_configs"          => view_and_edit,
-    "form_configurations"       => view_only,
-    "staff"                     => all_actions,
-    "admin"                     => view_only,
-    "parent_portal"             => view_and_edit
+    "parent_portal"             => all_actions,
+    "staff"                     => all_actions
   }
   grant_permissions.call(roles_map[Role::Names::THERAPY_COORDINATOR], coordinator_perms)
 
-  # 3f. Teacher / One-to-One Clinician — Clinical session delivery, trial recording, ABC incident logging
+  # 3f. Teacher / One-to-One Clinician — Session Data Collection, Assessment Dashboard, ABC Behavior Incident Log, Daily Session Notes, Parent Communication
   teacher_perms = {
-    "students"                  => view_and_edit,
-    "enrollments"               => view_only,
-    "forms"                     => view_only,
+    "sessions"                  => %w[view create edit index show update],
+    "trials"                    => %w[view create edit index show update],
+    "session_summaries"         => %w[view create edit index show update],
     "assessments"               => %w[view create edit index show update],
     "skills_assessments"        => %w[view create edit index show update],
     "behavior_assessments"      => %w[view create edit index show update],
     "preference_assessments"    => %w[view create edit index show update],
-    "iups"                      => view_only,
-    "goals"                     => %w[view create edit index show update],
-    "goal_domains"              => view_only,
-    "prompt_levels"             => view_only,
-    "sessions"                  => %w[view create edit index show update],
-    "trials"                    => %w[view create edit index show update],
-    "session_summaries"         => %w[view create edit index show update],
     "behavior_incidents"        => %w[view create edit index show update],
-    "abc_lists"                 => view_only,
-    "staff_members"             => view_only,
-    "staff_scheduling"          => view_only,
-    "session_block_definitions" => view_only,
-    "session_schedule_configs"  => view_only,
-    "reports"                   => view_only,
-    "oversight"                 => view_only,
+    "abc_lists"                 => %w[view index show],
     "parent_communications"     => %w[view create edit index show update],
-    "home_observations"         => view_only,
-    "staff"                     => view_only,
-    "parent_portal"             => view_only
+    "parent_portal"             => %w[view index show]
   }
   grant_permissions.call(roles_map[Role::Names::TEACHER], teacher_perms)
 
-  # 3g. Parent / Guardian — Child progress, home observations, and teacher communication
+  # 3g. Parent / Guardian — Child Progress Tracker, Home Observation Log, Parent Communication (Messages)
   parent_perms = {
     "students"                  => view_only,
     "iups"                      => view_only,
     "goals"                     => view_only,
     "sessions"                  => view_only,
-    "session_summaries"         => view_only,
     "reports"                   => view_only,
-    "parent_communications"     => %w[view create edit index show update],
     "home_observations"         => %w[view create edit index show update],
+    "parent_communications"     => %w[view create edit index show update],
     "parent_portal"             => %w[view create edit index show update]
   }
   grant_permissions.call(roles_map[Role::Names::PARENT], parent_perms)
