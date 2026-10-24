@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # Melue Foundation Therapy Management System — Database Seeds
-# File 2/4: db/seeds/02_admin_configuration.rb
+# File 2/5: db/seeds/02_admin_configuration.rb
 #
 # Scope:
 #   1. Prompt Hierarchy Levels (FP, PP, G, +) with Standard Color Coding
@@ -13,7 +13,7 @@
 # ==============================================================================
 
 puts "\n" + ("=" * 80)
-puts "  [SEED 02/04] ADMIN CONFIGURATION, ROOM INFRASTRUCTURE & FORM SCHEMAS"
+puts "  [SEED 02/05] ADMIN CONFIGURATION, ROOM INFRASTRUCTURE & FORM SCHEMAS"
 puts ("=" * 80)
 
 ActiveRecord::Base.transaction do
@@ -145,12 +145,13 @@ ActiveRecord::Base.transaction do
         },
         "fields" => [
           # Section: Student Info
-          { "id" => "enr_headshot", "type" => "file_upload", "label" => "Child Identification Headshot Photo", "required" => true, "visible" => true, "section" => "Student Info" },
+          { "id" => "enr_headshot", "type" => "file_upload", "label" => "Headshot Photo", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_first_name", "type" => "text", "label" => "Child First Name", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_middle_name", "type" => "text", "label" => "Child Middle Name", "required" => false, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_last_name", "type" => "text", "label" => "Child Last Name", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_dob", "type" => "date", "label" => "Date of Birth", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_gender", "type" => "dropdown", "label" => "Gender", "required" => true, "visible" => true, "section" => "Student Info", "options" => [ "Male", "Female" ] },
+          { "id" => "enr_birth_certificate", "type" => "file_upload", "label" => "Birth Certificate", "required" => false, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_diagnosis", "type" => "dropdown", "label" => "Primary Clinical Diagnosis", "required" => true, "visible" => true, "section" => "Student Info", "options" => [ "Autism Spectrum Disorder (ASD)", "Sensory Processing Disorder", "Developmental Delay", "Speech & Language Impairment", "Other Neurodevelopmental Condition" ] },
           { "id" => "enr_diagnosis_date", "type" => "date", "label" => "Date of Formal Diagnosis", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_program_type", "type" => "dropdown", "label" => "Recommended Placement Program", "required" => true, "visible" => true, "section" => "Student Info", "options" => [ "Regular Morning Program", "Regular Afternoon Program", "Pulled-Out Individual Program" ] },
@@ -163,17 +164,32 @@ ActiveRecord::Base.transaction do
           { "id" => "enr_guardian_phone", "type" => "text", "label" => "Primary Contact Telephone", "required" => true, "visible" => true, "section" => "Parent Info" },
           { "id" => "enr_guardian_email", "type" => "text", "label" => "Guardian Email Address", "required" => false, "visible" => true, "section" => "Parent Info" },
           { "id" => "enr_emergency_contact", "type" => "text", "label" => "Emergency Secondary Contact & Phone", "required" => true, "visible" => true, "section" => "Parent Info" },
+          { "id" => "enr_agreement", "type" => "file_upload", "label" => "Agreement Document", "required" => false, "visible" => true, "section" => "Parent Info" },
 
           # Section: Medical Info & Reinforcers
           { "id" => "enr_dev_history", "type" => "textarea", "label" => "Developmental History (Motor milestones, speech emergence, zero schooling history)", "required" => true, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_medical_restrictions", "type" => "textarea", "label" => "Medical Notes, Inulin/Prescription Medications & Dietary Restrictions", "required" => true, "visible" => true, "section" => "Medical Info" },
+          { "id" => "enr_diagnosis_paper", "type" => "file_upload", "label" => "Medical Diagnosis Paper", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_visual", "type" => "checkbox", "label" => "Visual Reinforcer Sensitivity (LED lights, spinning tubes, colorful rings, puzzle blocks)", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_auditory", "type" => "checkbox", "label" => "Auditory Reinforcer Sensitivity (Music blocks, nursery rhymes, xylophone, auditory praise)", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_tactile", "type" => "checkbox", "label" => "Tactile Reinforcer Preference (Shaving foam, stretch spring, squishy ball, textured pads)", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_kinetic", "type" => "checkbox", "label" => "Kinetic & Movement Preferences (Crash pad, vestibular swing, trampolines, gentle rocking)", "required" => false, "visible" => true, "section" => "Medical Info" },
-          { "id" => "enr_baseline_video", "type" => "file_upload", "label" => "Baseline Behavioral Assessment Video (Optional - FR-024b)", "required" => false, "visible" => true, "section" => "Medical Info" }
+          { "id" => "enr_baseline_video", "type" => "file_upload", "label" => "Baseline Video", "required" => false, "visible" => true, "section" => "Medical Info" },
+
+          # Section: Social Skills Questionnaire (Integrated Pre-Enrollment Instrument)
+          { "id" => "soc_q1", "type" => "radio", "label" => "Initiates verbal greeting or wave to familiar teachers upon arrival", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q2", "type" => "radio", "label" => "Responds to peer approach with positive affect or shared attention", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q3", "type" => "radio", "label" => "Respects personal body boundary when sitting alongside peers", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q4", "type" => "radio", "label" => "Uses vocal mand or communicative picture to ask adult for help", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q5", "type" => "radio", "label" => "Maintains eye contact during 1-to-1 conversational interactions (>2 secs)", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q6", "type" => "radio", "label" => "Answers simple social identity questions (What is your name? How old are you?)", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q7", "type" => "radio", "label" => "Yields preferred toy to peer when prompt timer rings without tantrum", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q8", "type" => "radio", "label" => "Participates in simple turn-taking interactive play (Rolling ball, stacking)", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q9", "type" => "radio", "label" => "Discriminates happy vs. angry facial expressions on picture cards", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q10", "type" => "radio", "label" => "Stops and freezes immediately upon hearing safety 'STOP' verbal cue", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_evaluator_summary", "type" => "textarea", "label" => "Evaluator Social Readiness Synthesis & Goal Bank Recommendations", "required" => false, "visible" => true, "section" => "Social Skills Questionnaire" }
         ],
-        "customSections" => [ "Student Info", "Parent Info", "Medical Info" ],
+        "customSections" => [ "Student Info", "Parent Info", "Medical Info", "Social Skills Questionnaire" ],
         "deletedSections" => [],
         "history" => []
       }
@@ -446,46 +462,7 @@ ActiveRecord::Base.transaction do
       }
     },
 
-    # ── Form 6: Social Skills Questionnaire ───────────────────────────────────
-    {
-      form_name: "Social Skills Questionnaire",
-      form_type: :social_skills,
-      organization_name: "Melu'e Foundation",
-      revision_number: 1,
-      revision_date: Date.parse("2025-08-01"),
-      is_default: true,
-      field_schema: {
-        "metadata" => {
-          "form_id" => "MCTC-TRP-006-01",
-          "revision" => "August 2025",
-          "organization" => "Melu'e Foundation",
-          "pages" => "Page 1 of 1"
-        },
-        "fields" => [
-          # Section: Social Interaction
-          { "id" => "soc_q1", "type" => "radio", "label" => "Initiates verbal greeting or wave to familiar teachers upon arrival", "required" => true, "visible" => true, "section" => "Social Interaction", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q2", "type" => "radio", "label" => "Responds to peer approach with positive affect or shared attention", "required" => true, "visible" => true, "section" => "Social Interaction", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q3", "type" => "radio", "label" => "Respects personal body boundary when sitting alongside peers", "required" => true, "visible" => true, "section" => "Social Interaction", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
 
-          # Section: Communication
-          { "id" => "soc_q4", "type" => "radio", "label" => "Uses vocal mand or communicative picture to ask adult for help", "required" => true, "visible" => true, "section" => "Communication", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q5", "type" => "radio", "label" => "Maintains eye contact during 1-to-1 conversational interactions (>2 secs)", "required" => true, "visible" => true, "section" => "Communication", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q6", "type" => "radio", "label" => "Answers simple social identity questions (What is your name? How old are you?)", "required" => true, "visible" => true, "section" => "Communication", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-
-          # Section: Play & Leisure
-          { "id" => "soc_q7", "type" => "radio", "label" => "Yields preferred toy to peer when prompt timer rings without tantrum", "required" => true, "visible" => true, "section" => "Play & Leisure", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q8", "type" => "radio", "label" => "Participates in simple turn-taking interactive play (Rolling ball, stacking)", "required" => true, "visible" => true, "section" => "Play & Leisure", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-
-          # Section: Emotion Recognition & Safety
-          { "id" => "soc_q9", "type" => "radio", "label" => "Discriminates happy vs. angry facial expressions on picture cards", "required" => true, "visible" => true, "section" => "General", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q10", "type" => "radio", "label" => "Stops and freezes immediately upon hearing safety 'STOP' verbal cue", "required" => true, "visible" => true, "section" => "General", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_evaluator_summary", "type" => "textarea", "label" => "Evaluator Social Readiness Synthesis & Goal Bank Recommendations", "required" => true, "visible" => true, "section" => "General" }
-        ],
-        "customSections" => [ "Social Interaction", "Communication", "Play & Leisure", "General" ],
-        "deletedSections" => [],
-        "history" => []
-      }
-    },
 
     # ── Form 7: Individualized Behavior Intervention Plan (IUP) ──────────────
     {
@@ -628,6 +605,9 @@ ActiveRecord::Base.transaction do
     is_default: true,
     field_schema: iup_cfg[:field_schema]
   } if iup_cfg
+
+  # Ensure Social Skills Questionnaire is no longer seeded as a standalone entity or form type
+  FormConfiguration.where("lower(form_name) = ? OR form_type = ?", "social skills questionnaire", FormConfiguration.form_types[:social_skills]).destroy_all
 
   form_configs_data.each do |fc_attrs|
     fc = FormConfiguration.find_or_initialize_by(form_name: fc_attrs[:form_name])

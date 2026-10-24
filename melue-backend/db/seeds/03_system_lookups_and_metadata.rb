@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # Melue Foundation Therapy Management System — Database Seeds
-# File 3/4: db/seeds/03_system_lookups_and_metadata.rb
+# File 3/5: db/seeds/03_system_lookups_and_metadata.rb
 #
 # Scope:
 #   1. 12 Default Sensory Activities (SEN-001 through SEN-012 per FR-051b)
@@ -13,7 +13,7 @@
 # ==============================================================================
 
 puts "\n" + ("=" * 80)
-puts "  [SEED 03/04] SYSTEM LOOKUPS, CLINICAL TAXONOMIES & METADATA"
+puts "  [SEED 03/05] SYSTEM LOOKUPS, CLINICAL TAXONOMIES & METADATA"
 puts ("=" * 80)
 
 ActiveRecord::Base.transaction do

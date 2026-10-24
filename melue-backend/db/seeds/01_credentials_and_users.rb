@@ -4,19 +4,19 @@ require "bcrypt"
 
 # ==============================================================================
 # Melue Foundation Therapy Management System — Database Seeds
-# File 1/4: db/seeds/01_credentials_and_users.rb
+# File 1/5: db/seeds/01_credentials_and_users.rb
 #
 # Scope:
 #   1. Core RBAC Roles (7 standard roles per FR-016 / System Architecture)
 #   2. Complete Granular Permissions Matrix (Canonical + REST actions)
 #   3. Role-Permission Assignments
-#   4. Authentic Staff Accounts (Tihut Girma, Hana Kebede, Mibret Zenebe, etc.)
-#   5. Authentic Guardian/Parent Account (Parent of Adel)
+#   4. Authentic Staff Accounts (Institutional Admin, Director One, PDirector One, etc.)
+#   5. Authentic Guardian/Parent Account (Parent of Student A)
 #   6. Role Assignments (RoleAssignment & UserRole synchronization)
 # ==============================================================================
 
 puts "\n" + ("=" * 80)
-puts "  [SEED 01/04] CREDENTIALS, ROLES, RBAC PERMISSIONS & USERS"
+puts "  [SEED 01/05] CREDENTIALS, ROLES, RBAC PERMISSIONS & USERS"
 puts ("=" * 80)
 
 ActiveRecord::Base.transaction do
@@ -196,7 +196,7 @@ ActiveRecord::Base.transaction do
   }
   grant_permissions.call(roles_map[Role::Names::SYSTEM_ADMIN], sys_admin_perms)
 
-  # 3b. Institutional Administrator — Schedule & Capacity Configuration, Form Builder, ABC Dropdown Lists, Trial Logging Format Config, Goal Bank / Domains
+  # 3b. Institutional Administrator — Schedule & Capacity Configuration, Form Builder, ABC Dropdown Lists, Trial Logging Format Config, Goal Bank / Domains, Staff Provisioning
   institutional_admin_perms = {
     "session_schedule_configs"  => crud_approve,
     "staff_scheduling"          => crud_approve,
@@ -211,6 +211,7 @@ ActiveRecord::Base.transaction do
     "iups"                      => crud_approve,
     "clinical_configs"          => crud_approve,
     "staff"                     => crud_approve,
+    "staff_members"             => crud_approve,
     "admin"                     => view_and_edit
   }
   grant_permissions.call(roles_map[Role::Names::INSTITUTIONAL_ADMIN], institutional_admin_perms)
@@ -224,7 +225,8 @@ ActiveRecord::Base.transaction do
     "parent_portal"             => crud_approve,
     "reports"                   => all_actions,
     "oversight"                 => all_actions,
-    "staff"                     => crud_approve
+    "staff"                     => crud_approve,
+    "staff_members"             => view_and_edit
   }
   grant_permissions.call(roles_map[Role::Names::DIRECTOR], director_perms)
 
@@ -313,7 +315,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "institutional.admin@melue.foundation",
-      full_name:    "Robel Ayana",
+      full_name:    "Institutional Admin",
       staff_number: "ADM-002",
       staff_role:   "admin",
       user_role:    :institutional_admin,
@@ -322,7 +324,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "director@melue.foundation",
-      full_name:    "Lidiya Hailu",
+      full_name:    "Director One",
       staff_number: "ADM-003",
       staff_role:   "admin",
       user_role:    :institutional_admin,
@@ -331,7 +333,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "program.director@melue.foundation",
-      full_name:    "Tihut Girma",
+      full_name:    "PDirector One",
       staff_number: "STF-001",
       staff_role:   "program_director",
       user_role:    :clinical_staff,
@@ -340,7 +342,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "coordinator@melue.foundation",
-      full_name:    "Hana Kebede",
+      full_name:    "Coordinator One",
       staff_number: "STF-002",
       staff_role:   "therapy_coordinator",
       user_role:    :clinical_staff,
@@ -349,7 +351,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "teacher1@melue.foundation",
-      full_name:    "Mibret Zenebe",
+      full_name:    "Teacher One",
       staff_number: "STF-003",
       staff_role:   "teacher",
       user_role:    :therapist,
@@ -358,7 +360,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "teacher2@melue.foundation",
-      full_name:    "Tsion Koste",
+      full_name:    "Teacher Two",
       staff_number: "STF-004",
       staff_role:   "teacher",
       user_role:    :therapist,
@@ -367,7 +369,7 @@ ActiveRecord::Base.transaction do
     },
     {
       email:        "teacher3@melue.foundation",
-      full_name:    "Dawit Bekele",
+      full_name:    "Teacher Three",
       staff_number: "STF-005",
       staff_role:   "teacher",
       user_role:    :therapist,
@@ -400,7 +402,7 @@ ActiveRecord::Base.transaction do
   end
 
   # ----------------------------------------------------------------------------
-  # 5. Authentic Guardian Account (Parent of Adel)
+  # 5. Authentic Guardian Account (Parent of Student A)
   # ----------------------------------------------------------------------------
   puts "\n--> Provisioning Authentic Guardian/Parent Account..."
 
@@ -412,7 +414,7 @@ ActiveRecord::Base.transaction do
   parent_user.save!
 
   parent_guardian = Guardian.find_or_initialize_by(user: parent_user)
-  parent_guardian.full_name = "Almaz Girma"
+  parent_guardian.full_name = "Parent One"
   parent_guardian.phone     = "+251 91 123 4567"
   parent_guardian.save!
 
@@ -420,7 +422,7 @@ ActiveRecord::Base.transaction do
   parent_user.assign_role(parent_role)
   UserRole.find_or_create_by!(user: parent_user, role: parent_role)
 
-  puts "    ✓ #{parent_guardian.full_name.ljust(22)} [Parent of Adel] -> #{parent_email} (#{Role::Names::PARENT})"
+  puts "    ✓ #{parent_guardian.full_name.ljust(22)} [Parent of Student A] -> #{parent_email} (#{Role::Names::PARENT})"
 
   # ----------------------------------------------------------------------------
   # 6. Global UserRole & RoleAssignment Integrity Verification

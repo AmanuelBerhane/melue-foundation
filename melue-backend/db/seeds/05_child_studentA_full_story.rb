@@ -2,10 +2,10 @@
 
 # ==============================================================================
 # Melue Foundation Therapy Management System — Database Seeds
-# File: db/seeds/05_child_studentA_full_story.rb
+# File 5/5: db/seeds/05_child_studentA_full_story.rb
 #
-# Complete Clinical Lifecycle of Student A (Adel) (SRS 3.2 – 3.7):
-#   1. Student Profile & Guardian Linking (Almaz Girma / parent_user)
+# Complete Clinical Lifecycle of Student A (SRS 3.2 – 3.7):
+#   1. Student Profile & Guardian Linking (Parent One / parent_user)
 #   2. Complete 6-Week Assessment Cycle & Evaluations:
 #      - ABLLS-R Assessment & Skill Scores (C, D, E, G, K, L, F, U, V, W)
 #      - MAS (Motivation Assessment Scale) Target: Screaming -> Tangible
@@ -21,7 +21,7 @@
 
 ActiveRecord::Base.transaction do
   puts "\n================================================================================"
-  puts "  STEP 5: STUDENT A (ADEL) — COMPLETE AUTHENTIC CLINICAL LIFECYCLE"
+  puts "  [SEED 05/05] STUDENT A — COMPLETE AUTHENTIC CLINICAL LIFECYCLE"
   puts "================================================================================\n"
 
   # ----------------------------------------------------------------------------
@@ -39,8 +39,8 @@ ActiveRecord::Base.transaction do
   morning_block_a = SessionBlockDefinition.find_by!(name: "Morning Block A")
   morning_block_b = SessionBlockDefinition.find_by!(name: "Morning Block B")
 
-  teacher1 = StaffMember.joins(:user).find_by!(users: { email: "teacher1@melue.foundation" }) # Mibret Zenebe
-  teacher2 = StaffMember.joins(:user).find_by!(users: { email: "teacher2@melue.foundation" }) # Tsion Koste
+  teacher1 = StaffMember.joins(:user).find_by!(users: { email: "teacher1@melue.foundation" }) # Teacher One
+  teacher2 = StaffMember.joins(:user).find_by!(users: { email: "teacher2@melue.foundation" }) # Teacher Two
 
   coordinator_user  = User.find_by!(email: "coordinator@melue.foundation")
   coordinator_staff = StaffMember.find_by!(user: coordinator_user)
@@ -60,13 +60,13 @@ ActiveRecord::Base.transaction do
   # ----------------------------------------------------------------------------
   puts "\n--> [1/5] Provisioning Student A profile and linking parent guardian..."
 
-  adel = Student.find_or_initialize_by(
+  student_a = Student.find_or_initialize_by(
     first_name: "Student",
     last_name:  "A"
   )
 
-  adel.assign_attributes(
-    middle_name:           "Adel",
+  student_a.assign_attributes(
+    middle_name:           nil,
     date_of_birth:         Date.parse("2021-02-15"),
     therapy_group:         "basic",
     program_type:          "regular",
@@ -87,18 +87,19 @@ ActiveRecord::Base.transaction do
       "household_members"       => [ "Mother", "Father", "Aunt", "Sister" ]
     }
   )
-  adel.save!
+  student_a.save!
+  adel = student_a
 
   # Idempotent Guardian Association
   StudentGuardian.find_or_create_by!(
-    student:  adel,
+    student:  student_a,
     guardian: parent_guardian
   ) do |sg|
     sg.relationship       = "Mother"
     sg.is_primary_contact = true
   end
 
-  puts "    ✓ Student A (Adel) profile active: ID [#{adel.student_id}] | Guardian: #{parent_guardian.full_name} linked."
+  puts "    ✓ Student A profile active: ID [#{student_a.student_id}] | Guardian: #{parent_guardian.full_name} linked."
 
   # ----------------------------------------------------------------------------
   # 2. 6-Week Assessment Cycle & Comprehensive Evaluations (SRS 3.3)
@@ -106,7 +107,7 @@ ActiveRecord::Base.transaction do
   puts "\n--> [2/5] Provisioning 6-Week Assessment Cycle & 5-Part Clinical Evaluation..."
 
   cycle = AssessmentCycle.find_or_initialize_by(
-    student:    adel,
+    student:    student_a,
     started_on: Date.parse("2025-10-15")
   )
   cycle.completed_on = Date.parse("2025-11-26")
@@ -174,7 +175,7 @@ ActiveRecord::Base.transaction do
     completed_at: Date.parse("2025-11-20").to_time,
     responses:    {
       "target_behavior" => "Screaming",
-      "evaluator"       => "Mibret Zenebe",
+      "evaluator"       => "Teacher One",
       "1" => 4, "2" => 5, "3" => 3, "4" => 2,
       "5" => 5, "6" => 4, "7" => 1, "8" => 2,
       "9" => 4, "10" => 3, "11" => 2, "12" => 1,
@@ -630,7 +631,7 @@ ActiveRecord::Base.transaction do
       end_time:   "09:30",
       focus_goal: adel_goals_map["Functional Requesting (Mand via sign or distal point)"],
       alt_goal:   adel_goals_map["Vocal imitation of series of speech sounds"],
-      notes:      "Adel demonstrated emerging distal point with partial physical prompt. Reduced vocal protest during transitions."
+      notes:      "Student A demonstrated emerging distal point with partial physical prompt. Reduced vocal protest during transitions."
     },
     {
       date:       Date.parse("2026-02-11"),
@@ -739,7 +740,7 @@ ActiveRecord::Base.transaction do
 
     10.times do |t_idx|
       goal = goals_for_trials[t_idx % goals_for_trials.length]
-      event_id = "trial-seed-adel-#{session.id}-#{t_idx + 1}"
+      event_id = "trial-seed-student-a-#{session.id}-#{t_idx + 1}"
 
       next if Trial.exists?(client_event_id: event_id)
 
@@ -777,6 +778,6 @@ ActiveRecord::Base.transaction do
   puts "    ✓ 3 Historical completed sessions, participant records, reviewed summaries and 30 standard trials provisioned."
 
   puts "\n" + ("=" * 80)
-  puts "  STEP 5 COMPLETE: STUDENT A (ADEL) FULL CLINICAL STORY ESTABLISHED"
+  puts "  [SEED 05/05] COMPLETE: STUDENT A FULL CLINICAL STORY ESTABLISHED"
   puts ("=" * 80) + "\n"
 end
