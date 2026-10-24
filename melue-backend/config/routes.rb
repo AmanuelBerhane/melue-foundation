@@ -11,6 +11,12 @@ Rails.application.routes.draw do
       get "options/students", to: "options#students"
       get "options/staff", to: "options#staff"
       get "options/rooms", to: "options#rooms"
+      get "options/programs", to: "options#programs"
+      get "options/therapy_groups", to: "options#therapy_groups"
+      get "options/statuses", to: "options#statuses"
+      get "coordinator/programs", to: "options#programs"
+      get "coordinator/therapy_groups", to: "options#therapy_groups"
+      get "coordinator/statuses", to: "options#statuses"
 
       # Coordinator student management
       namespace :coordinator do

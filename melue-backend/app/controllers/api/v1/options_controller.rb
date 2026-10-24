@@ -54,4 +54,40 @@ class Api::V1::OptionsController < Api::V1::BaseController
 
     render json: rooms
   end
+
+  # GET /api/v1/options/programs
+  def programs
+    programs = [ "Regular Morning", "Regular Afternoon", "Pulled Out" ]
+    render json: programs
+  end
+
+  # GET /api/v1/options/therapy_groups
+  def therapy_groups
+    groups = [ "Basic", "Functional Living" ]
+    render json: groups
+  end
+
+  # GET /api/v1/options/statuses
+  def statuses
+    statuses = [ "Active", "Inactive", "Draft", "Archived" ]
+    if defined?(Student)
+      db_statuses = Student.distinct.pluck(:status).compact.map do |s|
+        case s.to_s.downcase
+        when "active", "active_therapy", "registered", "ready_for_iup", "in_assessment", "assessment_complete"
+          "Active"
+        when "draft", "pending_review"
+          "Draft"
+        when "archived", "discharged", "withdrawn"
+          "Archived"
+        when "inactive"
+          "Inactive"
+        else
+          s.to_s.humanize.titleize
+        end
+      end
+      statuses = (statuses + db_statuses).uniq
+    end
+
+    render json: statuses
+  end
 end

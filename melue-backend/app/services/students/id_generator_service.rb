@@ -4,7 +4,7 @@ require "zlib"
 
 module Students
   # Generates sequential, human-readable student identifiers in the format:
-  #   MEL/{SEQUENCE}/{YY} (e.g., MEL/0001/25, MEL/0002/26)
+  #   MEL-****-YY (e.g., MEL-0001-26, MEL-0002-26)
   #
   # Enforces thread/process safety via PostgreSQL transaction-level advisory locks.
   class IdGeneratorService
@@ -14,7 +14,7 @@ module Students
       # Generates the next sequential student ID for the given enrollment year.
       #
       # @param enrolled_at [Time, Date, nil] the date/time of enrollment
-      # @return [String] formatted ID (e.g., "MEL/0001/25")
+      # @return [String] formatted ID (e.g., "MEL-0001-26")
       def generate(enrolled_at: Time.current)
         year_suffix = (enrolled_at.presence || Time.current).to_date.strftime("%y")
         lock_key = Zlib.crc32("STUDENT_ID_GENERATOR_#{PREFIX}_#{year_suffix}") & 0x7FFFFFFF
@@ -31,7 +31,15 @@ module Students
                                     .pluck(:student_id)
                                     .map do |sid|
                                       parts = sid.to_s.split("-")
-                                      parts.length == 3 ? parts[1].to_i : 0
+                                      if parts.length == 3 && parts[0] == PREFIX
+                                        parts[1].to_i
+                                      elsif parts.length >= 3 && parts[1] == "MELUE"
+                                        parts[2].to_i
+                                      elsif parts.length >= 2
+                                        parts[1].to_i
+                                      else
+                                        0
+                                      end
                                     end
 
           next_number = (existing_numbers.max || 0) + 1

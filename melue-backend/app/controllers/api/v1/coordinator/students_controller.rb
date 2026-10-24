@@ -21,6 +21,37 @@ module Api
             students = students.where("student_id ILIKE :sid", sid: sid)
           end
 
+          if params[:program].present? && params[:program] != "All"
+            prog = params[:program].to_s.downcase
+            if prog.include?("pull")
+              students = students.where(program_type: :pulled_out)
+            elsif prog.include?("regular")
+              students = students.where(program_type: :regular)
+            end
+          end
+
+          if (params[:therapy_group].present? || params[:therapyGroup].present?) && (params[:therapy_group] || params[:therapyGroup]) != "All"
+            tg = (params[:therapy_group] || params[:therapyGroup]).to_s.downcase
+            if tg.include?("function")
+              students = students.where(therapy_group: :functional_living)
+            elsif tg.include?("basic")
+              students = students.where(therapy_group: :basic)
+            end
+          end
+
+          if params[:status].present? && params[:status] != "All"
+            st = params[:status].to_s.downcase
+            if st == "active"
+              students = students.where(status: [ :active, :active_therapy, :registered, :ready_for_iup, :in_assessment, :assessment_complete ])
+            elsif st == "inactive"
+              students = students.where(status: :inactive)
+            elsif st == "draft"
+              students = students.where(status: [ :draft, :pending_review ])
+            elsif st == "archived"
+              students = students.where(status: [ :archived, :discharged, :withdrawn ])
+            end
+          end
+
           rows = students.map do |s|
             age = s.date_of_birth ? (Date.current.year - s.date_of_birth.year) : 0
             assignment = s.teacher_student_assignments.first
@@ -53,31 +84,79 @@ module Api
           raw_params = create_params
           custom_fields = parse_custom_fields(params[:custom_fields] || params[:customFields] || raw_params[:custom_fields] || raw_params[:customFields])
 
-          first_name = raw_params[:first_name] || raw_params[:firstName]
-          last_name = raw_params[:last_name] || raw_params[:lastName] || "Unknown"
-          dob = raw_params[:date_of_birth] || raw_params[:dateOfBirth] || "2018-01-01"
+          first_name = raw_params[:first_name].presence ||
+                       raw_params[:firstName].presence ||
+                       raw_params[:childFirstName].presence ||
+                       raw_params[:child_first_name].presence ||
+                       raw_params[:enr_first_name].presence ||
+                       custom_fields[:first_name].presence ||
+                       custom_fields["first_name"].presence ||
+                       custom_fields[:firstName].presence ||
+                       custom_fields["firstName"].presence ||
+                       custom_fields[:childFirstName].presence ||
+                       custom_fields["childFirstName"].presence ||
+                       custom_fields[:child_first_name].presence ||
+                       custom_fields["child_first_name"].presence ||
+                       custom_fields[:enr_first_name].presence ||
+                       custom_fields["enr_first_name"].presence ||
+                       custom_fields[:f1].presence ||
+                       custom_fields["f1"].presence
+
+          if first_name.blank? && (raw_params[:fullName].present? || raw_params[:full_name].present? || raw_params[:name].present? || params[:name].present? || params[:fullName].present?)
+            full = raw_params[:fullName] || raw_params[:full_name] || raw_params[:name] || params[:name] || params[:fullName]
+            first_name = full.to_s.strip.split.first
+          end
+          first_name ||= "Student"
+
+          last_name = raw_params[:last_name].presence ||
+                      raw_params[:lastName].presence ||
+                      raw_params[:childLastName].presence ||
+                      raw_params[:child_last_name].presence ||
+                      raw_params[:enr_last_name].presence ||
+                      custom_fields[:last_name].presence ||
+                      custom_fields["last_name"].presence ||
+                      custom_fields[:lastName].presence ||
+                      custom_fields["lastName"].presence ||
+                      custom_fields[:childLastName].presence ||
+                      custom_fields["childLastName"].presence ||
+                      custom_fields[:child_last_name].presence ||
+                      custom_fields["child_last_name"].presence ||
+                      custom_fields[:enr_last_name].presence ||
+                      custom_fields["enr_last_name"].presence
+
+          if last_name.blank? && (raw_params[:fullName].present? || raw_params[:full_name].present? || raw_params[:name].present? || params[:name].present? || params[:fullName].present?)
+            full = raw_params[:fullName] || raw_params[:full_name] || raw_params[:name] || params[:name] || params[:fullName]
+            rest = full.to_s.strip.split[1..]
+            last_name = rest.join(" ") if rest.present?
+          end
+          last_name ||= "Unknown"
+
+          dob = raw_params[:date_of_birth] || raw_params[:dateOfBirth] || raw_params[:dob] || raw_params[:enr_dob] || "2018-01-01"
 
           # Normalize program type to valid Rails enum: regular or pulled_out
-          raw_program = (raw_params[:program_type] || raw_params[:programType]).to_s.downcase
+          raw_program = (raw_params[:program_type] || raw_params[:programType] || raw_params[:program] || raw_params[:enr_program_type]).to_s.downcase
           program_type = raw_program.include?("pull") ? :pulled_out : :regular
 
           # Normalize therapy group to valid Rails enum: basic or functional_living
-          raw_group = (raw_params[:therapy_group] || raw_params[:therapyGroup]).to_s.downcase
+          raw_group = (raw_params[:therapy_group] || raw_params[:therapyGroup] || raw_params[:enr_therapy_group]).to_s.downcase
           therapy_group = raw_group.include?("function") ? :functional_living : :basic
 
           service_params = {
             first_name: first_name,
-            middle_name: raw_params[:middle_name] || raw_params[:middleName],
+            middle_name: raw_params[:middle_name] || raw_params[:middleName] || raw_params[:childMiddleName] || raw_params[:child_middle_name] || raw_params[:enr_middle_name],
             last_name: last_name,
             date_of_birth: dob,
             program_type: program_type,
             therapy_group: therapy_group,
             status: :in_assessment,
             diagnosis: raw_params[:diagnosis].presence || "Autism Spectrum Disorder",
-            guardian_name: raw_params[:guardian_name] || raw_params[:parentName].presence || "Guardian",
-            guardian_phone: raw_params[:guardian_phone] || raw_params[:parentPhone].presence || "555-0100",
-            guardian_email: raw_params[:guardian_email] || raw_params[:parentEmail],
-            headshot: raw_params[:headshot] || raw_params[:photo],
+            guardian_name: raw_params[:guardian_name] || raw_params[:parentName].presence || raw_params[:enr_guardian_name].presence || "Guardian",
+            guardian_phone: raw_params[:guardian_phone] || raw_params[:parentPhone].presence || raw_params[:enr_guardian_phone].presence || "555-0100",
+            headshot: raw_params[:headshot] || raw_params[:photo] || raw_params[:enr_headshot] || raw_params[:photoUrl] || raw_params[:photo_url],
+            baseline_video: raw_params[:baseline_video] || raw_params[:baselineVideo] || raw_params[:enr_baseline_video] || raw_params[:video] || raw_params[:videoUrl],
+            birth_certificate: raw_params[:birth_certificate] || raw_params[:birthCertificate] || raw_params[:enr_birth_certificate],
+            diagnosis_paper: raw_params[:diagnosis_paper] || raw_params[:diagnosisPaper] || raw_params[:enr_diagnosis_paper],
+            agreement: raw_params[:agreement] || raw_params[:agreement_document] || raw_params[:agreementDocument] || raw_params[:enr_agreement],
             custom_fields: custom_fields,
             enrolled_at: Time.current
           }
@@ -125,6 +204,15 @@ module Api
             serialize_document(doc)
           end
 
+          goals_list = @student.student_goals.map do |g|
+            {
+              id: g.id.to_s,
+              name: g.goal_name || "Goal",
+              status: g.status || "in_progress",
+              progressPercent: g.progress_percent || 0
+            }
+          end
+
           render json: {
             id: @student.id.to_s,
             studentId: @student.student_id,
@@ -145,6 +233,7 @@ module Api
             enrolledAt: @student.enrolled_at,
             custom_fields: @student.custom_fields || {},
             customFields: @student.custom_fields || {},
+            goals: goals_list,
             documents: documents_list,
             birth_certificate: serialize_document(birth_cert),
             birthCertificate: serialize_document(birth_cert),
@@ -163,17 +252,50 @@ module Api
         # PATCH /api/v1/coordinator/students/:id/profile
         def update_profile
           attrs = {}
-          attrs[:first_name] = params[:firstName] if params[:firstName].present?
-          attrs[:first_name] = params[:first_name] if params[:first_name].present?
-          attrs[:last_name] = params[:lastName] if params[:lastName].present?
-          attrs[:last_name] = params[:last_name] if params[:last_name].present?
+          fn = params[:firstName] || params[:first_name] || params[:childFirstName] || params[:child_first_name] || params[:enr_first_name]
+          attrs[:first_name] = fn if fn.present?
+
+          ln = params[:lastName] || params[:last_name] || params[:childLastName] || params[:child_last_name] || params[:enr_last_name]
+          attrs[:last_name] = ln if ln.present?
+
+          mn = params[:middleName] || params[:middle_name] || params[:childMiddleName] || params[:child_middle_name] || params[:enr_middle_name]
+          attrs[:middle_name] = mn if mn.present?
+
+          if attrs[:first_name].blank? && (params[:fullName].present? || params[:name].present?)
+            full = params[:fullName] || params[:name]
+            attrs[:first_name] = full.to_s.strip.split.first
+          end
+
           attrs[:diagnosis] = params[:diagnosis] if params[:diagnosis].present?
-          attrs[:guardian_name] = params[:guardianName] if params[:guardianName].present?
-          attrs[:guardian_name] = params[:guardian_name] if params[:guardian_name].present?
-          attrs[:guardian_phone] = params[:guardianPhone] if params[:guardianPhone].present?
-          attrs[:guardian_phone] = params[:guardian_phone] if params[:guardian_phone].present?
-          attrs[:guardian_email] = params[:guardianEmail] if params[:guardianEmail].present?
-          attrs[:guardian_email] = params[:guardian_email] if params[:guardian_email].present?
+          attrs[:guardian_name] = params[:guardianName] || params[:guardian_name] || params[:parentName] || params[:enr_guardian_name] if (params[:guardianName] || params[:guardian_name] || params[:parentName] || params[:enr_guardian_name]).present?
+          attrs[:guardian_phone] = params[:guardianPhone] || params[:guardian_phone] || params[:parentPhone] || params[:enr_guardian_phone] if (params[:guardianPhone] || params[:guardian_phone] || params[:parentPhone] || params[:enr_guardian_phone]).present?
+          attrs[:guardian_email] = params[:guardianEmail] || params[:guardian_email] || params[:parentEmail] || params[:enr_guardian_email] if (params[:guardianEmail] || params[:guardian_email] || params[:parentEmail] || params[:enr_guardian_email]).present?
+
+          if (params[:headshot] || params[:photo] || params[:enr_headshot] || params[:photoUrl] || params[:photo_url]).present?
+            file = params[:headshot] || params[:photo] || params[:enr_headshot] || params[:photoUrl] || params[:photo_url]
+            attach_active_storage_file(@student.headshot, file, "headshot.jpg", "image/jpeg")
+            attach_active_storage_file(@student.headshot_photo, file, "headshot.jpg", "image/jpeg")
+          end
+
+          if (params[:baseline_video] || params[:baselineVideo] || params[:enr_baseline_video] || params[:video] || params[:videoUrl]).present?
+            file = params[:baseline_video] || params[:baselineVideo] || params[:enr_baseline_video] || params[:video] || params[:videoUrl]
+            attach_active_storage_file(@student.baseline_video, file, "baseline_video.mp4", "video/mp4")
+          end
+
+          if (params[:birth_certificate] || params[:birthCertificate] || params[:enr_birth_certificate]).present?
+            file = params[:birth_certificate] || params[:birthCertificate] || params[:enr_birth_certificate]
+            attach_student_doc(@student, "birth_certificate", file, "birth_certificate.pdf", "application/pdf")
+          end
+
+          if (params[:diagnosis_paper] || params[:diagnosisPaper] || params[:enr_diagnosis_paper]).present?
+            file = params[:diagnosis_paper] || params[:diagnosisPaper] || params[:enr_diagnosis_paper]
+            attach_student_doc(@student, "diagnosis_paper", file, "diagnosis_paper.pdf", "application/pdf")
+          end
+
+          if (params[:agreement] || params[:agreement_document] || params[:agreementDocument] || params[:enr_agreement]).present?
+            file = params[:agreement] || params[:agreement_document] || params[:agreementDocument] || params[:enr_agreement]
+            attach_student_doc(@student, "agreement", file, "agreement.pdf", "application/pdf")
+          end
 
           custom_f = params[:custom_fields] || params[:customFields]
           attrs[:custom_fields] = parse_custom_fields(custom_f) if custom_f.present?
@@ -187,31 +309,101 @@ module Api
 
         private
 
+        def attach_active_storage_file(attachment, file, default_filename, default_content_type)
+          target = build_file_io(file, default_filename: default_filename, default_content_type: default_content_type)
+          return unless target.present?
+
+          blob = target.is_a?(ActiveStorage::Blob) ? target : ActiveStorage::Blob.create_and_upload!(
+            io: target[:io],
+            filename: target[:filename],
+            content_type: target[:content_type]
+          )
+          attachment.attach(blob)
+        rescue => e
+          Rails.logger.warn("Attachment error: #{e.message}")
+        end
+
+        def attach_student_doc(student, doc_type, file, default_filename, default_content_type)
+          target = build_file_io(file, default_filename: default_filename, default_content_type: default_content_type)
+          return unless target.present?
+
+          blob = target.is_a?(ActiveStorage::Blob) ? target : ActiveStorage::Blob.create_and_upload!(
+            io: target[:io],
+            filename: target[:filename],
+            content_type: target[:content_type]
+          )
+          doc = student.documents.find_or_initialize_by(document_type: doc_type)
+          doc.file.attach(blob)
+          doc.description ||= "#{doc_type.humanize} attached"
+          doc.save!
+        rescue => e
+          Rails.logger.warn("Document attachment error: #{e.message}")
+        end
+
+        def build_file_io(file, default_filename:, default_content_type:)
+          return nil unless file.present?
+
+          if file.is_a?(ActiveStorage::Blob)
+            file
+          elsif file.is_a?(String) && file.start_with?("data:")
+            match = file.match(/\Adata:([^;]+);base64,(.+)\z/m)
+            if match
+              content_type = match[1]
+              data = Base64.decode64(match[2])
+              ext = Rack::Mime::MIME_TYPES.invert[content_type] || ".bin"
+              filename = default_filename.end_with?(ext) ? default_filename : "#{File.basename(default_filename, '.*')}#{ext}"
+              { io: StringIO.new(data), filename: filename, content_type: content_type }
+            else
+              nil
+            end
+          elsif file.respond_to?(:read) || file.respond_to?(:tempfile)
+            {
+              io: file.respond_to?(:tempfile) ? file.tempfile : file,
+              filename: file.respond_to?(:original_filename) ? file.original_filename : default_filename,
+              content_type: file.respond_to?(:content_type) ? file.content_type : default_content_type
+            }
+          elsif file.is_a?(Hash) && file[:io].present?
+            file
+          else
+            nil
+          end
+        end
+
         def set_student
           lookup = (params[:id] || params[:student_id] || params[:studentId]).to_s.strip
-          @student = if lookup.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/)
-            Student.find_by(id: lookup)
+          is_uuid = lookup.match?(/\A\h{8}-\h{4}-\h{4}-\h{4}-\h{12}\z/)
+          @student = if is_uuid
+            Student.find_by(id: lookup) || Student.find_by("student_id ILIKE ?", lookup)
           else
-            Student.find_by("student_id ILIKE ?", lookup) || Student.find_by(id: lookup)
+            Student.find_by("student_id ILIKE ?", lookup) ||
+            Student.find_by("CONCAT(first_name, ' ', last_name) ILIKE ?", lookup) ||
+            Student.find_by("first_name ILIKE :q OR last_name ILIKE :q", q: lookup)
           end
           render json: { error: "Student not found" }, status: :not_found unless @student
         end
 
         def create_params
           params.permit(
-            :firstName, :first_name,
-            :lastName, :last_name,
-            :middleName, :middle_name,
-            :dateOfBirth, :date_of_birth,
-            :programType, :program_type,
-            :therapyGroup, :therapy_group,
-            :diagnosis,
+            :firstName, :first_name, :childFirstName, :child_first_name, :enr_first_name,
+            :lastName, :last_name, :childLastName, :child_last_name, :enr_last_name,
+            :middleName, :middle_name, :childMiddleName, :child_middle_name, :enr_middle_name,
+            :fullName, :full_name, :name,
+            :dateOfBirth, :date_of_birth, :dob, :enr_dob,
+            :programType, :program_type, :program, :enr_program_type,
+            :therapyGroup, :therapy_group, :therapy_group_track, :enr_therapy_group,
+            :diagnosis, :enr_diagnosis,
+            :diagnosisDate, :diagnosis_date, :enr_diagnosis_date,
             :studentId, :student_id,
-            :parentName, :guardian_name,
-            :parentPhone, :guardian_phone,
-            :parentEmail, :guardian_email,
-            :assignedTherapist,
-            :headshot, :photo,
+            :parentName, :guardian_name, :enr_guardian_name,
+            :parentPhone, :guardian_phone, :enr_guardian_phone,
+            :parentEmail, :guardian_email, :enr_guardian_email,
+            :emergencyContact, :emergency_contact, :enr_emergency_contact,
+            :assignedTherapist, :therapist,
+            :headshot, :photo, :enr_headshot, :photoUrl, :photo_url,
+            :birth_certificate, :birthCertificate, :enr_birth_certificate,
+            :diagnosis_paper, :diagnosisPaper, :enr_diagnosis_paper,
+            :agreement, :agreement_document, :agreementDocument, :enr_agreement,
+            :baseline_video, :baselineVideo, :enr_baseline_video, :video, :videoUrl, :video_url,
             custom_fields: {},
             customFields: {}
           )
