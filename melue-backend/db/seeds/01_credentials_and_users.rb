@@ -190,13 +190,11 @@ ActiveRecord::Base.transaction do
     "staff_members"       => all_actions,
     "roles"               => all_actions,
     "clinical_configs"    => all_actions,
-    "audit_logs"          => all_actions,
-    "admin"               => all_actions,
-    "staff"               => all_actions
+    "audit_logs"          => all_actions
   }
   grant_permissions.call(roles_map[Role::Names::SYSTEM_ADMIN], sys_admin_perms)
 
-  # 3b. Institutional Administrator — Schedule & Capacity Configuration, Form Builder, ABC Dropdown Lists, Trial Logging Format Config, Goal Bank / Domains, Staff Provisioning
+  # 3b. Institutional Administrator — Schedule & Capacity Configuration, Form Builder, ABC Dropdown Lists, Trial Logging Format Config, Goal Bank / Domains
   institutional_admin_perms = {
     "session_schedule_configs"  => crud_approve,
     "staff_scheduling"          => crud_approve,
@@ -208,11 +206,7 @@ ActiveRecord::Base.transaction do
     "sessions"                  => crud_approve,
     "goal_domains"              => crud_approve,
     "goals"                     => crud_approve,
-    "iups"                      => crud_approve,
-    "clinical_configs"          => crud_approve,
-    "staff"                     => crud_approve,
-    "staff_members"             => crud_approve,
-    "admin"                     => view_and_edit
+    "iups"                      => crud_approve
   }
   grant_permissions.call(roles_map[Role::Names::INSTITUTIONAL_ADMIN], institutional_admin_perms)
 
@@ -224,9 +218,7 @@ ActiveRecord::Base.transaction do
     "parent_communications"     => crud_approve,
     "parent_portal"             => crud_approve,
     "reports"                   => all_actions,
-    "oversight"                 => all_actions,
-    "staff"                     => crud_approve,
-    "staff_members"             => view_and_edit
+    "oversight"                 => all_actions
   }
   grant_permissions.call(roles_map[Role::Names::DIRECTOR], director_perms)
 
@@ -243,9 +235,7 @@ ActiveRecord::Base.transaction do
     "goals"                     => all_actions,
     "goal_domains"              => all_actions,
     "reports"                   => all_actions,
-    "oversight"                 => all_actions,
-    "clinical_configs"          => all_actions,
-    "form_configurations"       => all_actions
+    "oversight"                 => all_actions
   }
   grant_permissions.call(roles_map[Role::Names::PROGRAM_DIRECTOR], program_director_perms)
 
@@ -256,12 +246,10 @@ ActiveRecord::Base.transaction do
     "session_summaries"         => all_actions,
     "students"                  => crud_approve,
     "enrollments"               => crud_approve,
-    "staff_members"             => view_and_edit,
     "staff_scheduling"          => all_actions,
     "session_block_definitions" => all_actions,
     "parent_communications"     => all_actions,
-    "parent_portal"             => all_actions,
-    "staff"                     => all_actions
+    "parent_portal"             => all_actions
   }
   grant_permissions.call(roles_map[Role::Names::THERAPY_COORDINATOR], coordinator_perms)
 

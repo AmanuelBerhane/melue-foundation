@@ -89,9 +89,6 @@ module Api
               if p.nil?
                 canonical_res = RESOURCE_ALIAS_MAP[res.downcase]
                 p = Permission.find_by(resource: canonical_res, action: act.downcase) if canonical_res
-                p ||= Permission.find_or_create_by!(resource: res, action: act.downcase) do |perm|
-                  perm.description = "Can #{act} #{res}"
-                end
               end
               resolved_perms << p if p
             elsif id_or_tag =~ UUID_REGEX
@@ -109,9 +106,6 @@ module Api
                 if perm.nil?
                   canonical_res = RESOURCE_ALIAS_MAP[mod.to_s.downcase]
                   perm = Permission.find_by(resource: canonical_res, action: act.to_s.downcase) if canonical_res
-                  perm ||= Permission.find_or_create_by!(resource: mod.to_s, action: act.to_s.downcase) do |p|
-                    p.description = "Can #{act} #{mod}"
-                  end
                 end
                 resolved_perms << perm if perm
               end
@@ -229,6 +223,36 @@ module Api
         UUID_REGEX = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
 
         RESOURCE_ALIAS_MAP = {
+          "sys_staff_accounts" => "staff_members",
+          "sys_role_management" => "roles",
+          "sys_permissions" => "clinical_configs",
+          "sys_audit_log" => "audit_logs",
+          "ia_form_builder" => "form_configurations",
+          "ia_trial_logging" => "prompt_levels",
+          "ia_abc_dropdowns" => "abc_lists",
+          "ia_schedule_capacity" => "session_schedule_configs",
+          "director_scheduling" => "staff_scheduling",
+          "coord_staff_workload" => "staff",
+          "coord_room_scheduling" => "session_block_definitions",
+          "pd_enrollment_wizard" => "enrollments",
+          "coord_student_registration" => "enrollments",
+          "teacher_assessments" => "assessments",
+          "pd_assessment_review" => "assessments",
+          "pd_assessment_summary" => "assessments",
+          "pd_iup_generation" => "iups",
+          "pd_iup_library" => "iups",
+          "pd_clinical_quality" => "goals",
+          "teacher_daily_trials" => "trials",
+          "teacher_daily_notes" => "sessions",
+          "teacher_abc_log" => "abc_lists",
+          "coord_live_sessions" => "sessions",
+          "coord_session_summary" => "session_summaries",
+          "goal_mastery_approval" => "goals",
+          "director_parent_comm" => "parent_communications",
+          "parent_child_progress" => "parent_portal",
+          "parent_home_observations" => "home_observations",
+          "director_reports_oversight" => "oversight",
+          "director_report_builder" => "reports",
           "enrollments" => "students",
           "forms" => "students",
           "skills_assessments" => "assessments",
@@ -301,15 +325,15 @@ module Api
 
           case role.name
           when Role::Names::SYSTEM_ADMIN
-            all_perms
+            all_perms.where(resource: %w[staff_members roles clinical_configs audit_logs])
           when Role::Names::INSTITUTIONAL_ADMIN
-            all_perms
+            all_perms.where(resource: %w[session_schedule_configs staff_scheduling form_configurations forms abc_lists behavior_incidents prompt_levels sessions goal_domains goals iups])
           when Role::Names::DIRECTOR
-            all_perms.where(resource: %w[students assessments iups sessions behavior_incidents staff reports])
+            all_perms.where(resource: %w[students assessments iups sessions behavior_incidents staff_scheduling session_schedule_configs reports oversight goals parent_communications parent_portal])
           when Role::Names::PROGRAM_DIRECTOR
-            all_perms.where(resource: %w[students assessments iups sessions reports], action: %w[view create edit approve index show update])
+            all_perms.where(resource: %w[students enrollments forms assessments skills_assessments behavior_assessments preference_assessments iups goals goal_domains reports oversight], action: %w[view create edit approve index show update])
           when Role::Names::THERAPY_COORDINATOR
-            all_perms.where(resource: %w[students sessions behavior_incidents staff reports], action: %w[view create edit index show update])
+            all_perms.where(resource: %w[students enrollments sessions trials session_summaries behavior_incidents staff_scheduling session_block_definitions reports parent_communications parent_portal], action: %w[view create edit index show update])
           when Role::Names::TEACHER
             all_perms.where(resource: %w[sessions behavior_incidents], action: %w[view create edit index show update])
                      .or(all_perms.where(resource: %w[students assessments iups], action: %w[view index show]))
