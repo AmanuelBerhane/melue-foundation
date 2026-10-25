@@ -195,8 +195,8 @@ class Student < ApplicationRecord
   end
 
   def video_format_and_size
-    unless baseline_video.content_type.in?(%w[video/mp4 video/quicktime])
-      errors.add(:baseline_video, "must be MP4 or MOV format")
+    unless baseline_video.content_type.in?(%w[video/mp4 video/quicktime video/webm])
+      errors.add(:baseline_video, "must be MP4, WebM, or MOV format")
     end
 
     if baseline_video.byte_size > 100.megabytes

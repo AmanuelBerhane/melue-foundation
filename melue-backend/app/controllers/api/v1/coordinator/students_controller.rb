@@ -271,6 +271,25 @@ module Api
           attrs[:guardian_phone] = params[:guardianPhone] || params[:guardian_phone] || params[:parentPhone] || params[:enr_guardian_phone] if (params[:guardianPhone] || params[:guardian_phone] || params[:parentPhone] || params[:enr_guardian_phone]).present?
           attrs[:guardian_email] = params[:guardianEmail] || params[:guardian_email] || params[:parentEmail] || params[:enr_guardian_email] if (params[:guardianEmail] || params[:guardian_email] || params[:parentEmail] || params[:enr_guardian_email]).present?
 
+          if params[:remove_headshot].present? || params[:delete_headshot].present?
+            @student.headshot.purge if @student.headshot.attached?
+            @student.headshot_photo.purge if @student.headshot_photo.attached?
+          end
+
+          if params[:remove_baseline_video].present? || params[:delete_baseline_video].present?
+            @student.baseline_video.purge if @student.baseline_video.attached?
+          end
+
+          %w[birth_certificate diagnosis_paper agreement other].each do |dtype|
+            if params["remove_#{dtype}"].present? || params["delete_#{dtype}"].present?
+              @student.documents.where(document_type: dtype).destroy_all
+            end
+          end
+
+          if params[:delete_document_id].present?
+            @student.documents.where(id: params[:delete_document_id]).destroy_all
+          end
+
           if (params[:headshot] || params[:photo] || params[:enr_headshot] || params[:photoUrl] || params[:photo_url]).present?
             file = params[:headshot] || params[:photo] || params[:enr_headshot] || params[:photoUrl] || params[:photo_url]
             attach_active_storage_file(@student.headshot, file, "headshot.jpg", "image/jpeg")
@@ -460,12 +479,19 @@ module Api
             type: doc.document_type,
             filename: file&.filename&.to_s,
             fileName: file&.filename&.to_s,
+            name: file&.filename&.to_s,
             url: file_url,
             file_url: file_url,
+            fileUrl: file_url,
             byte_size: file&.byte_size,
+            byteSize: file&.byte_size,
+            file_size: file&.byte_size,
             content_type: file&.content_type,
+            contentType: file&.content_type,
             description: doc.description,
-            created_at: doc.created_at
+            created_at: doc.created_at,
+            upload_date: doc.created_at&.strftime("%b %d, %Y"),
+            uploadDate: doc.created_at&.strftime("%b %d, %Y")
           }
         end
 
