@@ -199,6 +199,7 @@ ActiveRecord::Base.transaction do
     { domain: "Motor", name: "Cut along a straight line with scissors" },
 
     # ── Social ─────────────────────────────────────────────────────────────────
+    { domain: "Social", name: "Initiate greeting with peers" },
     { domain: "Social", name: "Respond to greetings and goodbyes from others" },
     { domain: "Social", name: "Take turns in structured play" },
     { domain: "Social", name: "Make eye contact during conversation" },
