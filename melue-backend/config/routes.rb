@@ -266,7 +266,13 @@ Rails.application.routes.draw do
       namespace :program_director do
         get :dashboard, to: "dashboard#show"
         get :assessment_pipeline, to: "assessment_pipeline#index"
-        resources :assessments, only: %i[index show]
+        resources :assessments, only: %i[index show] do
+          member do
+            post :approve
+            post "mark-reviewed", to: "assessments#approve"
+            post :mark_reviewed, to: "assessments#approve"
+          end
+        end
       end
 
       resources :sensory_activities, only: [ :index ]

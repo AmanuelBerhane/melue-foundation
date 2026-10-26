@@ -56,6 +56,27 @@ module Api
             render_error(result.error, :not_found)
           end
         end
+
+        # POST /api/v1/program_director/assessments/:id/approve
+        # FR-057: Digital approval trigger, updating status to reviewed and student to ready_for_iup
+        def approve
+          cycle = AssessmentCycle.find_by(id: params[:id]) ||
+                  AssessmentCycle.where(student_id: params[:id]).order(updated_at: :desc).first
+          return render_error("Assessment not found", :not_found) unless cycle
+
+          cycle.update(status: "reviewed", completed_on: cycle.completed_on || Date.current)
+          student = cycle.student
+          student&.update(status: "ready_for_iup")
+
+          render json: {
+            success: true,
+            message: "Assessment approved and signed off successfully. Student transitioned to Ready for IUP.",
+            assessment_id: cycle.id,
+            student_id: student&.id,
+            status: "reviewed",
+            student_status: student&.status
+          }, status: :ok
+        end
       end
     end
   end
