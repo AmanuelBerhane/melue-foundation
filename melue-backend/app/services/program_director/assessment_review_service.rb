@@ -92,11 +92,15 @@ module ProgramDirector
       completed_date_str = cycle.completed_on&.strftime("%Y-%m-%d") ||
                            (cycle.status.in?(%w[complete reviewed]) ? cycle.updated_at.strftime("%Y-%m-%d") : nil)
 
+      real_student_number = student.student_id.presence || "MEL-#{student.id.to_s.delete('-')[0..3].upcase}-26"
+
       {
         id: cycle.id,
         assessment_id: cycle.id,
         student_id: student.id,
         studentId: student.id,
+        student_number: real_student_number,
+        studentNumber: real_student_number,
         student_name: student.full_name,
         studentName: student.full_name,
         age: student.age || 6,

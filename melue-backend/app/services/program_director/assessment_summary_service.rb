@@ -64,9 +64,13 @@ module ProgramDirector
         behavior_status: behavior_data[:status]
       )
 
+      real_student_number = student.student_id.presence || "MEL-#{student.id.to_s.delete('-')[0..3].upcase}-26"
+
       payload = {
         student: {
           id: student.id,
+          student_number: real_student_number,
+          student_id: real_student_number,
           name: student.full_name,
           first_name: student.first_name,
           last_name: student.last_name,
