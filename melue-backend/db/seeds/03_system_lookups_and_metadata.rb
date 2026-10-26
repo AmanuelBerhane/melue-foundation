@@ -118,46 +118,57 @@ ActiveRecord::Base.transaction do
   puts "    ✓ Seeded #{consequences_seed.size} Consequence dropdown options"
 
   # ----------------------------------------------------------------------------
-  # 3. Preference Assessment Item Inventory (SRS 3.3.4 / FR-047a)
+  # 3. Preference Assessment Item Inventory (SRS 3.3.4 / MCTC-TRP-013)
   # ----------------------------------------------------------------------------
-  puts "\n--> Provisioning Preference Assessment Item Inventory (5 Categories)..."
+  puts "\n--> Provisioning Authentic 24 Preference Assessment Items (MCTC-TRP-013)..."
 
-  inventory_items_seed = {
-    "Visual" => [
-      "Phone", "TV", "Flashlight", "Picture books", "Balloon",
-      "Crayons or markers", "Painting", "Shadow", "Beads", "Pouring liquids"
-    ],
-    "Sensory" => [
-      "Lotion", "Play doh", "Sand play", "Water play",
-      "Toys that bend or stretch", "Finger painting", "Soap bubbles", "Shining"
-    ],
-    "Auditory" => [
-      "Toys that talk or sing", "Music", "Low pitch voice", "Stress balls"
-    ],
-    "Movement" => [
-      "Movement", "Rolling on floor", "Being held upside down"
-    ],
-    "Toys" => [
-      "Tube car", "Frog toy", "Coloring tube", "Fish toy", "Red plastic toy",
-      "Stress ball", "Flexy red", "Piano", "Coloring glitter", "Body part puzzle",
-      "Letter mat", "Gross motor handle", "Seesaw", "Slide", "Magnetic Apple",
-      "Mobile art", "Watch", "Large & small toys", "Harmonica", "Stretch spring",
-      "Bicycle", "Number book", "Spinner", "Colors"
-    ]
-  }
+  # Authentic 24 Canonical Inventory Items from MCTC-TRP-013
+  canonical_items = [
+    { name: "Tube car", category: "Toys" },
+    { name: "Frog toy", category: "Toys" },
+    { name: "Calming tube", category: "Sensory" },
+    { name: "Red plastic toy", category: "Toys" },
+    { name: "Stress ball", category: "Sensory" },
+    { name: "Flexy red", category: "Sensory" },
+    { name: "Piano", category: "Auditory" },
+    { name: "Calming glitter", category: "Visual" },
+    { name: "Body part puzzle", category: "Toys" },
+    { name: "Letter mat", category: "Toys" },
+    { name: "Gross motor ladder", category: "Movement" },
+    { name: "See saw", category: "Movement" },
+    { name: "Magnetic Apple", category: "Toys" },
+    { name: "Mobile art", category: "Visual" },
+    { name: "Watch", category: "Toys" },
+    { name: "Large & small toys", category: "Toys" },
+    { name: "Harmonica", category: "Auditory" },
+    { name: "Stretch spring", category: "Sensory" },
+    { name: "Bicycle", category: "Movement" },
+    { name: "Number book", category: "Visual" },
+    { name: "Spinner", category: "Sensory" },
+    { name: "Crayons", category: "Visual" },
+    { name: "Pouring liquids", category: "Sensory" },
+    { name: "Shadow", category: "Visual" }
+  ]
+
+  canonical_names = canonical_items.map { |i| i[:name].downcase.strip }
+
+  # Purge / deactivate outdated items
+  PreferenceInventoryItem.all.find_each do |item|
+    unless canonical_names.include?(item.name.downcase.strip)
+      item.update_columns(is_active: false, discarded_at: Time.current)
+    end
+  end
 
   total_inventory_items = 0
-  inventory_items_seed.each do |category, item_names|
-    item_names.each do |name|
-      item = PreferenceInventoryItem.find_or_initialize_by(category: category, name: name)
-      item.is_active     = true
-      item.discarded_at  = nil
-      item.save!
-      total_inventory_items += 1
-    end
-    puts "    ✓ Category: #{category.ljust(10)} (#{item_names.size} items)"
+  canonical_items.each do |entry|
+    item = PreferenceInventoryItem.find_or_initialize_by(name: entry[:name])
+    item.category     = entry[:category]
+    item.is_active     = true
+    item.discarded_at  = nil
+    item.save!
+    total_inventory_items += 1
   end
-  puts "    ✓ Total Preference Inventory Items: #{total_inventory_items}"
+  puts "    ✓ Successfully seeded #{total_inventory_items} authentic MCTC-TRP-013 items."
 
   # ----------------------------------------------------------------------------
   # 4. Canonical Goal Domains & Standard Goal Bank (SRS 3.5.1 / FR-071)

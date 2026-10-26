@@ -19,6 +19,7 @@ module Api
               id: bta.id.to_s,
               behavior_name: bta.behavior_name,
               behaviorName: bta.behavior_name,
+              definition: bta.definition,
               mass_responses: bta.mass_responses || {},
               massAnswers: bta.mass_responses || {},
               fast_responses: bta.fast_responses || {},
@@ -98,6 +99,12 @@ module Api
           raw_targets = params[:target_behaviors] || params[:targetBehaviors] || params[:behaviors]
 
           if raw_targets.present? && raw_targets.is_a?(Array)
+            # Synchronize target behaviors (remove ones deleted by user)
+            submitted_names = raw_targets.map { |tb| tb[:behavior_name] || tb[:behaviorName] || tb[:name] }.compact.map(&:to_s).map(&:strip)
+            if submitted_names.any?
+              @behavior_assessment.behavior_target_assessments.where.not("TRIM(behavior_name) IN (?)", submitted_names).destroy_all
+            end
+
             # Validate completion if submitting
             if is_submitting
               raw_targets.each do |tb|
@@ -105,9 +112,12 @@ module Api
                 m_ans = tb[:massAnswers] || tb[:mass_responses] || {}
                 f_ans = tb[:fastAnswers] || tb[:fast_responses] || {}
                 m_count = m_ans.respond_to?(:keys) ? m_ans.keys.count { |k| m_ans[k].present? } : 0
-                f_count = f_ans.respond_to?(:keys) ? f_ans.keys.count { |k| !f_ans[k].nil? } : 0
+                f_count = f_ans.respond_to?(:keys) ? f_ans.keys.count { |k| !f_ans[k].nil? && f_ans[k] != "" } : 0
 
-                if m_count < 12 || f_count < 8
+                min_m = m_ans.keys.any? { |k| k.to_s.gsub(/\D/, "").to_i > 12 } ? 51 : 12
+                min_f = f_ans.keys.any? { |k| k.to_s.gsub(/\D/, "").to_i > 8 } ? 27 : 8
+
+                if m_count < min_m || f_count < min_f
                   return render json: {
                     error: "Validation error: All required MASS and FAST questions for behavior '#{bname}' must be answered before submitting."
                   }, status: :unprocessable_content
@@ -121,7 +131,9 @@ module Api
 
             raw_targets.each do |tb|
               bname = tb[:behavior_name] || tb[:behaviorName] || tb[:name] || "Target Behavior"
+              bdef = tb[:definition] || tb[:behaviorDefinition] || tb[:operational_definition]
               bta = @behavior_assessment.behavior_target_assessments.find_or_initialize_by(behavior_name: bname)
+              bta.definition = bdef if bdef.present?
               bta.mass_responses = (tb[:massAnswers] || tb[:mass_responses] || {}).to_unsafe_h rescue (tb[:massAnswers] || tb[:mass_responses] || {})
               bta.fast_responses = (tb[:fastAnswers] || tb[:fast_responses] || {}).to_unsafe_h rescue (tb[:fastAnswers] || tb[:fast_responses] || {})
               bta.status = is_submitting ? "completed" : "draft"
@@ -133,6 +145,7 @@ module Api
                 id: bta.id.to_s,
                 behavior_name: bta.behavior_name,
                 behaviorName: bta.behavior_name,
+                definition: bta.definition,
                 mass_responses: bta.mass_responses,
                 massAnswers: bta.mass_responses,
                 fast_responses: bta.fast_responses,
@@ -146,7 +159,9 @@ module Api
               }
 
               bta.function_scores.each do |fn, val|
-                combined_scores[fn.to_sym] = (combined_scores[fn.to_sym] || 0) + val.to_i
+                if fn.to_sym == :sensory || fn.to_sym == :escape || fn.to_sym == :attention || fn.to_sym == :tangible
+                  combined_scores[fn.to_sym] = (combined_scores[fn.to_sym] || 0) + val.to_i
+                end
               end
             end
 

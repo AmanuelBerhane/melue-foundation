@@ -108,4 +108,17 @@ class Api::V1::OptionsController < Api::V1::BaseController
 
     render json: statuses
   end
+
+  # GET /api/v1/options/therapy_statuses
+  def therapy_statuses
+    canonical = [
+      "In Assessment",
+      "Assessment Complete",
+      "Ready for IUP",
+      "IUP Ready",
+      "In Session",
+      "Not Started"
+    ]
+    render json: canonical
+  end
 end

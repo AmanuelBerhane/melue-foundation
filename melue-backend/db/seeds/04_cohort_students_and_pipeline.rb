@@ -104,7 +104,12 @@ ActiveRecord::Base.transaction do
       guardian_phone:        "+251 91 200 0001",
       guardian_email:        "guardian1@example.com",
       diagnosis:             "Suspected Autism Spectrum Disorder",
-      assessment_started_at: 2.weeks.ago
+      assessment_started_at: 2.weeks.ago,
+      custom_fields:         {
+        "f_therapist"        => teacher1.full_name,
+        "therapist"          => teacher1.full_name,
+        "assigned_therapist" => teacher1.full_name
+      }
     },
     {
       full_name:    "Guardian One",
@@ -129,7 +134,12 @@ ActiveRecord::Base.transaction do
       guardian_phone:        "+251 91 200 0002",
       guardian_email:        "guardian2@example.com",
       diagnosis:             "Global Developmental Delay",
-      assessment_started_at: 3.weeks.ago
+      assessment_started_at: 3.weeks.ago,
+      custom_fields:         {
+        "f_therapist"        => teacher2.full_name,
+        "therapist"          => teacher2.full_name,
+        "assigned_therapist" => teacher2.full_name
+      }
     },
     {
       full_name:    "Guardian Two",
@@ -535,12 +545,30 @@ ActiveRecord::Base.transaction do
 
   today = Date.current
 
-  # Teacher 1 -> Yonas & Meron | Morning Block A | Station 1 (Room 1A)
-  [ yonas, meron ].each do |st|
+  # Multi-day scheduled assignment range (past 2 days up to next 14 days) so schedule is always active
+  assignment_dates = ((-2)..14).map { |n| today + n.days }.reject { |d| d.saturday? || d.sunday? }
+
+  assignment_dates.each do |target_date|
+    # Teacher 1 -> Yonas & Meron | Morning Block A | Station 1 (Room 1A)
+    [ yonas, meron ].each do |st|
+      TeacherStudentAssignment.find_or_initialize_by(
+        student:                   st,
+        session_block_definition: morning_block_a,
+        scheduled_date:           target_date
+      ).tap do |tsa|
+        tsa.teacher         = teacher1
+        tsa.therapy_station = station1
+        tsa.therapy_room    = room_1a
+        tsa.status          = "scheduled"
+        tsa.save!
+      end
+    end
+
+    # Teacher 1 Assessment Caseload -> Student One (in_assessment) | Morning Block B | Station 1 (Room 1A)
     TeacherStudentAssignment.find_or_initialize_by(
-      student:                   st,
-      session_block_definition: morning_block_a,
-      scheduled_date:           today
+      student:                   student1,
+      session_block_definition: morning_block_b,
+      scheduled_date:           target_date
     ).tap do |tsa|
       tsa.teacher         = teacher1
       tsa.therapy_station = station1
@@ -548,14 +576,12 @@ ActiveRecord::Base.transaction do
       tsa.status          = "scheduled"
       tsa.save!
     end
-  end
 
-  # Teacher 2 -> Abel & Liya | Morning Block B | Station 1 (Room 1B)
-  [ abel, liya ].each do |st|
+    # Teacher 2 Assessment Caseload -> Student Two (in_assessment) | Morning Block A | Station 1 (Room 1B)
     TeacherStudentAssignment.find_or_initialize_by(
-      student:                   st,
-      session_block_definition: morning_block_b,
-      scheduled_date:           today
+      student:                   student2,
+      session_block_definition: morning_block_a,
+      scheduled_date:           target_date
     ).tap do |tsa|
       tsa.teacher         = teacher2
       tsa.therapy_station = station1
@@ -563,20 +589,35 @@ ActiveRecord::Base.transaction do
       tsa.status          = "scheduled"
       tsa.save!
     end
-  end
 
-  # Teacher 3 -> Natnael & Hiwot | Afternoon Block A | Station 2 (Room 2A) (Today's Assignment)
-  [ natnael, hiwot ].each do |st|
-    TeacherStudentAssignment.find_or_initialize_by(
-      student:                   st,
-      session_block_definition: afternoon_block_a,
-      scheduled_date:           today
-    ).tap do |tsa|
-      tsa.teacher         = teacher3
-      tsa.therapy_station = station2
-      tsa.therapy_room    = room_2a
-      tsa.status          = "scheduled"
-      tsa.save!
+    # Teacher 2 -> Abel & Liya | Morning Block B | Station 1 (Room 1B)
+    [ abel, liya ].each do |st|
+      TeacherStudentAssignment.find_or_initialize_by(
+        student:                   st,
+        session_block_definition: morning_block_b,
+        scheduled_date:           target_date
+      ).tap do |tsa|
+        tsa.teacher         = teacher2
+        tsa.therapy_station = station1
+        tsa.therapy_room    = room_1b
+        tsa.status          = "scheduled"
+        tsa.save!
+      end
+    end
+
+    # Teacher 3 -> Natnael & Hiwot | Afternoon Block A | Station 2 (Room 2A)
+    [ natnael, hiwot ].each do |st|
+      TeacherStudentAssignment.find_or_initialize_by(
+        student:                   st,
+        session_block_definition: afternoon_block_a,
+        scheduled_date:           target_date
+      ).tap do |tsa|
+        tsa.teacher         = teacher3
+        tsa.therapy_station = station2
+        tsa.therapy_room    = room_2a
+        tsa.status          = "scheduled"
+        tsa.save!
+      end
     end
   end
 
