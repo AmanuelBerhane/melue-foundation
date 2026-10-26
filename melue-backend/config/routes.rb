@@ -68,6 +68,7 @@ Rails.application.routes.draw do
         get  "students/:student_id/assessments/behavior", to: "behavior_assessments#show"
         post "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
         patch "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
+        post "students/:student_id/submit_assessments", to: "dashboard#submit_assessments"
       end
 
       resources :notifications, only: [ :index ] do

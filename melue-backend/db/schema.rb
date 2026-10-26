@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_07_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "citext"
   enable_extension "pg_catalog.plpgsql"
@@ -180,6 +180,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_07_100000) do
     t.index ["student_id", "occurred_at"], name: "index_behavior_incidents_on_student_id_and_occurred_at"
     t.index ["student_id"], name: "index_behavior_incidents_on_student_id"
     t.index ["therapy_session_id"], name: "index_behavior_incidents_on_therapy_session_id"
+  end
+
+  create_table "behavior_target_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "behavior_assessment_id", null: false
+    t.string "behavior_name", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "discarded_at"
+    t.string "dominant_function"
+    t.jsonb "fast_responses", default: {}
+    t.jsonb "function_scores", default: {}
+    t.string "hypothesized_function"
+    t.jsonb "mass_responses", default: {}
+    t.jsonb "risk_indicators", default: {}
+    t.string "status", default: "draft", null: false
+    t.datetime "updated_at", null: false
+    t.index ["behavior_assessment_id"], name: "index_behavior_target_assessments_on_behavior_assessment_id"
+    t.index ["discarded_at"], name: "index_behavior_target_assessments_on_discarded_at"
+    t.index ["status"], name: "index_behavior_target_assessments_on_status"
   end
 
   create_table "fast_assessments", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -887,6 +906,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_07_100000) do
   add_foreign_key "behavior_incidents", "student_goals"
   add_foreign_key "behavior_incidents", "students"
   add_foreign_key "behavior_incidents", "therapy_sessions"
+  add_foreign_key "behavior_target_assessments", "behavior_assessments"
   add_foreign_key "fast_assessments", "assessment_cycles"
   add_foreign_key "fast_assessments", "staff_members", column: "teacher_id"
   add_foreign_key "fast_assessments", "students"

@@ -78,5 +78,63 @@ RSpec.describe 'Api::V1::Teacher::BehaviorAssessments', type: :request do
       expect(data['risk_indicators']).to be_present
       expect(data['risk_indicators']['risk_level']).to be_present
     end
+
+    it 'supports multi-questionnaire target behaviors saving drafts without validation errors' do
+      post "/api/v1/teacher/students/#{student.id}/assessments/behavior",
+           params: {
+             target_behaviors: [
+               {
+                 behavior_name: "Screaming",
+                 massAnswers: { "M1" => "Always" },
+                 fastAnswers: { "F1" => "Yes" }
+               },
+               {
+                 behavior_name: "Flopping",
+                 massAnswers: { "M2" => "Usually" },
+                 fastAnswers: { "F2" => "Yes" }
+               }
+             ],
+             records: [
+               {
+                 behavior: "Screaming",
+                 frequency: "2x / hour",
+                 duration: "5 mins",
+                 intensity: "High"
+               }
+             ],
+             status: "draft"
+           },
+           headers: headers,
+           as: :json
+
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body['status']).to eq('success')
+      targets = body['data']['target_behaviors']
+      expect(targets).to be_an(Array)
+      expect(targets.length).to eq(2)
+      expect(targets.map { |t| t['behavior_name'] }).to contain_exactly("Screaming", "Flopping")
+      expect(body['data']['status']).to eq('draft')
+    end
+
+    it 'validates that all required questions are answered upon submission' do
+      post "/api/v1/teacher/students/#{student.id}/assessments/behavior",
+           params: {
+             target_behaviors: [
+               {
+                 behavior_name: "Aggression",
+                 massAnswers: { "M1" => "Always" }, # only 1 question answered
+                 fastAnswers: { "F1" => "Yes" }
+               }
+             ],
+             status: "submitted"
+           },
+           headers: headers,
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      body = JSON.parse(response.body)
+      expect(body['error']).to include('Validation error')
+    end
   end
 end
