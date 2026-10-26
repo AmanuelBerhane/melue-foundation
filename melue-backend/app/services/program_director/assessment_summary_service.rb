@@ -84,7 +84,12 @@ module ProgramDirector
         AssessmentCycle.includes(
           :student,
           ablls_assessment: { ablls_responses: { ablls_skill_item: :ablls_domain } }
-        ).where(student_id: @assessment_cycle_id).order(started_on: :desc).first
+        ).where(student_id: @assessment_cycle_id)
+         .order(
+           Arel.sql("CASE WHEN assessment_cycles.status IN ('complete', 'reviewed') THEN 0 ELSE 1 END"),
+           updated_at: :desc,
+           started_on: :desc
+         ).first
     end
 
     # ── Skills / ABLLS ──────────────────────────────────────────────────────────

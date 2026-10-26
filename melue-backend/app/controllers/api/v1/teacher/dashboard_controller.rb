@@ -48,10 +48,6 @@ class Api::V1::Teacher::DashboardController < Api::V1::BaseController
                                          .where(status: "in_assessment")
                                          .distinct : []
 
-    if staff && assessment_students.empty?
-      assessment_students = Student.kept.where(status: "in_assessment").distinct.order(:first_name, :last_name).first(2)
-    end
-
     cycles = AssessmentCycle.kept.where(student_id: assessment_students.map(&:id)).includes(:skills_assessment).index_by(&:student_id)
 
     assessment_tasks = assessment_students.map do |s|
@@ -128,19 +124,20 @@ class Api::V1::Teacher::DashboardController < Api::V1::BaseController
                                                    .where(teacher_id: staff.id)
                                                    .pluck(:student_id)
 
-    scoped_students = Student.kept
-                             .where(id: assigned_student_ids)
-                             .where(status: %w[in_assessment registered enrolled])
-                             .distinct
-                             .order(:first_name, :last_name)
-
-    # Resilient fallback: If no explicit assessment assignment for this teacher yet,
-    # load active cohort students in assessment so any teacher can view & score assessments
-    if scoped_students.empty?
-      scoped_students = Student.kept
-                               .where(status: "in_assessment")
-                               .distinct
-                               .order(:first_name, :last_name)
+    scoped_students = if assigned_student_ids.any?
+      Student.kept
+             .where(id: assigned_student_ids)
+             .where(status: %w[in_assessment registered enrolled])
+             .distinct
+             .order(:first_name, :last_name)
+    else
+      # If teacher has no assignments at all, only load in_assessment students that are NOT assigned to any other teacher
+      assigned_to_any_teacher = TeacherStudentAssignment.kept.pluck(:student_id).uniq
+      Student.kept
+             .where(status: "in_assessment")
+             .where.not(id: assigned_to_any_teacher)
+             .distinct
+             .order(:first_name, :last_name)
     end
 
     cycles = AssessmentCycle.kept
@@ -318,17 +315,28 @@ class Api::V1::Teacher::DashboardController < Api::V1::BaseController
       return render json: { error: "Not authorized for this student" }, status: :forbidden unless (assigned || is_in_assessment)
     end
 
-    cycle = AssessmentCycle.kept.find_or_create_by!(student: student, status: "in_progress") do |c|
-      c.started_on = Date.current
-    end
-
     # Transition student status: "in_assessment" -> "assessment_complete" (routes to Program Director review SCR-PD-002)
     student.update!(status: "assessment_complete")
-    cycle.update!(status: "complete", completed_on: Date.current)
+
+    existing_cycles = AssessmentCycle.kept.where(student: student)
+    if existing_cycles.any?
+      existing_cycles.each do |c|
+        c.update!(status: "complete", completed_on: c.completed_on || Date.current)
+      end
+      cycle = existing_cycles.order(updated_at: :desc).first
+    else
+      cycle = AssessmentCycle.create!(
+        student: student,
+        status: "complete",
+        started_on: Date.current,
+        completed_on: Date.current
+      )
+    end
 
     render json: {
       success: true,
       student_id: student.id.to_s,
+      assessment_cycle_id: cycle.id,
       status: student.status,
       display_status: "Assessment Complete / Pending Review"
     }
