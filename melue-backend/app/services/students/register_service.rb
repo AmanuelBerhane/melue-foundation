@@ -30,8 +30,10 @@ module Students
       return failure(age_error) if age_error
 
       attach_headshot(student)
+      attach_baseline_video(student)
 
       if student.save
+        attach_documents(student)
         success(student)
       else
         failure(student.errors.full_messages.join(", "))
@@ -73,18 +75,104 @@ module Students
       nil
     end
 
+    def build_file_io(file, default_filename:, default_content_type:)
+      return nil unless file.present?
+
+      if file.is_a?(ActiveStorage::Blob)
+        file
+      elsif file.is_a?(String) && file.start_with?("data:")
+        match = file.match(/\Adata:([^;]+);base64,(.+)\z/m)
+        if match
+          content_type = match[1]
+          data = Base64.decode64(match[2])
+          ext = Rack::Mime::MIME_TYPES.invert[content_type] || ".bin"
+          filename = default_filename.end_with?(ext) ? default_filename : "#{File.basename(default_filename, '.*')}#{ext}"
+          { io: StringIO.new(data), filename: filename, content_type: content_type }
+        else
+          nil
+        end
+      elsif file.respond_to?(:read) || file.respond_to?(:tempfile)
+        {
+          io: file.respond_to?(:tempfile) ? file.tempfile : file,
+          filename: file.respond_to?(:original_filename) ? file.original_filename : default_filename,
+          content_type: file.respond_to?(:content_type) ? file.content_type : default_content_type
+        }
+      elsif file.is_a?(Hash) && file[:io].present?
+        file
+      else
+        nil
+      end
+    end
+
     def attach_headshot(student)
-      file = @params[:headshot] || @params[:photo]
+      file = @params[:headshot] || @params[:photo] || @params[:enr_headshot] || @params[:photoUrl] || @params[:photo_url]
       return unless file.present?
 
-      blob = file.is_a?(ActiveStorage::Blob) ? file : ActiveStorage::Blob.create_and_upload!(
-        io: file,
-        filename: file.respond_to?(:original_filename) ? file.original_filename : "headshot.jpg",
-        content_type: file.respond_to?(:content_type) ? file.content_type : "image/jpeg"
+      target = build_file_io(file, default_filename: "headshot.jpg", default_content_type: "image/jpeg")
+      return unless target.present?
+
+      blob = target.is_a?(ActiveStorage::Blob) ? target : ActiveStorage::Blob.create_and_upload!(
+        io: target[:io],
+        filename: target[:filename],
+        content_type: target[:content_type]
       )
 
       student.headshot.attach(blob)
       student.headshot_photo.attach(blob)
+    rescue => e
+      Rails.logger.warn("Failed to attach headshot: #{e.message}")
+    end
+
+    def attach_baseline_video(student)
+      file = @params[:baseline_video] || @params[:baselineVideo] || @params[:enr_baseline_video] || @params[:video] || @params[:videoUrl]
+      return unless file.present?
+
+      target = build_file_io(file, default_filename: "baseline_video.mp4", default_content_type: "video/mp4")
+      return unless target.present?
+
+      blob = target.is_a?(ActiveStorage::Blob) ? target : ActiveStorage::Blob.create_and_upload!(
+        io: target[:io],
+        filename: target[:filename],
+        content_type: target[:content_type]
+      )
+
+      student.baseline_video.attach(blob)
+    rescue => e
+      Rails.logger.warn("Failed to attach baseline video: #{e.message}")
+    end
+
+    def attach_documents(student)
+      # Birth certificate
+      bc_file = @params[:birth_certificate] || @params[:birthCertificate] || @params[:enr_birth_certificate]
+      attach_single_document(student, bc_file, "birth_certificate", "birth_certificate.pdf", "application/pdf")
+
+      # Medical diagnosis paper
+      dp_file = @params[:diagnosis_paper] || @params[:diagnosisPaper] || @params[:enr_diagnosis_paper]
+      attach_single_document(student, dp_file, "diagnosis_paper", "diagnosis_paper.pdf", "application/pdf")
+
+      # Agreement
+      ag_file = @params[:agreement] || @params[:enr_agreement] || @params[:agreement_document] || @params[:agreementDocument]
+      attach_single_document(student, ag_file, "agreement", "agreement.pdf", "application/pdf")
+    end
+
+    def attach_single_document(student, file, doc_type, default_name, default_type)
+      return unless file.present?
+
+      target = build_file_io(file, default_filename: default_name, default_content_type: default_type)
+      return unless target.present?
+
+      blob = target.is_a?(ActiveStorage::Blob) ? target : ActiveStorage::Blob.create_and_upload!(
+        io: target[:io],
+        filename: target[:filename],
+        content_type: target[:content_type]
+      )
+
+      doc = student.documents.find_or_initialize_by(document_type: doc_type)
+      doc.file.attach(blob)
+      doc.description ||= "#{doc_type.humanize} attached during enrollment"
+      doc.save!
+    rescue => e
+      Rails.logger.warn("Failed to attach document #{doc_type}: #{e.message}")
     end
   end
 end

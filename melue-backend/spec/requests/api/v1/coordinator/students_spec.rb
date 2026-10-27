@@ -71,6 +71,45 @@ RSpec.describe 'Coordinator Students API', type: :request do
       expect(student.custom_fields).to eq({ 'transportation_route' => 'Route B' })
     end
 
+    it 'persists child first name when passed via childFirstName, enr_first_name or custom_fields' do
+      alias_params = {
+        childFirstName: 'Kaleb',
+        childLastName: 'Haile',
+        dateOfBirth: 7.years.ago.to_date.to_s,
+        programType: 'Regular',
+        therapyGroup: 'Basic Therapy',
+        diagnosis: 'Autism Spectrum Disorder',
+        custom_fields: {
+          'enr_first_name' => 'Kaleb',
+          'enr_last_name' => 'Haile'
+        }
+      }
+
+      post '/api/v1/coordinator/students', params: alias_params, headers: headers
+
+      expect(response).to have_http_status(:created)
+      expect(json['fullName']).to eq('Kaleb Haile')
+      student = Student.find(json['id'])
+      expect(student.first_name).to eq('Kaleb')
+      expect(student.last_name).to eq('Haile')
+    end
+
+
+    it 'persists uploaded documents and baseline video during student creation' do
+      doc_params = valid_params.merge(
+        birth_certificate: fixture_file_upload(Rails.root.join('spec/fixtures/files/test.pdf'), 'application/pdf'),
+        agreement: fixture_file_upload(Rails.root.join('spec/fixtures/files/test.pdf'), 'application/pdf'),
+        diagnosis_paper: fixture_file_upload(Rails.root.join('spec/fixtures/files/test.pdf'), 'application/pdf')
+      )
+
+      post '/api/v1/coordinator/students', params: doc_params, headers: headers
+
+      expect(response).to have_http_status(:created)
+      student = Student.find(json['id'])
+      expect(student.documents.count).to eq(3)
+      expect(student.documents.pluck(:document_type)).to contain_exactly('birth_certificate', 'diagnosis_paper', 'agreement')
+    end
+
     it 'enforces age-range validation for Basic Therapy via RegisterService (FR-026)' do
       invalid_age_params = valid_params.merge(dateOfBirth: 2.years.ago.to_date.to_s)
 

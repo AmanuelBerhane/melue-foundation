@@ -24,14 +24,32 @@ class Api::V1::OptionsController < Api::V1::BaseController
 
   # GET /api/v1/options/staff
   def staff
+    assignments_by_teacher = TeacherStudentAssignment
+      .where(status: %w[scheduled completed])
+      .pluck(:teacher_id, :student_id)
+      .each_with_object(Hash.new { |h, k| h[k] = [] }) do |(teacher_id, student_id), h|
+        h[teacher_id] << student_id.to_s unless h[teacher_id].include?(student_id.to_s)
+      end
+
+    if assignments_by_teacher.empty?
+      assignments_by_teacher = TeacherStudentAssignment
+        .pluck(:teacher_id, :student_id)
+        .each_with_object(Hash.new { |h, k| h[k] = [] }) do |(teacher_id, student_id), h|
+          h[teacher_id] << student_id.to_s unless h[teacher_id].include?(student_id.to_s)
+        end
+    end
+
     staff_members = StaffMember.includes(user: :roles).all.map do |sm|
       role_name = sm.user&.roles&.first&.name&.humanize || "Staff"
+      assigned_ids = assignments_by_teacher[sm.id] || []
       {
         id: sm.id.to_s,
         name: sm.full_name,
         role: (sm.role.presence || "teacher").to_s.downcase,
         roleName: role_name,
-        assignedStudents: []
+        assignedStudents: assigned_ids,
+        assignedStudentCount: assigned_ids.length,
+        assigned_students_count: assigned_ids.length
       }
     end
 
@@ -53,5 +71,54 @@ class Api::V1::OptionsController < Api::V1::BaseController
     end
 
     render json: rooms
+  end
+
+  # GET /api/v1/options/programs
+  def programs
+    programs = [ "Regular Morning", "Regular Afternoon", "Pulled Out" ]
+    render json: programs
+  end
+
+  # GET /api/v1/options/therapy_groups
+  def therapy_groups
+    groups = [ "Basic", "Functional Living" ]
+    render json: groups
+  end
+
+  # GET /api/v1/options/statuses
+  def statuses
+    statuses = [ "Active", "Inactive", "Draft", "Archived" ]
+    if defined?(Student)
+      db_statuses = Student.distinct.pluck(:status).compact.map do |s|
+        case s.to_s.downcase
+        when "active", "active_therapy", "registered", "ready_for_iup", "in_assessment", "assessment_complete"
+          "Active"
+        when "draft", "pending_review"
+          "Draft"
+        when "archived", "discharged", "withdrawn"
+          "Archived"
+        when "inactive"
+          "Inactive"
+        else
+          s.to_s.humanize.titleize
+        end
+      end
+      statuses = (statuses + db_statuses).uniq
+    end
+
+    render json: statuses
+  end
+
+  # GET /api/v1/options/therapy_statuses
+  def therapy_statuses
+    canonical = [
+      "In Assessment",
+      "Assessment Complete",
+      "Ready for IUP",
+      "IUP Ready",
+      "In Session",
+      "Not Started"
+    ]
+    render json: canonical
   end
 end

@@ -26,6 +26,8 @@ class StudentSerializer < ApplicationSerializer
       program_type: student.program_type,
       therapy_group: student.therapy_group,
       status: student.status,
+      therapy_status: student.status.to_s.humanize.titleize,
+      therapyStatus: student.status.to_s.humanize.titleize,
       headshot_url: headshot_url(student),
       custom_fields: student.custom_fields || {}
     }

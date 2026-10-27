@@ -54,10 +54,13 @@ class Student < ApplicationRecord
     self.student_id = value
   end
 
+  STUDENT_ID_FORMAT = /\A(?:\d{4}-MELUE-\d{4,}|MEL-\d{4,}-\d{2})\z/i
+
   validates :first_name, :last_name, :date_of_birth, presence: true
   validates :program_type, :therapy_group, presence: true
   validates :status, presence: true
-  validates :student_id, presence: true, uniqueness: { case_sensitive: false }
+  validates :student_id, presence: true, uniqueness: { case_sensitive: false },
+                         format: { with: STUDENT_ID_FORMAT, message: "must follow standard format MEL-****-YY (e.g. MEL-0001-26)" }
 
   before_validation :assign_student_id, on: :create
   before_create :assign_student_id
@@ -192,8 +195,8 @@ class Student < ApplicationRecord
   end
 
   def video_format_and_size
-    unless baseline_video.content_type.in?(%w[video/mp4 video/quicktime])
-      errors.add(:baseline_video, "must be MP4 or MOV format")
+    unless baseline_video.content_type.in?(%w[video/mp4 video/quicktime video/webm])
+      errors.add(:baseline_video, "must be MP4, WebM, or MOV format")
     end
 
     if baseline_video.byte_size > 100.megabytes

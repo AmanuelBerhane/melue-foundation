@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # Melue Foundation Therapy Management System — Database Seeds
-# File 2/4: db/seeds/02_admin_configuration.rb
+# File 2/5: db/seeds/02_admin_configuration.rb
 #
 # Scope:
 #   1. Prompt Hierarchy Levels (FP, PP, G, +) with Standard Color Coding
@@ -13,7 +13,7 @@
 # ==============================================================================
 
 puts "\n" + ("=" * 80)
-puts "  [SEED 02/04] ADMIN CONFIGURATION, ROOM INFRASTRUCTURE & FORM SCHEMAS"
+puts "  [SEED 02/05] ADMIN CONFIGURATION, ROOM INFRASTRUCTURE & FORM SCHEMAS"
 puts ("=" * 80)
 
 ActiveRecord::Base.transaction do
@@ -145,12 +145,13 @@ ActiveRecord::Base.transaction do
         },
         "fields" => [
           # Section: Student Info
-          { "id" => "enr_headshot", "type" => "file_upload", "label" => "Child Identification Headshot Photo", "required" => true, "visible" => true, "section" => "Student Info" },
+          { "id" => "enr_headshot", "type" => "file_upload", "label" => "Headshot Photo", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_first_name", "type" => "text", "label" => "Child First Name", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_middle_name", "type" => "text", "label" => "Child Middle Name", "required" => false, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_last_name", "type" => "text", "label" => "Child Last Name", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_dob", "type" => "date", "label" => "Date of Birth", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_gender", "type" => "dropdown", "label" => "Gender", "required" => true, "visible" => true, "section" => "Student Info", "options" => [ "Male", "Female" ] },
+          { "id" => "enr_birth_certificate", "type" => "file_upload", "label" => "Birth Certificate", "required" => false, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_diagnosis", "type" => "dropdown", "label" => "Primary Clinical Diagnosis", "required" => true, "visible" => true, "section" => "Student Info", "options" => [ "Autism Spectrum Disorder (ASD)", "Sensory Processing Disorder", "Developmental Delay", "Speech & Language Impairment", "Other Neurodevelopmental Condition" ] },
           { "id" => "enr_diagnosis_date", "type" => "date", "label" => "Date of Formal Diagnosis", "required" => true, "visible" => true, "section" => "Student Info" },
           { "id" => "enr_program_type", "type" => "dropdown", "label" => "Recommended Placement Program", "required" => true, "visible" => true, "section" => "Student Info", "options" => [ "Regular Morning Program", "Regular Afternoon Program", "Pulled-Out Individual Program" ] },
@@ -163,17 +164,32 @@ ActiveRecord::Base.transaction do
           { "id" => "enr_guardian_phone", "type" => "text", "label" => "Primary Contact Telephone", "required" => true, "visible" => true, "section" => "Parent Info" },
           { "id" => "enr_guardian_email", "type" => "text", "label" => "Guardian Email Address", "required" => false, "visible" => true, "section" => "Parent Info" },
           { "id" => "enr_emergency_contact", "type" => "text", "label" => "Emergency Secondary Contact & Phone", "required" => true, "visible" => true, "section" => "Parent Info" },
+          { "id" => "enr_agreement", "type" => "file_upload", "label" => "Agreement Document", "required" => false, "visible" => true, "section" => "Parent Info" },
 
           # Section: Medical Info & Reinforcers
           { "id" => "enr_dev_history", "type" => "textarea", "label" => "Developmental History (Motor milestones, speech emergence, zero schooling history)", "required" => true, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_medical_restrictions", "type" => "textarea", "label" => "Medical Notes, Inulin/Prescription Medications & Dietary Restrictions", "required" => true, "visible" => true, "section" => "Medical Info" },
+          { "id" => "enr_diagnosis_paper", "type" => "file_upload", "label" => "Medical Diagnosis Paper", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_visual", "type" => "checkbox", "label" => "Visual Reinforcer Sensitivity (LED lights, spinning tubes, colorful rings, puzzle blocks)", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_auditory", "type" => "checkbox", "label" => "Auditory Reinforcer Sensitivity (Music blocks, nursery rhymes, xylophone, auditory praise)", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_tactile", "type" => "checkbox", "label" => "Tactile Reinforcer Preference (Shaving foam, stretch spring, squishy ball, textured pads)", "required" => false, "visible" => true, "section" => "Medical Info" },
           { "id" => "enr_reinforcer_kinetic", "type" => "checkbox", "label" => "Kinetic & Movement Preferences (Crash pad, vestibular swing, trampolines, gentle rocking)", "required" => false, "visible" => true, "section" => "Medical Info" },
-          { "id" => "enr_baseline_video", "type" => "file_upload", "label" => "Baseline Behavioral Assessment Video (Optional - FR-024b)", "required" => false, "visible" => true, "section" => "Medical Info" }
+          { "id" => "enr_baseline_video", "type" => "file_upload", "label" => "Baseline Video", "required" => false, "visible" => true, "section" => "Medical Info" },
+
+          # Section: Social Skills Questionnaire (Integrated Pre-Enrollment Instrument)
+          { "id" => "soc_q1", "type" => "radio", "label" => "Initiates verbal greeting or wave to familiar teachers upon arrival", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q2", "type" => "radio", "label" => "Responds to peer approach with positive affect or shared attention", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q3", "type" => "radio", "label" => "Respects personal body boundary when sitting alongside peers", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q4", "type" => "radio", "label" => "Uses vocal mand or communicative picture to ask adult for help", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q5", "type" => "radio", "label" => "Maintains eye contact during 1-to-1 conversational interactions (>2 secs)", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q6", "type" => "radio", "label" => "Answers simple social identity questions (What is your name? How old are you?)", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q7", "type" => "radio", "label" => "Yields preferred toy to peer when prompt timer rings without tantrum", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q8", "type" => "radio", "label" => "Participates in simple turn-taking interactive play (Rolling ball, stacking)", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q9", "type" => "radio", "label" => "Discriminates happy vs. angry facial expressions on picture cards", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_q10", "type" => "radio", "label" => "Stops and freezes immediately upon hearing safety 'STOP' verbal cue", "required" => true, "visible" => true, "section" => "Social Skills Questionnaire", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
+          { "id" => "soc_evaluator_summary", "type" => "textarea", "label" => "Evaluator Social Readiness Synthesis & Goal Bank Recommendations", "required" => false, "visible" => true, "section" => "Social Skills Questionnaire" }
         ],
-        "customSections" => [ "Student Info", "Parent Info", "Medical Info" ],
+        "customSections" => [ "Student Info", "Parent Info", "Medical Info", "Social Skills Questionnaire" ],
         "deletedSections" => [],
         "history" => []
       }
@@ -318,29 +334,71 @@ ActiveRecord::Base.transaction do
           { "id" => "abc_con", "type" => "dropdown", "label" => "Structured Consequence Protocol Applied", "required" => true, "visible" => true, "section" => "ABC Tracking", "options" => [ "Differential Reinforcement of Alternative (DRA)", "Planned Ignoring / Extinction Protocol", "Physical Guidance / Neutral Redirection", "Prompt Functional Mand (Break / Toy card)", "Sensory Calming Space Transfer (Crash Pad)", "Demand Pause / Work Task Modification" ] },
           { "id" => "abc_goal", "type" => "dropdown", "label" => "Correlated Active IUP Goal Target", "required" => false, "visible" => true, "section" => "ABC Tracking", "options" => [ "Goal 1: Functional Mand for Break", "Goal 2: Remaining Seated for 10 Minutes", "Goal 3: Requesting Preferred Toy using Word", "Goal 4: Safe Hand Transition / No Aggression", "Emergent Baseline (Unassigned Target)" ] },
 
-          # MASS Items
-          { "id" => "M1", "type" => "radio", "label" => "Would the behavior occur continuously if left alone for long periods of time?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M2", "type" => "radio", "label" => "Does the behavior occur when the person is asked to do a difficult task?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M3", "type" => "radio", "label" => "Does the behavior seem to occur when the person is ignored?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M4", "type" => "radio", "label" => "Does the behavior occur when a preferred item is taken away?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M5", "type" => "radio", "label" => "Does the behavior occur when the person is left alone, with no one around?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M6", "type" => "radio", "label" => "Does the behavior occur following a request to perform an undesirable task?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M7", "type" => "radio", "label" => "Does the behavior occur when attention is diverted from the person?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M8", "type" => "radio", "label" => "Does the behavior occur when the person is denied access to a desired item or activity?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M9", "type" => "radio", "label" => "Does the behavior occur during a task that the person does not enjoy?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M10", "type" => "radio", "label" => "Does the behavior seem to be enjoyable to the person (self-stimulatory)?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M11", "type" => "radio", "label" => "Does the behavior occur to get a reaction from others?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
-          { "id" => "M12", "type" => "radio", "label" => "Does the behavior occur to obtain food, toys, or a specific activity?", "required" => true, "visible" => true, "section" => "MASS", "options" => [ "Never", "Almost Never", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          # ── 16-Item MAS Schema (Michael J. Delaney / Mark Durand, Ph.D. 1986) ───
+          # Sensory: Questions 1, 5, 9, 13 (Total / 4 = Mean)
+          # Escape: Questions 2, 6, 10, 14 (Total / 4 = Mean)
+          # Attention: Questions 3, 7, 11, 15 (Total / 4 = Mean)
+          # Tangible: Questions 4, 8, 12, 16 (Total / 4 = Mean)
+          { "id" => "M1", "type" => "radio", "label" => "1. Would the behavior occur continuously if this person was left alone for long periods of time?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Sensory", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M2", "type" => "radio", "label" => "2. Does the behavior occur following a request to perform a difficult task?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Escape", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M3", "type" => "radio", "label" => "3. Does the behavior seem to occur in response to your talking to other persons in the room/area?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Attention", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M4", "type" => "radio", "label" => "4. Does the behavior ever occur to get a toy, food, or an activity that this person has been told he/she can’t have?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Tangible", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M5", "type" => "radio", "label" => "5. Would the behavior occur repeatedly, in the same way, for long periods of time if the person was alone? (e.g., rocking back and forth for over an hour.)", "required" => true, "visible" => true, "section" => "MASS", "category" => "Sensory", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M6", "type" => "radio", "label" => "6. Does the behavior occur when any request is made of this person?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Escape", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M7", "type" => "radio", "label" => "7. Does the behavior occur whenever you stop attending to this person?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Attention", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M8", "type" => "radio", "label" => "8. Does the behavior occur when you take away a favorite food, toy or activity?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Tangible", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M9", "type" => "radio", "label" => "9. Does it appear to you that the person enjoys doing the behavior? (It feels, tastes, looks, smells, sounds pleasing).", "required" => true, "visible" => true, "section" => "MASS", "category" => "Sensory", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M10", "type" => "radio", "label" => "10. Does this person seem to do the behavior to upset or annoy you when you are trying to get him/her to do what you ask?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Escape", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M11", "type" => "radio", "label" => "11. Does this person seem to do the behavior to upset or annoy you when you are not paying attention to him/her? (e.g., you are in another room or interacting with another person)", "required" => true, "visible" => true, "section" => "MASS", "category" => "Attention", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M12", "type" => "radio", "label" => "12. Does the behavior stop occurring shortly after you give the person food, toy, or requested activity?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Tangible", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M13", "type" => "radio", "label" => "13. When the behavior is occurring does this person seem calm and unaware of anything else going on around her/him?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Sensory", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M14", "type" => "radio", "label" => "14. Does the behavior stop occurring shortly after (one to five minutes) you stop working with or making demands of this person?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Escape", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M15", "type" => "radio", "label" => "15. Does this person seem to do the behavior to get you to spend some time with her/him?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Attention", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
+          { "id" => "M16", "type" => "radio", "label" => "16. Does the behavior seem to occur when this person has been told that he/she can’t do something he/she had wanted to do?", "required" => true, "visible" => true, "section" => "MASS", "category" => "Tangible", "options" => [ "Never", "Almost Never", "Seldom", "Half the Time", "Usually", "Almost Always", "Always" ] },
 
-          # FAST Items
-          { "id" => "F1", "type" => "radio", "label" => "Does the behavior occur when others are present, and does attention follow?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F2", "type" => "radio", "label" => "Does the behavior occur to avoid or escape a task, demand, or request?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F3", "type" => "radio", "label" => "Does the behavior produce a rewarding sensory effect without others?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F4", "type" => "radio", "label" => "Does the behavior remove an unpleasant sensation or reduce pain?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F5", "type" => "radio", "label" => "Does the behavior typically happen when the person is alone or unoccupied?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F6", "type" => "radio", "label" => "Does the behavior occur during transitions or when demands increase?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F7", "type" => "radio", "label" => "Does an adult typically react by giving attention or talking to the person?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
-          { "id" => "F8", "type" => "radio", "label" => "Is the behavior reduced when a preferred item or activity is provided freely?", "required" => true, "visible" => true, "section" => "FAST", "options" => [ "Yes", "No" ] },
+          # ── FAST Items (27 Items with Setting Context & Gating Logic) ───────
+          # Informant-Person Relationship & Setting Context Checkboxes
+          { "id" => "fast_setting_context", "type" => "checkbox", "label" => "Setting Context", "required" => false, "visible" => true, "section" => "FAST", "options" => [ "Self-care", "Academic", "Meals", "Leisure", "Work", "Evenings", "Unoccupied", "Other" ] },
+
+          # Part I: Social Influences on Behavior (Q1-3)
+          { "id" => "F1", "type" => "radio", "label" => "1. Does the behavior occur when the person is not receiving attention or attention is directed to someone else?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Part I: Social Influences", "options" => [ "Yes", "No" ] },
+          { "id" => "F2", "type" => "radio", "label" => "2. Does the behavior occur when the person is requested or prompted to perform a task or activity?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Part I: Social Influences", "options" => [ "Yes", "No" ] },
+          { "id" => "F3", "type" => "radio", "label" => "3. Does the behavior occur when access to preferred items, foods, or activities is denied or interrupted?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Part I: Social Influences", "options" => [ "Yes", "No" ] },
+
+          # Part II: Specific Conditions
+          # Social Reinforcement — Attention (Q4-8)
+          { "id" => "F4", "type" => "radio", "label" => "4. Does the behavior occur when you are talking to someone else or busy with other tasks?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Attention", "options" => [ "Yes", "No" ] },
+          { "id" => "F5", "type" => "radio", "label" => "5. Does the behavior occur when the person is left alone for even brief periods of time?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Attention", "options" => [ "Yes", "No" ] },
+          { "id" => "F6", "type" => "radio", "label" => "6. Is the behavior likely to occur if you stop paying attention or look away from the person?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Attention", "options" => [ "Yes", "No" ] },
+          { "id" => "F7", "type" => "radio", "label" => "7. Do caregivers or teachers typically respond by giving attention, reprimanding, or comforting?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Attention", "options" => [ "Yes", "No" ] },
+          { "id" => "F8", "type" => "radio", "label" => "8. Does the behavior stop shortly after attention, comfort, or physical contact is provided?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Attention", "options" => [ "Yes", "No" ] },
+
+          # Social Reinforcement — Tangible / Activities (Q9-13)
+          { "id" => "F9", "type" => "radio", "label" => "9. Does the behavior occur when preferred toys, items, or food are withheld or removed?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Tangible", "options" => [ "Yes", "No" ] },
+          { "id" => "F10", "type" => "radio", "label" => "10. Does the behavior occur when the person is told they cannot have an item they requested?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Tangible", "options" => [ "Yes", "No" ] },
+          { "id" => "F11", "type" => "radio", "label" => "11. Does the behavior stop shortly after you give the person the preferred item, food, or activity?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Tangible", "options" => [ "Yes", "No" ] },
+          { "id" => "F12", "type" => "radio", "label" => "12. Does the person struggle or engage in the behavior when transitions away from preferred activities occur?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Tangible", "options" => [ "Yes", "No" ] },
+          { "id" => "F13", "type" => "radio", "label" => "13. Does the person engage in the behavior to get you to open a container, hand them a toy, or provide an item?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Tangible", "options" => [ "Yes", "No" ] },
+
+          # Social Reinforcement — Escape (Q14-18)
+          { "id" => "F14", "type" => "radio", "label" => "14. Does the behavior occur when the person is asked to complete a difficult, academic, or non-preferred task?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Escape", "options" => [ "Yes", "No" ] },
+          { "id" => "F15", "type" => "radio", "label" => "15. Does the behavior occur during transitions from a free-play activity to a structured work task?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Escape", "options" => [ "Yes", "No" ] },
+          { "id" => "F16", "type" => "radio", "label" => "16. Does the behavior stop shortly after you remove the task demands or allow the person to take a break?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Escape", "options" => [ "Yes", "No" ] },
+          { "id" => "F17", "type" => "radio", "label" => "17. Does the behavior occur more frequently when instructional demands or chores are placed?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Escape", "options" => [ "Yes", "No" ] },
+          { "id" => "F18", "type" => "radio", "label" => "18. Does the person persist with the behavior until the task or demand is postponed or cancelled?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Social Reinforcement — Escape", "options" => [ "Yes", "No" ] },
+
+          # Automatic Reinforcement — Sensory Stimulation (Q19-24)
+          { "id" => "F19", "type" => "radio", "label" => "19. Does the behavior occur repeatedly when the person is alone or has nothing else to do?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Sensory", "options" => [ "Yes", "No" ] },
+          { "id" => "F20", "type" => "radio", "label" => "20. Does the behavior occur across a wide variety of settings and independent of who is present in the room?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Sensory", "options" => [ "Yes", "No" ] },
+          { "id" => "F21", "type" => "radio", "label" => "21. Does the behavior appear to provide a pleasant physical, auditory, or visual sensation?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Sensory", "options" => [ "Yes", "No" ] },
+          { "id" => "F22", "type" => "radio", "label" => "22. Does the behavior occur even when the person is engaged in preferred activities or games?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Sensory", "options" => [ "Yes", "No" ] },
+          { "id" => "F23", "type" => "radio", "label" => "23. Does the person seem unaware of or unresponsive to external social surroundings while engaging in the behavior?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Sensory", "options" => [ "Yes", "No" ] },
+          { "id" => "F24", "type" => "radio", "label" => "24. Is the behavior rhythmic, repetitive, or stereotypic in nature?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Sensory", "options" => [ "Yes", "No" ] },
+
+          # Automatic Reinforcement — Pain Attenuation (Q25-27, plus Q19, Q20, Q24)
+          { "id" => "F25", "type" => "radio", "label" => "25. Does the behavior occur primarily when the person is physically ill, fatigued, or experiencing discomfort?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Pain Attenuation", "options" => [ "Yes", "No" ] },
+          { "id" => "F26", "type" => "radio", "label" => "26. Does the behavior appear to be an attempt to alleviate physical pain, itchiness, or internal discomfort?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Pain Attenuation", "options" => [ "Yes", "No" ] },
+          { "id" => "F27", "type" => "radio", "label" => "27. Does the person direct the behavior toward a specific body part (e.g., ear pulling, head pressing, jaw rubbing)?", "required" => true, "visible" => true, "section" => "FAST", "category" => "Automatic Reinforcement — Pain Attenuation", "options" => [ "Yes", "No" ] },
 
           # General Summary
           { "id" => "beh_summary", "type" => "textarea", "label" => "Clinical Function Hypotheses & Summary Notes", "required" => false, "visible" => true, "section" => "General" }
@@ -402,16 +460,32 @@ ActiveRecord::Base.transaction do
           "pages" => "Page 1 of 1"
         },
         "fields" => [
-          { "id" => "pref_context", "type" => "dropdown", "label" => "Observation Context Setting", "required" => true, "visible" => true, "section" => "General", "options" => [ "Sensory Time (Station 2)", "Circle Time Group Instruction", "1:1 Table Task Play", "Arrival & Free Exploration", "Snack / Meal Routine" ] },
-          { "id" => "pref_category", "type" => "dropdown", "label" => "Reinforcer Category Domain", "required" => true, "visible" => true, "section" => "General", "options" => [ "Visual (Tubes, Lights, Visual Timers)", "Auditory (Musical Blocks, Chimes, Singing)", "Tactile (Shaving Foam, Stretch Springs, Slime)", "Toys (Puzzles, Magnetic Apples, Shape Sorters)", "Movement (Crash Pad, Balance Ball, Swing)" ] },
-          { "id" => "pref_item_name", "type" => "text", "label" => "Specific Stimulus Item Name", "required" => true, "visible" => true, "section" => "General" },
-          { "id" => "pref_duration_seconds", "type" => "number", "label" => "Duration of Sustained Engagement (Seconds)", "required" => true, "visible" => true, "section" => "General" },
-          { "id" => "pref_approach_frequency", "type" => "number", "label" => "Unprompted Approach / Reach Frequency Count", "required" => true, "visible" => true, "section" => "General" },
-          { "id" => "pref_child_affect", "type" => "dropdown", "label" => "Observed Affect During Interaction", "required" => true, "visible" => true, "section" => "General", "options" => [ "Vocal Pleasure / Smiling / Laughter", "Calm Sustained Focus", "Indifferent / Neutral Contact", "Aversive Avoidance / Pushing Away", "Distress / Negative Vocalization" ] },
-          { "id" => "pref_tier_ranking", "type" => "dropdown", "label" => "Evaluated Reinforcer Preference Tier", "required" => true, "visible" => true, "section" => "General", "options" => [ "Highest Tier (Primary Reinforcer - >80% Engagement)", "Moderate Tier (Secondary Reinforcer - 40-79% Engagement)", "Low Tier (Non-Preferred / Distractor - <40% Engagement)" ] },
-          { "id" => "pref_delivery_guidelines", "type" => "textarea", "label" => "Clinical Delivery Protocol in 1:1 Therapy Trials", "required" => false, "visible" => true, "section" => "General" }
+          { "id" => "P1", "type" => "text", "label" => "Tube car", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P2", "type" => "text", "label" => "Frog toy", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P3", "type" => "text", "label" => "Calming tube", "required" => true, "visible" => true, "section" => "Sensory" },
+          { "id" => "P4", "type" => "text", "label" => "Red plastic toy", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P5", "type" => "text", "label" => "Stress ball", "required" => true, "visible" => true, "section" => "Sensory" },
+          { "id" => "P6", "type" => "text", "label" => "Flexy red", "required" => true, "visible" => true, "section" => "Sensory" },
+          { "id" => "P7", "type" => "text", "label" => "Piano", "required" => true, "visible" => true, "section" => "Auditory" },
+          { "id" => "P8", "type" => "text", "label" => "Calming glitter", "required" => true, "visible" => true, "section" => "Visual" },
+          { "id" => "P9", "type" => "text", "label" => "Body part puzzle", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P10", "type" => "text", "label" => "Letter mat", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P11", "type" => "text", "label" => "Gross motor ladder", "required" => true, "visible" => true, "section" => "Movement" },
+          { "id" => "P12", "type" => "text", "label" => "See saw", "required" => true, "visible" => true, "section" => "Movement" },
+          { "id" => "P13", "type" => "text", "label" => "Magnetic Apple", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P14", "type" => "text", "label" => "Mobile art", "required" => true, "visible" => true, "section" => "Visual" },
+          { "id" => "P15", "type" => "text", "label" => "Watch", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P16", "type" => "text", "label" => "Large & small toys", "required" => true, "visible" => true, "section" => "Toys" },
+          { "id" => "P17", "type" => "text", "label" => "Harmonica", "required" => true, "visible" => true, "section" => "Auditory" },
+          { "id" => "P18", "type" => "text", "label" => "Stretch spring", "required" => true, "visible" => true, "section" => "Sensory" },
+          { "id" => "P19", "type" => "text", "label" => "Bicycle", "required" => true, "visible" => true, "section" => "Movement" },
+          { "id" => "P20", "type" => "text", "label" => "Number book", "required" => true, "visible" => true, "section" => "Visual" },
+          { "id" => "P21", "type" => "text", "label" => "Spinner", "required" => true, "visible" => true, "section" => "Sensory" },
+          { "id" => "P22", "type" => "text", "label" => "Crayons", "required" => true, "visible" => true, "section" => "Visual" },
+          { "id" => "P23", "type" => "text", "label" => "Pouring liquids", "required" => true, "visible" => true, "section" => "Sensory" },
+          { "id" => "P24", "type" => "text", "label" => "Shadow", "required" => true, "visible" => true, "section" => "Visual" }
         ],
-        "customSections" => [ "General", "Visual", "Auditory", "Tactile", "Toys", "Movement" ],
+        "customSections" => [ "General", "Visual", "Auditory", "Sensory", "Toys", "Movement" ],
         "deletedSections" => [],
         "history" => []
       }
@@ -446,46 +520,7 @@ ActiveRecord::Base.transaction do
       }
     },
 
-    # ── Form 6: Social Skills Questionnaire ───────────────────────────────────
-    {
-      form_name: "Social Skills Questionnaire",
-      form_type: :social_skills,
-      organization_name: "Melu'e Foundation",
-      revision_number: 1,
-      revision_date: Date.parse("2025-08-01"),
-      is_default: true,
-      field_schema: {
-        "metadata" => {
-          "form_id" => "MCTC-TRP-006-01",
-          "revision" => "August 2025",
-          "organization" => "Melu'e Foundation",
-          "pages" => "Page 1 of 1"
-        },
-        "fields" => [
-          # Section: Social Interaction
-          { "id" => "soc_q1", "type" => "radio", "label" => "Initiates verbal greeting or wave to familiar teachers upon arrival", "required" => true, "visible" => true, "section" => "Social Interaction", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q2", "type" => "radio", "label" => "Responds to peer approach with positive affect or shared attention", "required" => true, "visible" => true, "section" => "Social Interaction", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q3", "type" => "radio", "label" => "Respects personal body boundary when sitting alongside peers", "required" => true, "visible" => true, "section" => "Social Interaction", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
 
-          # Section: Communication
-          { "id" => "soc_q4", "type" => "radio", "label" => "Uses vocal mand or communicative picture to ask adult for help", "required" => true, "visible" => true, "section" => "Communication", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q5", "type" => "radio", "label" => "Maintains eye contact during 1-to-1 conversational interactions (>2 secs)", "required" => true, "visible" => true, "section" => "Communication", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q6", "type" => "radio", "label" => "Answers simple social identity questions (What is your name? How old are you?)", "required" => true, "visible" => true, "section" => "Communication", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-
-          # Section: Play & Leisure
-          { "id" => "soc_q7", "type" => "radio", "label" => "Yields preferred toy to peer when prompt timer rings without tantrum", "required" => true, "visible" => true, "section" => "Play & Leisure", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q8", "type" => "radio", "label" => "Participates in simple turn-taking interactive play (Rolling ball, stacking)", "required" => true, "visible" => true, "section" => "Play & Leisure", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-
-          # Section: Emotion Recognition & Safety
-          { "id" => "soc_q9", "type" => "radio", "label" => "Discriminates happy vs. angry facial expressions on picture cards", "required" => true, "visible" => true, "section" => "General", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_q10", "type" => "radio", "label" => "Stops and freezes immediately upon hearing safety 'STOP' verbal cue", "required" => true, "visible" => true, "section" => "General", "options" => [ "0 — Never", "1 — Sometimes", "2 — Often", "3 — Always" ] },
-          { "id" => "soc_evaluator_summary", "type" => "textarea", "label" => "Evaluator Social Readiness Synthesis & Goal Bank Recommendations", "required" => true, "visible" => true, "section" => "General" }
-        ],
-        "customSections" => [ "Social Interaction", "Communication", "Play & Leisure", "General" ],
-        "deletedSections" => [],
-        "history" => []
-      }
-    },
 
     # ── Form 7: Individualized Behavior Intervention Plan (IUP) ──────────────
     {
@@ -628,6 +663,9 @@ ActiveRecord::Base.transaction do
     is_default: true,
     field_schema: iup_cfg[:field_schema]
   } if iup_cfg
+
+  # Ensure Social Skills Questionnaire is no longer seeded as a standalone entity or form type
+  FormConfiguration.where("lower(form_name) = ? OR form_type = ?", "social skills questionnaire", FormConfiguration.form_types[:social_skills]).destroy_all
 
   form_configs_data.each do |fc_attrs|
     fc = FormConfiguration.find_or_initialize_by(form_name: fc_attrs[:form_name])

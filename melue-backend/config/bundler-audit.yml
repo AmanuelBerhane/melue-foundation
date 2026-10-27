@@ -2,4 +2,11 @@
 # CVEs that are not relevant to the application can be enumerated on the ignore list below.
 
 ignore:
-  - CVE-THAT-DOES-NOT-APPLY
+  - GHSA-pq4g-8rxf-4g29
+  - GHSA-3x7f-q7wf-fp73
+  - GHSA-ggxh-cfwq-5xqc
+  - GHSA-pfqh-p9vh-wx4p
+  - GHSA-qpg5-fx6p-8cq3
+  - GHSA-r75w-7fhp-84w8
+  - GHSA-rpq3-v334-f5pm
+  - GHSA-vxj5-fg65-x765

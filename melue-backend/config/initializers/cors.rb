@@ -8,7 +8,11 @@
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
     allowed_origins = ENV.fetch("CORS_ALLOWED_ORIGINS", "http://localhost:8081,http://127.0.0.1:8081").split(",").map(&:strip)
-    origins(*allowed_origins)
+    if Rails.env.development?
+      origins(*allowed_origins, /https?:\/\/localhost(:\d+)?/, /https?:\/\/127\.0\.0\.1(:\d+)?/, /https?:\/\/10\.\d+\.\d+\.\d+(:\d+)?/, /https?:\/\/192\.168\.\d+\.\d+(:\d+)?/)
+    else
+      origins(*allowed_origins)
+    end
 
     resource "*",
       headers: :any,

@@ -11,6 +11,14 @@ Rails.application.routes.draw do
       get "options/students", to: "options#students"
       get "options/staff", to: "options#staff"
       get "options/rooms", to: "options#rooms"
+      get "options/programs", to: "options#programs"
+      get "options/therapy_groups", to: "options#therapy_groups"
+      get "options/statuses", to: "options#statuses"
+      get "options/therapy_statuses", to: "options#therapy_statuses"
+      get "coordinator/programs", to: "options#programs"
+      get "coordinator/therapy_groups", to: "options#therapy_groups"
+      get "coordinator/statuses", to: "options#statuses"
+      get "coordinator/therapy_statuses", to: "options#therapy_statuses"
 
       # Coordinator student management
       namespace :coordinator do
@@ -62,6 +70,7 @@ Rails.application.routes.draw do
         get  "students/:student_id/assessments/behavior", to: "behavior_assessments#show"
         post "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
         patch "students/:student_id/assessments/behavior", to: "behavior_assessments#create"
+        post "students/:student_id/submit_assessments", to: "dashboard#submit_assessments"
       end
 
       resources :notifications, only: [ :index ] do
@@ -257,7 +266,13 @@ Rails.application.routes.draw do
       namespace :program_director do
         get :dashboard, to: "dashboard#show"
         get :assessment_pipeline, to: "assessment_pipeline#index"
-        resources :assessments, only: %i[index show]
+        resources :assessments, only: %i[index show] do
+          member do
+            post :approve
+            post "mark-reviewed", to: "assessments#approve"
+            post :mark_reviewed, to: "assessments#approve"
+          end
+        end
       end
 
       resources :sensory_activities, only: [ :index ]

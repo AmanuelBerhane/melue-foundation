@@ -5,7 +5,10 @@ class BehaviorAssessment < ApplicationRecord
 
   belongs_to :assessment_cycle
 
-  STATUSES = %w[draft in_progress submitted].freeze
+  has_many :behavior_target_assessments, dependent: :destroy
+  has_many :behavior_questionnaire_records, class_name: "BehaviorTargetAssessment", dependent: :destroy
+
+  STATUSES = %w[draft in_progress submitted completed].freeze
 
   validates :assessment_cycle_id, uniqueness: true
   validates :status, presence: true, inclusion: { in: STATUSES }
@@ -14,7 +17,8 @@ class BehaviorAssessment < ApplicationRecord
 
   def draft?        = status == "draft"
   def in_progress?  = status == "in_progress"
-  def submitted?    = status == "submitted"
+  def submitted?    = status == "submitted" || status == "completed"
+  def completed?    = status == "completed" || status == "submitted"
 
   private
 

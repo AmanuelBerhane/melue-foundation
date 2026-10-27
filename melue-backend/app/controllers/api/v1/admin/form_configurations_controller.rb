@@ -183,7 +183,7 @@ module Api
         end
 
         def form_configuration_params
-          params.require(:form_configuration).permit(:form_type, :form_name, :revision_date, :organization_name, :is_default, field_schema: {})
+          params.require(:form_configuration).permit(:form_type, :form_name, :revision_number, :revision_date, :organization_name, :is_default, field_schema: {})
         end
       end
     end

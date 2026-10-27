@@ -135,4 +135,22 @@ RSpec.describe "Api::V1::ProgramDirector::Assessments", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
   end
+
+  describe "POST /api/v1/program_director/assessments/:id/approve" do
+    let(:student) { create(:student, status: "assessment_complete") }
+    let(:cycle) { create(:assessment_cycle, student: student, status: "complete") }
+
+    it "approves the assessment and marks the student ready for IUP" do
+      post "/api/v1/program_director/assessments/#{cycle.id}/approve", headers: headers
+
+      expect(response).to have_http_status(:ok)
+      data = JSON.parse(response.body)
+      expect(data["success"]).to be(true)
+      expect(data["status"]).to eq("reviewed")
+      expect(data["student_status"]).to eq("ready_for_iup")
+
+      expect(cycle.reload.status).to eq("reviewed")
+      expect(student.reload.status).to eq("ready_for_iup")
+    end
+  end
 end

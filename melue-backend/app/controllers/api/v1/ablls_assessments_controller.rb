@@ -178,6 +178,25 @@ class Api::V1::AbllsAssessmentsController < Api::V1::BaseController
   def set_ablls_assessment
     assessment_id = params[:ablls_assessment_id] || params[:id]
     @ablls_assessment = AbllsAssessment.find_by(id: assessment_id)
+    if @ablls_assessment.nil?
+      student_id = assessment_id.to_s.sub(/^skills-/, "")
+      student = Student.find_by(id: student_id)
+      if student
+        cycle = student.assessment_cycles.order(created_at: :desc).first
+        if cycle.nil?
+          cycle = student.assessment_cycles.create!(
+            start_date: Date.current,
+            end_date: 6.weeks.from_now.to_date,
+            status: "active"
+          )
+        end
+        @ablls_assessment = cycle.ablls_assessment || cycle.create_ablls_assessment!(
+          staff_member: current_staff_member,
+          status: "draft",
+          started_at: Time.current
+        )
+      end
+    end
     render_not_found("ABLLS assessment not found") unless @ablls_assessment
   end
 

@@ -2,14 +2,14 @@
 
 # ==============================================================================
 # Melue Foundation Therapy Management System — Database Seeds
-# File: db/seeds/04_cohort_students_and_pipeline.rb
+# File 4/5: db/seeds/04_cohort_students_and_pipeline.rb
 #
 # Clinical Cohort Seeding (SRS 3.2, 3.6, 3.7):
 #   - Diverse cohort of 10 students spanning all clinical pipeline phases:
-#       1. in_assessment (Amir Hassan, Tigist Bekele)
-#       2. ready_for_iup (Saron Tekle, Biniam Hailu) with completed assessment cycles
-#       3. active_therapy (Yonas Girma, Meron Haile, Abel Tadesse, Liya Belay)
-#       4. completed_sessions (Natnael Worku, Hiwot Alemu)
+#       1. in_assessment (Student One, Student Two)
+#       2. ready_for_iup (Student Three, Student Four) with completed assessment cycles
+#       3. active_therapy (Student Five, Student Six, Student Seven, Student Eight)
+#       4. completed_sessions (Student Nine, Student Ten)
 #   - Completed Assessment Cycles (ABLLS-R, MAS, FAST, Preference, Sensory)
 #   - Active IUPs and Standard Student Goals (STRICTLY standard goals, zero TA)
 #   - Teacher-Student Station Assignments (Today + 5-day historical)
@@ -20,7 +20,7 @@
 
 ActiveRecord::Base.transaction do
   puts "\n================================================================================"
-  puts "  STEP 4: COHORT STUDENTS, CLINICAL PIPELINE & HISTORICAL TRIAL STREAM"
+  puts "  [SEED 04/05] COHORT STUDENTS, CLINICAL PIPELINE & HISTORICAL TRIAL STREAM"
   puts "================================================================================\n"
 
   # ----------------------------------------------------------------------------
@@ -57,13 +57,18 @@ ActiveRecord::Base.transaction do
   # ----------------------------------------------------------------------------
   # Helper: Idempotent Student Builder
   # ----------------------------------------------------------------------------
-  def self.seed_student(attributes, guardian_attributes)
-    student = Student.find_or_initialize_by(
-      first_name: attributes[:first_name],
-      last_name:  attributes[:last_name]
-    )
+  def self.seed_student(attributes, guardian_attributes, student_id_code, fallback_old_name = nil)
+    old_slash_code = student_id_code.tr("-", "/")
+    student = Student.find_by(student_id: student_id_code) ||
+              Student.find_by(student_id: old_slash_code) ||
+              Student.find_by(first_name: attributes[:first_name], last_name: attributes[:last_name])
+    if student.nil? && fallback_old_name
+      student = Student.find_by(first_name: fallback_old_name[:first_name], last_name: fallback_old_name[:last_name])
+    end
+    student ||= Student.new
 
     student.assign_attributes(attributes)
+    student.student_id = student_id_code
     student.save!
 
     guardian = Guardian.find_or_create_by!(
@@ -87,49 +92,65 @@ ActiveRecord::Base.transaction do
   # ----------------------------------------------------------------------------
   puts "\n--> [1/4] Seeding Phase: 'in_assessment' students..."
 
-  amir = seed_student(
+  student1 = seed_student(
     {
-      first_name:            "Amir",
-      last_name:             "Hassan",
+      first_name:            "Student",
+      last_name:             "One",
       date_of_birth:         Date.parse("2019-07-22"),
       therapy_group:         "basic",
       program_type:          "regular",
       status:                "in_assessment",
-      guardian_name:         "Fatuma Hassan",
+      guardian_name:         "Guardian One",
       guardian_phone:        "+251 91 200 0001",
-      guardian_email:        "fatuma.hassan@example.com",
+      guardian_email:        "guardian1@example.com",
       diagnosis:             "Suspected Autism Spectrum Disorder",
-      assessment_started_at: 2.weeks.ago
+      assessment_started_at: 2.weeks.ago,
+      custom_fields:         {
+        "f_therapist"        => teacher1.full_name,
+        "therapist"          => teacher1.full_name,
+        "assigned_therapist" => teacher1.full_name
+      }
     },
     {
-      full_name:    "Fatuma Hassan",
+      full_name:    "Guardian One",
       phone:        "+251 91 200 0001",
-      email:        "fatuma.hassan@example.com",
+      email:        "guardian1@example.com",
       relationship: "Mother"
-    }
+    },
+    "MEL-0001-26",
+    { first_name: "Amir", last_name: "Hassan" }
   )
+  amir = student1
 
-  tigist = seed_student(
+  student2 = seed_student(
     {
-      first_name:            "Tigist",
-      last_name:             "Bekele",
+      first_name:            "Student",
+      last_name:             "Two",
       date_of_birth:         Date.parse("2018-11-14"),
       therapy_group:         "basic",
       program_type:          "pulled_out",
       status:                "in_assessment",
-      guardian_name:         "Almaz Bekele",
+      guardian_name:         "Guardian Two",
       guardian_phone:        "+251 91 200 0002",
-      guardian_email:        "almaz.bekele@example.com",
+      guardian_email:        "guardian2@example.com",
       diagnosis:             "Global Developmental Delay",
-      assessment_started_at: 3.weeks.ago
+      assessment_started_at: 3.weeks.ago,
+      custom_fields:         {
+        "f_therapist"        => teacher2.full_name,
+        "therapist"          => teacher2.full_name,
+        "assigned_therapist" => teacher2.full_name
+      }
     },
     {
-      full_name:    "Almaz Bekele",
+      full_name:    "Guardian Two",
       phone:        "+251 91 200 0002",
-      email:        "almaz.bekele@example.com",
+      email:        "guardian2@example.com",
       relationship: "Mother"
-    }
+    },
+    "MEL-0002-26",
+    { first_name: "Tigist", last_name: "Bekele" }
   )
+  tigist = student2
 
   # Provision in-progress assessment cycles for in_assessment students
   [ amir, tigist ].each do |student|
@@ -141,58 +162,64 @@ ActiveRecord::Base.transaction do
     end
   end
 
-  puts "    ✓ Amir Hassan and Tigist Bekele seeded in 'in_assessment'."
+  puts "    ✓ Student One and Student Two seeded in 'in_assessment'."
 
   # ----------------------------------------------------------------------------
   # 2. Pipeline Stage 2: ready_for_iup (Assessments completed, pending plan)
   # ----------------------------------------------------------------------------
   puts "\n--> [2/4] Seeding Phase: 'ready_for_iup' students and full assessment batteries..."
 
-  saron = seed_student(
+  student3 = seed_student(
     {
-      first_name:            "Saron",
-      last_name:             "Tekle",
+      first_name:            "Student",
+      last_name:             "Three",
       date_of_birth:         Date.parse("2017-03-18"),
       therapy_group:         "basic",
       program_type:          "regular",
       status:                "ready_for_iup",
-      guardian_name:         "Hiwot Tekle",
+      guardian_name:         "Guardian Three",
       guardian_phone:        "+251 91 200 0003",
-      guardian_email:        "hiwot.tekle@example.com",
+      guardian_email:        "guardian3@example.com",
       diagnosis:             "ASD Level 1",
       enrolled_at:           8.weeks.ago,
       assessment_started_at: 6.weeks.ago
     },
     {
-      full_name:    "Hiwot Tekle",
+      full_name:    "Guardian Three",
       phone:        "+251 91 200 0003",
-      email:        "hiwot.tekle@example.com",
+      email:        "guardian3@example.com",
       relationship: "Mother"
-    }
+    },
+    "MEL-0003-26",
+    { first_name: "Saron", last_name: "Tekle" }
   )
+  saron = student3
 
-  biniam = seed_student(
+  student4 = seed_student(
     {
-      first_name:            "Biniam",
-      last_name:             "Hailu",
+      first_name:            "Student",
+      last_name:             "Four",
       date_of_birth:         Date.parse("2013-09-05"),
       therapy_group:         "functional_living",
       program_type:          "regular",
       status:                "ready_for_iup",
-      guardian_name:         "Mekdes Hailu",
+      guardian_name:         "Guardian Four",
       guardian_phone:        "+251 91 200 0004",
-      guardian_email:        "mekdes.hailu@example.com",
+      guardian_email:        "guardian4@example.com",
       diagnosis:             "ASD Level 2",
       enrolled_at:           8.weeks.ago,
       assessment_started_at: 6.weeks.ago
     },
     {
-      full_name:    "Mekdes Hailu",
+      full_name:    "Guardian Four",
       phone:        "+251 91 200 0004",
-      email:        "mekdes.hailu@example.com",
+      email:        "guardian4@example.com",
       relationship: "Mother"
-    }
+    },
+    "MEL-0004-26",
+    { first_name: "Biniam", last_name: "Hailu" }
   )
+  biniam = student4
 
   # Provision full completed 5-part assessment battery for Saron and Biniam
   [ saron, biniam ].each do |student|
@@ -311,109 +338,127 @@ ActiveRecord::Base.transaction do
     mass.calculate_scores!
   end
 
-  puts "    ✓ Saron Tekle and Biniam Hailu seeded in 'ready_for_iup' with full 5-part assessment records."
+  puts "    ✓ Student Three and Student Four seeded in 'ready_for_iup' with full 5-part assessment records."
 
   # ----------------------------------------------------------------------------
   # 3. Pipeline Stage 3: active_therapy (Assigned stations, active IUPs & standard goals)
   # ----------------------------------------------------------------------------
   puts "\n--> [3/4] Seeding Phase: 'active_therapy' students, active IUPs and standard goals..."
 
-  yonas = seed_student(
+  student5 = seed_student(
     {
-      first_name:     "Yonas",
-      last_name:      "Girma",
+      first_name:     "Student",
+      last_name:      "Five",
       date_of_birth:  Date.parse("2018-04-12"),
       therapy_group:  "basic",
       program_type:   "regular",
       status:         "active_therapy",
-      guardian_name:  "Girma Wolde",
+      guardian_name:  "Guardian Five",
       guardian_phone: "+251 91 200 0005",
-      guardian_email: "girma.wolde@example.com",
+      guardian_email: "guardian5@example.com",
       diagnosis:      "Autism Spectrum Disorder"
     },
-    { full_name: "Girma Wolde", phone: "+251 91 200 0005", email: "girma.wolde@example.com", relationship: "Father" }
+    { full_name: "Guardian Five", phone: "+251 91 200 0005", email: "guardian5@example.com", relationship: "Father" },
+    "MEL-0005-26",
+    { first_name: "Yonas", last_name: "Girma" }
   )
+  yonas = student5
 
-  meron = seed_student(
+  student6 = seed_student(
     {
-      first_name:     "Meron",
-      last_name:      "Haile",
+      first_name:     "Student",
+      last_name:      "Six",
       date_of_birth:  Date.parse("2017-09-05"),
       therapy_group:  "basic",
       program_type:   "regular",
       status:         "active_therapy",
-      guardian_name:  "Haile Gebre",
+      guardian_name:  "Guardian Six",
       guardian_phone: "+251 91 200 0006",
-      guardian_email: "haile.gebre@example.com",
+      guardian_email: "guardian6@example.com",
       diagnosis:      "Autism Spectrum Disorder"
     },
-    { full_name: "Haile Gebre", phone: "+251 91 200 0006", email: "haile.gebre@example.com", relationship: "Father" }
+    { full_name: "Guardian Six", phone: "+251 91 200 0006", email: "guardian6@example.com", relationship: "Father" },
+    "MEL-0006-26",
+    { first_name: "Meron", last_name: "Haile" }
   )
+  meron = student6
 
-  abel = seed_student(
+  student7 = seed_student(
     {
-      first_name:     "Abel",
-      last_name:      "Tadesse",
+      first_name:     "Student",
+      last_name:      "Seven",
       date_of_birth:  Date.parse("2019-02-20"),
       therapy_group:  "basic",
       program_type:   "pulled_out",
       status:         "active_therapy",
-      guardian_name:  "Tadesse Assefa",
+      guardian_name:  "Guardian Seven",
       guardian_phone: "+251 91 200 0007",
-      guardian_email: "tadesse.assefa@example.com",
+      guardian_email: "guardian7@example.com",
       diagnosis:      "Developmental Delay & Social Communication Disorder"
     },
-    { full_name: "Tadesse Assefa", phone: "+251 91 200 0007", email: "tadesse.assefa@example.com", relationship: "Father" }
+    { full_name: "Guardian Seven", phone: "+251 91 200 0007", email: "guardian7@example.com", relationship: "Father" },
+    "MEL-0007-26",
+    { first_name: "Abel", last_name: "Tadesse" }
   )
+  abel = student7
 
-  liya = seed_student(
+  student8 = seed_student(
     {
-      first_name:     "Liya",
-      last_name:      "Belay",
+      first_name:     "Student",
+      last_name:      "Eight",
       date_of_birth:  Date.parse("2016-11-30"),
       therapy_group:  "basic",
       program_type:   "regular",
       status:         "active_therapy",
-      guardian_name:  "Belay Demisse",
+      guardian_name:  "Guardian Eight",
       guardian_phone: "+251 91 200 0008",
-      guardian_email: "belay.demisse@example.com",
+      guardian_email: "guardian8@example.com",
       diagnosis:      "Autism Spectrum Disorder"
     },
-    { full_name: "Belay Demisse", phone: "+251 91 200 0008", email: "belay.demisse@example.com", relationship: "Father" }
+    { full_name: "Guardian Eight", phone: "+251 91 200 0008", email: "guardian8@example.com", relationship: "Father" },
+    "MEL-0008-26",
+    { first_name: "Liya", last_name: "Belay" }
   )
+  liya = student8
 
   # Pipeline Stage 4: completed_sessions (Active therapy with rich multi-day trial history)
-  natnael = seed_student(
+  student9 = seed_student(
     {
-      first_name:     "Natnael",
-      last_name:      "Worku",
+      first_name:     "Student",
+      last_name:      "Nine",
       date_of_birth:  Date.parse("2013-06-15"),
       therapy_group:  "functional_living",
       program_type:   "regular",
       status:         "active_therapy",
-      guardian_name:  "Worku Kassa",
+      guardian_name:  "Guardian Nine",
       guardian_phone: "+251 91 200 0009",
-      guardian_email: "worku.kassa@example.com",
+      guardian_email: "guardian9@example.com",
       diagnosis:      "ASD Level 2 with Behavioral Challenges"
     },
-    { full_name: "Worku Kassa", phone: "+251 91 200 0009", email: "worku.kassa@example.com", relationship: "Father" }
+    { full_name: "Guardian Nine", phone: "+251 91 200 0009", email: "guardian9@example.com", relationship: "Father" },
+    "MEL-0009-26",
+    { first_name: "Natnael", last_name: "Worku" }
   )
+  natnael = student9
 
-  hiwot = seed_student(
+  student10 = seed_student(
     {
-      first_name:     "Hiwot",
-      last_name:      "Alemu",
+      first_name:     "Student",
+      last_name:      "Ten",
       date_of_birth:  Date.parse("2014-08-08"),
       therapy_group:  "functional_living",
       program_type:   "pulled_out",
       status:         "active_therapy",
-      guardian_name:  "Alemu Tsegaye",
+      guardian_name:  "Guardian Ten",
       guardian_phone: "+251 91 200 0010",
-      guardian_email: "alemu.tsegaye@example.com",
+      guardian_email: "guardian10@example.com",
       diagnosis:      "ASD Level 2"
     },
-    { full_name: "Alemu Tsegaye", phone: "+251 91 200 0010", email: "alemu.tsegaye@example.com", relationship: "Father" }
+    { full_name: "Guardian Ten", phone: "+251 91 200 0010", email: "guardian10@example.com", relationship: "Father" },
+    "MEL-0010-26",
+    { first_name: "Hiwot", last_name: "Alemu" }
   )
+  hiwot = student10
 
   # Provision Active IUPs and 2 Standard Goals for Each Active Student
   # CRITICAL RESTRICTION: Every goal MUST have goal_type: "standard"
@@ -500,12 +545,30 @@ ActiveRecord::Base.transaction do
 
   today = Date.current
 
-  # Teacher 1 -> Yonas & Meron | Morning Block A | Station 1 (Room 1A)
-  [ yonas, meron ].each do |st|
+  # Multi-day scheduled assignment range (past 2 days up to next 14 days) so schedule is always active
+  assignment_dates = ((-2)..14).map { |n| today + n.days }.reject { |d| d.saturday? || d.sunday? }
+
+  assignment_dates.each do |target_date|
+    # Teacher 1 -> Yonas & Meron | Morning Block A | Station 1 (Room 1A)
+    [ yonas, meron ].each do |st|
+      TeacherStudentAssignment.find_or_initialize_by(
+        student:                   st,
+        session_block_definition: morning_block_a,
+        scheduled_date:           target_date
+      ).tap do |tsa|
+        tsa.teacher         = teacher1
+        tsa.therapy_station = station1
+        tsa.therapy_room    = room_1a
+        tsa.status          = "scheduled"
+        tsa.save!
+      end
+    end
+
+    # Teacher 1 Assessment Caseload -> Student One (in_assessment) | Morning Block B | Station 1 (Room 1A)
     TeacherStudentAssignment.find_or_initialize_by(
-      student:                   st,
-      session_block_definition: morning_block_a,
-      scheduled_date:           today
+      student:                   student1,
+      session_block_definition: morning_block_b,
+      scheduled_date:           target_date
     ).tap do |tsa|
       tsa.teacher         = teacher1
       tsa.therapy_station = station1
@@ -513,14 +576,12 @@ ActiveRecord::Base.transaction do
       tsa.status          = "scheduled"
       tsa.save!
     end
-  end
 
-  # Teacher 2 -> Abel & Liya | Morning Block B | Station 1 (Room 1B)
-  [ abel, liya ].each do |st|
+    # Teacher 2 Assessment Caseload -> Student Two (in_assessment) | Morning Block A | Station 1 (Room 1B)
     TeacherStudentAssignment.find_or_initialize_by(
-      student:                   st,
-      session_block_definition: morning_block_b,
-      scheduled_date:           today
+      student:                   student2,
+      session_block_definition: morning_block_a,
+      scheduled_date:           target_date
     ).tap do |tsa|
       tsa.teacher         = teacher2
       tsa.therapy_station = station1
@@ -528,20 +589,35 @@ ActiveRecord::Base.transaction do
       tsa.status          = "scheduled"
       tsa.save!
     end
-  end
 
-  # Teacher 3 -> Natnael & Hiwot | Afternoon Block A | Station 2 (Room 2A) (Today's Assignment)
-  [ natnael, hiwot ].each do |st|
-    TeacherStudentAssignment.find_or_initialize_by(
-      student:                   st,
-      session_block_definition: afternoon_block_a,
-      scheduled_date:           today
-    ).tap do |tsa|
-      tsa.teacher         = teacher3
-      tsa.therapy_station = station2
-      tsa.therapy_room    = room_2a
-      tsa.status          = "scheduled"
-      tsa.save!
+    # Teacher 2 -> Abel & Liya | Morning Block B | Station 1 (Room 1B)
+    [ abel, liya ].each do |st|
+      TeacherStudentAssignment.find_or_initialize_by(
+        student:                   st,
+        session_block_definition: morning_block_b,
+        scheduled_date:           target_date
+      ).tap do |tsa|
+        tsa.teacher         = teacher2
+        tsa.therapy_station = station1
+        tsa.therapy_room    = room_1b
+        tsa.status          = "scheduled"
+        tsa.save!
+      end
+    end
+
+    # Teacher 3 -> Natnael & Hiwot | Afternoon Block A | Station 2 (Room 2A)
+    [ natnael, hiwot ].each do |st|
+      TeacherStudentAssignment.find_or_initialize_by(
+        student:                   st,
+        session_block_definition: afternoon_block_a,
+        scheduled_date:           target_date
+      ).tap do |tsa|
+        tsa.teacher         = teacher3
+        tsa.therapy_station = station2
+        tsa.therapy_room    = room_2a
+        tsa.status          = "scheduled"
+        tsa.save!
+      end
     end
   end
 
@@ -652,7 +728,7 @@ ActiveRecord::Base.transaction do
       submitted_at:       session_end + 10.minutes,
       reviewed_by_user:   coordinator_user,
       reviewed_at:        session_end + 45.minutes,
-      qualitative_notes:  "Session on #{hist_date.strftime('%B %d')}: Natnael showed strong verbal response during functional living routines. Hiwot maintained focus with partial physical prompting."
+      qualitative_notes:  "Session on #{hist_date.strftime('%B %d')}: Student Nine showed strong verbal response during functional living routines. Student Ten maintained focus with partial physical prompting."
     )
     summary.save!
 
@@ -861,9 +937,9 @@ ActiveRecord::Base.transaction do
     incident.save!
   end
 
-  puts "    ✓ Longitudinal ABC incidents seeded for Yonas, Natnael, and Hiwot."
+  puts "    ✓ Longitudinal ABC incidents seeded for Student Five, Student Nine, and Student Ten."
 
   puts "\n" + ("=" * 80)
-  puts "  STEP 4 COMPLETE: 10 Cohort Students, Pipeline Stages & Historical Data Seeded"
+  puts "  [SEED 04/05] COMPLETE: 10 Cohort Students, Pipeline Stages & Historical Data Seeded"
   puts ("=" * 80) + "\n"
 end
