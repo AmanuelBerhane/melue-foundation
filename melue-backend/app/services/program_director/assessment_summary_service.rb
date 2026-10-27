@@ -348,7 +348,7 @@ module ProgramDirector
             status: "completed"
           )
           default_bta.calculate_function_scores! rescue nil
-          target_records = [default_bta]
+          target_records = [ default_bta ]
         end
       end
 
@@ -396,7 +396,7 @@ module ProgramDirector
           "automatic_pain" => { label: "Automatic Reinforcement — Pain Attenuation", yes_count: 1, max_points: 6, percentage: 16.7, is_dominant: false }
         }
 
-        dominant_fast = fs["dominant_fast_variables"] || fs[:dominant_fast_variables] || ["Social Reinforcement — Escape"]
+        dominant_fast = fs["dominant_fast_variables"] || fs[:dominant_fast_variables] || [ "Social Reinforcement — Escape" ]
 
         {
           id: bta.id || "tb-1",

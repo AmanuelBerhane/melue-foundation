@@ -203,15 +203,15 @@ module Api
 
           custom_sections = if payload.key?("customSections")
             payload["customSections"]
-          elsif payload.key?("sections")
+                            elsif payload.key?("sections")
             payload["sections"]
-          else
+                            else
             prev_custom_sections
           end || []
 
           deleted_sections = if payload.key?("deletedSections")
             payload["deletedSections"]
-          else
+                             else
             prev_deleted_sections
           end || []
 
@@ -292,7 +292,7 @@ module Api
               "created_at" => Time.current.iso8601,
               "saved_at" => Time.current.iso8601
             }
-            base_history = [snapshot] + base_history
+            base_history = [ snapshot ] + base_history
           end
 
           # 7. Persist to FormConfiguration

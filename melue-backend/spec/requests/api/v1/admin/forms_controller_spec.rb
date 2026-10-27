@@ -24,7 +24,7 @@ RSpec.describe "Api::V1::Admin::FormsController", type: :request do
       is_default: true,
       field_schema: {
         "fields" => initial_fields,
-        "customSections" => ["Student Info", "Parent Info", "Medical Info"],
+        "customSections" => [ "Student Info", "Parent Info", "Medical Info" ],
         "deletedSections" => [],
         "history" => [],
         "metadata" => {
@@ -72,7 +72,7 @@ RSpec.describe "Api::V1::Admin::FormsController", type: :request do
           organization_name: "Melu-e Specialized Academy",
           pages: "Page 1 of 8",
           fields: initial_fields,
-          customSections: ["Student Info", "Parent Info", "Medical Info"],
+          customSections: [ "Student Info", "Parent Info", "Medical Info" ],
           metadata: {
             formId: "FRM-ENR-2026",
             formName: "Student Enrollment Form 2026",
@@ -182,7 +182,7 @@ RSpec.describe "Api::V1::Admin::FormsController", type: :request do
 
         # Step 2: Proceed to add a new body component to this form
         new_field = { "id" => "f_allergy", "type" => "Text", "label" => "Known Allergies", "section" => "Medical Info" }
-        updated_fields = initial_fields + [new_field]
+        updated_fields = initial_fields + [ new_field ]
 
         body_payload = {
           formId: first_save["formId"],

@@ -26,4 +26,3 @@ class BehaviorAssessment < ApplicationRecord
     assessment_cycle.check_and_mark_complete! if submitted?
   end
 end
-

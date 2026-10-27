@@ -174,7 +174,7 @@ class Api::V1::Teacher::DashboardController < Api::V1::BaseController
       pref_prog = pref_status == "Completed" ? 100 : 0
       sensory_prog = sensory_status == "Completed" ? 100 : 0
 
-      module_statuses = [skills_status, behavior_status, pref_status, sensory_status]
+      module_statuses = [ skills_status, behavior_status, pref_status, sensory_status ]
       completed_count = module_statuses.count("Completed")
       in_prog_count = module_statuses.count("In Progress")
       not_start_count = module_statuses.count("Not Started")
@@ -197,7 +197,7 @@ class Api::V1::Teacher::DashboardController < Api::V1::BaseController
       days_since = latest_activity ? ((Time.current - latest_activity) / 1.day).to_i : 0
 
       # NFR-022: Check if any in-progress draft untouched for > 7 days
-      in_progress_modules = [skills, behavior, pref, sensory].compact.select do |m|
+      in_progress_modules = [ skills, behavior, pref, sensory ].compact.select do |m|
         (m.respond_to?(:in_progress?) ? m.in_progress? : m.status == "in_progress") || (m.respond_to?(:draft?) && m.draft?)
       end
 
@@ -312,7 +312,7 @@ class Api::V1::Teacher::DashboardController < Api::V1::BaseController
     if staff
       assigned = TeacherStudentAssignment.kept.where(teacher_id: staff.id, student_id: student.id).exists?
       is_in_assessment = student.status == "in_assessment"
-      return render json: { error: "Not authorized for this student" }, status: :forbidden unless (assigned || is_in_assessment)
+      return render json: { error: "Not authorized for this student" }, status: :forbidden unless assigned || is_in_assessment
     end
 
     # Transition student status: "in_assessment" -> "assessment_complete" (routes to Program Director review SCR-PD-002)

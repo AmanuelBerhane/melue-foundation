@@ -69,25 +69,28 @@ module ProgramDirector
       pref_status, pref_progress = evaluate_preference_assessment(cycle.preference_assessment)
       behavior_status, behavior_progress = evaluate_behavior_assessment(sensory)
 
-      overall_progress = if cycle.status.in?(%w[complete reviewed])
-                           100
-                         else
-                           ((skills_progress + pref_progress + behavior_progress) / 3.0).round.clamp(0, 100)
-                         end
+      overall_progress =
+        if cycle.status.in?(%w[ complete reviewed ])
+          100
+        else
+          ((skills_progress + pref_progress + behavior_progress) / 3.0).round.clamp(0, 100)
+        end
 
       therapist_name = assignment&.teacher&.full_name || "Assigned Clinician"
 
-      group_display = case student.therapy_group
-                      when "basic" then "Basic Group"
-                      when "functional_living" then "Functional Living"
-                      else student.therapy_group.presence&.humanize || "Station 1"
-                      end
+      group_display =
+        case student.therapy_group
+        when "basic" then "Basic Group"
+        when "functional_living" then "Functional Living"
+        else student.therapy_group.presence&.humanize || "Station 1"
+        end
 
-      program_display = case student.program_type
-                        when "regular" then "Regular"
-                        when "pulled_out" then "Pulled out"
-                        else student.program_type.presence&.humanize || "Comprehensive ABA"
-                        end
+      program_display =
+        case student.program_type
+        when "regular" then "Regular"
+        when "pulled_out" then "Pulled out"
+        else student.program_type.presence&.humanize || "Comprehensive ABA"
+        end
 
       completed_date_str = cycle.completed_on&.strftime("%Y-%m-%d") ||
                            (cycle.status.in?(%w[complete reviewed]) ? cycle.updated_at.strftime("%Y-%m-%d") : nil)

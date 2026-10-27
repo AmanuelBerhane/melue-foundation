@@ -23,10 +23,10 @@ class BehaviorTargetAssessment < ApplicationRecord
 
   # Authentic 16-Item MAS Category Mappings (Delaney & Durand, 1986)
   MAS_CATEGORY_MAPPING = {
-    sensory: [1, 5, 9, 13].freeze,
-    escape: [2, 6, 10, 14].freeze,
-    attention: [3, 7, 11, 15].freeze,
-    tangible: [4, 8, 12, 16].freeze
+    sensory: [ 1, 5, 9, 13 ].freeze,
+    escape: [ 2, 6, 10, 14 ].freeze,
+    attention: [ 3, 7, 11, 15 ].freeze,
+    tangible: [ 4, 8, 12, 16 ].freeze
   }.freeze
 
   MAS_CATEGORY_NAMES = {
@@ -38,11 +38,11 @@ class BehaviorTargetAssessment < ApplicationRecord
 
   # Authentic FAST Category Mappings (27 Questions - Florida Center on Self-Injury)
   FAST_CATEGORY_MAPPING = {
-    social_attention: { part_two_items: [4, 5, 6, 7, 8], max: 8, label: "Social Reinforcement — Attention" }.freeze,
-    social_tangible:  { part_two_items: [9, 10, 11, 12, 13], max: 8, label: "Social Reinforcement — Tangible" }.freeze,
-    social_escape:    { part_two_items: [14, 15, 16, 17, 18], max: 8, label: "Social Reinforcement — Escape" }.freeze,
-    automatic_sensory: { items: [19, 20, 21, 22, 23, 24], max: 6, label: "Automatic Reinforcement — Sensory Stimulation" }.freeze,
-    automatic_pain:   { items: [19, 20, 24, 25, 26, 27], max: 6, label: "Automatic Reinforcement — Pain Attenuation" }.freeze
+    social_attention: { part_two_items: [ 4, 5, 6, 7, 8 ], max: 8, label: "Social Reinforcement — Attention" }.freeze,
+    social_tangible:  { part_two_items: [ 9, 10, 11, 12, 13 ], max: 8, label: "Social Reinforcement — Tangible" }.freeze,
+    social_escape:    { part_two_items: [ 14, 15, 16, 17, 18 ], max: 8, label: "Social Reinforcement — Escape" }.freeze,
+    automatic_sensory: { items: [ 19, 20, 21, 22, 23, 24 ], max: 6, label: "Automatic Reinforcement — Sensory Stimulation" }.freeze,
+    automatic_pain:   { items: [ 19, 20, 24, 25, 26, 27 ], max: 6, label: "Automatic Reinforcement — Pain Attenuation" }.freeze
   }.freeze
 
   def self.parse_likert(val)
@@ -100,7 +100,7 @@ class BehaviorTargetAssessment < ApplicationRecord
     end
 
     # Motivational Ranking: Rank 1 (highest mean) to Rank 4 (lowest mean)
-    sorted_cats = mas_scores_result.keys.sort_by { |cat| [-mas_scores_result[cat][:mean], -mas_scores_result[cat][:total]] }
+    sorted_cats = mas_scores_result.keys.sort_by { |cat| [ -mas_scores_result[cat][:mean], -mas_scores_result[cat][:total] ] }
     sorted_cats.each_with_index do |cat, idx|
       mas_scores_result[cat][:rank] = idx + 1
     end
@@ -133,7 +133,7 @@ class BehaviorTargetAssessment < ApplicationRecord
       end
 
       pct = meta[:max] > 0 ? ((yes_count.to_f / meta[:max]) * 100).round(1) : 0
-      max_pct = [max_pct, pct].max
+      max_pct = [ max_pct, pct ].max
       fast_counts[cat] = yes_count
 
       fast_scores_result[cat] = {

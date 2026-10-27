@@ -312,7 +312,7 @@ module Api
           mass_assessment.save!
           fast_assessment.save!
 
-          [mass_assessment, fast_assessment]
+          [ mass_assessment, fast_assessment ]
         end
       end
     end

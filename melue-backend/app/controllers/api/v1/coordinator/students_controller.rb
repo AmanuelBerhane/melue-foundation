@@ -596,11 +596,11 @@ module Api
           staff = StaffMember.find_by(id: clean_param)
           # 2. Try exact / partial full_name
           staff ||= StaffMember.find_by("full_name ILIKE ?", "%#{clean_param}%")
-          
+
           # 3. Normalize digit representations: "Teacher 2" <-> "Teacher Two"
           num_to_word = { "1" => "One", "2" => "Two", "3" => "Three", "4" => "Four", "5" => "Five" }
           word_to_num = { "one" => "1", "two" => "2", "three" => "3", "four" => "4", "five" => "5" }
-          
+
           word_converted = clean_param
           num_to_word.each { |num, word| word_converted = word_converted.gsub(/\b#{num}\b/, word) }
           staff ||= StaffMember.find_by("full_name ILIKE ?", "%#{word_converted}%")
